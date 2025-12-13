@@ -1,4 +1,7 @@
 name: Sync Products
+concurrency:
+  group: sync-products
+  cancel-in-progress: true
 
 on:
   workflow_dispatch:
