@@ -10,7 +10,7 @@ from typing import Dict, Any, List, Optional
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-14-05"
+SYNC_PRODUCTS_VERSION = "2025-12-14-06"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -23,6 +23,11 @@ VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
 CAPTION_MAX = 900
 SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "1.2"))
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
+
+# 图片失败策略：
+#   "text" = 图片失败就降级发文本（默认）
+#   "skip" = 图片失败就跳过该产品（不发）
+BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "text").strip().lower()
 
 FLAG = {
     "US": "🇺🇸", "UK": "🇬🇧", "DE": "🇩🇪", "FR": "🇫🇷",
@@ -41,18 +46,12 @@ CURRENCY_SYMBOL = {
 }
 
 
+class SkipProduct(Exception):
+    pass
+
+
 def safe_str(x) -> str:
     return ("" if x is None else str(x)).strip()
-
-
-def load_json(p: Path, default):
-    if p.exists():
-        return json.loads(p.read_text(encoding="utf-8"))
-    return default
-
-
-def save_json(p: Path, obj):
-    p.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def sha1(s: str) -> str:
@@ -66,6 +65,45 @@ def _decode_bytes(b: bytes) -> str:
         except UnicodeDecodeError:
             continue
     return b.decode("utf-8", errors="replace")
+
+
+def load_json_safe(p: Path, default):
+    """
+    容错读取：
+    - 文件不存在 -> default
+    - 空文件/损坏 JSON -> 备份并返回 default
+    """
+    if not p.exists():
+        return default
+    try:
+        raw = p.read_text(encoding="utf-8").strip()
+        if not raw:
+            # 空文件
+            bak = p.with_suffix(p.suffix + f".empty.{int(time.time())}.bak")
+            try:
+                p.replace(bak)
+                print(f"[warn] state file empty, moved to {bak.name}, reset to default")
+            except Exception:
+                print("[warn] state file empty, reset to default (backup failed)")
+            return default
+        return json.loads(raw)
+    except Exception as e:
+        bak = p.with_suffix(p.suffix + f".broken.{int(time.time())}.bak")
+        try:
+            p.replace(bak)
+            print(f"[warn] state json broken, moved to {bak.name}, reset to default. err={e}")
+        except Exception:
+            print(f"[warn] state json broken, reset to default (backup failed). err={e}")
+        return default
+
+
+def save_json_atomic(p: Path, obj):
+    """
+    原子写入：写临时文件再 replace，避免写到一半被打断导致空文件/损坏。
+    """
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(p)
 
 
 def norm_text(s) -> str:
@@ -105,9 +143,10 @@ def parse_decimal_maybe(v) -> Optional[Decimal]:
 
 def canonical_money_for_hash(v) -> str:
     """
-    用于 hash：10 / 10.0 / 10.00 -> "10"
-    为空或 0 -> ""
-    无法解析 -> 归一化原文本
+    hash 用：
+    - 10 / 10.0 / 10.00 -> "10"
+    - 空或 0 -> ""
+    - 无法解析 -> 归一化原文本
     """
     s = safe_str(v)
     if not s:
@@ -153,14 +192,29 @@ def format_money_for_caption(v, market: str) -> Optional[str]:
     return f"{s}{sym}"
 
 
-def tg_api(method: str, payload: dict, max_retry: int = 6):
+def is_bad_image_error(err: Exception) -> bool:
+    s = str(err).lower()
+    # Telegram 对 URL 图片常见报错
+    keywords = [
+        "wrong file identifier",
+        "wrong type of the web page content",
+        "webpage_media_empty",
+        "failed to get http url content",
+        "http url specified",
+        "can't parse",
+        "bad request",
+    ]
+    return any(k in s for k in keywords)
+
+
+def tg_api(session: requests.Session, method: str, payload: dict, max_retry: int = 6):
     if not TG_TOKEN:
         raise RuntimeError("Missing TG_BOT_TOKEN")
 
     url = f"https://api.telegram.org/bot{TG_TOKEN}/{method}"
 
     for attempt in range(max_retry):
-        r = requests.post(url, json=payload, timeout=30)
+        r = session.post(url, json=payload, timeout=30)
         try:
             data = r.json()
         except Exception:
@@ -186,7 +240,7 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
     raise RuntimeError(f"{method} failed after retries (429).")
 
 
-def load_products() -> List[Dict[str, str]]:
+def load_products(session: requests.Session) -> List[Dict[str, str]]:
     def _norm_market(s: str) -> str:
         return safe_str(s).upper()
 
@@ -204,7 +258,7 @@ def load_products() -> List[Dict[str, str]]:
         store = _get(row, "store", "Store")
         remark = _get(row, "remark", "Remark")
         link = _get(row, "link", "Link", "url", "URL")
-        image_url = _get(row, "image_url", "image", "Image", "img")
+        image_url = _get(row, "image_url", "image", "Image", "img", "imageUrl", "image_url ")
         status = norm_status(_get(row, "status", "Status"))
 
         discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount")
@@ -242,7 +296,7 @@ def load_products() -> List[Dict[str, str]]:
 
     if sheet_url:
         try:
-            r = requests.get(sheet_url, timeout=30)
+            r = session.get(sheet_url, timeout=30)
             r.raise_for_status()
             text = _decode_bytes(r.content)
             reader = csv.DictReader(io.StringIO(text))
@@ -305,13 +359,13 @@ def build_caption(p: dict) -> str:
     return cap[:CAPTION_MAX]
 
 
-def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
+def send_new(session: requests.Session, chat_id: int, thread_id: int, p: dict) -> dict:
     caption = build_caption(p)
     img = safe_str(p.get("image_url"))
 
     if img:
         try:
-            res = tg_api("sendPhoto", {
+            res = tg_api(session, "sendPhoto", {
                 "chat_id": chat_id,
                 "message_thread_id": thread_id,
                 "photo": img,
@@ -320,9 +374,12 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
             time.sleep(SEND_DELAY_SEC)
             return {"message_id": res["message_id"], "kind": "photo", "image_url": img}
         except Exception as e:
-            print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
+            print(f"[warn] sendPhoto failed. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
+            if BAD_IMAGE_POLICY == "skip" and is_bad_image_error(e):
+                raise SkipProduct("bad image url -> skip by policy")
 
-    res = tg_api("sendMessage", {
+    # 文本兜底
+    res = tg_api(session, "sendMessage", {
         "chat_id": chat_id,
         "message_thread_id": thread_id,
         "text": caption,
@@ -332,7 +389,7 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
     return {"message_id": res["message_id"], "kind": "text", "image_url": ""}
 
 
-def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
+def edit_existing(session: requests.Session, chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
     caption = build_caption(p)
 
     prev_kind = safe_str(prev.get("kind") or "text")
@@ -342,7 +399,7 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
     if prev_kind == "photo":
         if new_img and new_img != prev_img:
             try:
-                tg_api("editMessageMedia", {
+                tg_api(session, "editMessageMedia", {
                     "chat_id": chat_id,
                     "message_id": message_id,
                     "media": {"type": "photo", "media": new_img, "caption": caption}
@@ -350,9 +407,9 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
                 time.sleep(SEND_DELAY_SEC)
                 return {"kind": "photo", "image_url": new_img}
             except Exception as e:
-                print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
+                print(f"[warn] editMessageMedia failed -> fallback to caption only. msg={message_id} err={e}")
 
-        tg_api("editMessageCaption", {
+        tg_api(session, "editMessageCaption", {
             "chat_id": chat_id,
             "message_id": message_id,
             "caption": caption,
@@ -360,7 +417,7 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
         time.sleep(SEND_DELAY_SEC)
         return {"kind": "photo", "image_url": prev_img}
 
-    tg_api("editMessageText", {
+    tg_api(session, "editMessageText", {
         "chat_id": chat_id,
         "message_id": message_id,
         "text": caption,
@@ -388,6 +445,22 @@ def pick_chat_id(thread_map_all: dict) -> str:
     )
 
 
+def migrate_legacy_key(state: Dict[str, Any], chat_id: int, key: str) -> Optional[dict]:
+    """
+    兼容你旧版本的 state key：
+    - 旧："{chat_id}:{market}:{asin}" 例如 "-10034...:US:B0..."
+    - 新："US:B0..."
+    """
+    legacy_key = f"{chat_id}:{key}"
+    if legacy_key in state and key not in state:
+        state[key] = state[legacy_key]
+        # 清理旧 key，避免不断增长；若你希望保留也可以注释下一行
+        del state[legacy_key]
+        print(f"[warn] migrated legacy state key -> {key} (legacy removed)")
+        return state[key]
+    return None
+
+
 def main():
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
 
@@ -396,13 +469,15 @@ def main():
     if not MAP_FILE.exists():
         raise SystemExit("Missing thread_map.json（请先在群里各话题 /bind 生成映射）")
 
-    thread_map_all = load_json(MAP_FILE, {})
+    session = requests.Session()
+
+    thread_map_all = load_json_safe(MAP_FILE, {})
     chat_id_str = pick_chat_id(thread_map_all)
     chat_id = int(chat_id_str)
     thread_map = thread_map_all.get(chat_id_str, {})
 
-    state: Dict[str, Any] = load_json(STATE_FILE, {})
-    products = load_products()
+    state: Dict[str, Any] = load_json_safe(STATE_FILE, {})
+    products = load_products(session)
 
     ok_count = 0
     skip_count = 0
@@ -433,28 +508,31 @@ def main():
             key = f"{market}:{asin}"
             status = norm_status(p.get("status"))
 
-            # 稳定 hash：文本归一化 + 价格规范化，避免重复发送
-            content_hash = sha1(
-                "|".join([
-                    norm_text(p.get("title")),
-                    norm_text(p.get("keyword")),
-                    norm_text(p.get("store")),
-                    norm_text(p.get("remark")),
-                    norm_text(p.get("link")),
-                    norm_text(p.get("image_url")),
-                    canonical_money_for_hash(p.get("discount_price")),
-                    canonical_money_for_hash(p.get("commission")),
-                    status,
-                ])
-            )
+            # 稳定 hash：文本归一化 + 金额 canonical
+            content_hash = sha1("|".join([
+                norm_text(p.get("title")),
+                norm_text(p.get("keyword")),
+                norm_text(p.get("store")),
+                norm_text(p.get("remark")),
+                norm_text(p.get("link")),
+                norm_text(p.get("image_url")),
+                canonical_money_for_hash(p.get("discount_price")),
+                canonical_money_for_hash(p.get("commission")),
+                status,
+            ]))
 
             prev = state.get(key)
+            if not prev:
+                # 迁移 legacy key（如果存在）
+                migrated = migrate_legacy_key(state, chat_id, key)
+                if migrated:
+                    prev = migrated
 
-            # -------- removed：删除（关键修复：不清空 message_id）--------
+            # removed：删除（关键：不清空 message_id，便于后续重试删除）
             if status == "removed":
                 delete_ok = bool(prev.get("delete_ok")) if isinstance(prev, dict) else False
 
-                # 如果之前已删除成功且 hash 没变，就不再重复 delete
+                # 已删除成功 + hash 未变化 -> 不重复 delete
                 if prev and prev.get("status") == "removed" and prev.get("hash") == content_hash and delete_ok:
                     skip_count += 1
                     continue
@@ -463,7 +541,7 @@ def main():
                 if prev and prev.get("message_id") and not delete_ok:
                     attempted = True
                     try:
-                        tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
+                        tg_api(session, "deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
                         delete_ok = True
                         print("deleted:", key, "msg", prev["message_id"])
                     except Exception as e:
@@ -477,20 +555,18 @@ def main():
                     "ts": int(time.time()),
                     "delete_attempted": attempted or bool((prev or {}).get("delete_attempted")),
                     "delete_ok": delete_ok,
-                    # 注意：不清空 message_id，方便之后还能重试删除
                 }
                 ok_count += 1
                 continue
 
-            # -------- active --------
             # active 且无变化：跳过
             if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
                 skip_count += 1
                 continue
 
-            # relist：removed -> active，强制重发（无论是否保留 message_id）
+            # relist：removed -> active，强制重发
             if prev and prev.get("status") == "removed":
-                info = send_new(chat_id, thread_id, p)
+                info = send_new(session, chat_id, thread_id, p)
                 state[key] = {
                     "message_id": info["message_id"],
                     "hash": content_hash,
@@ -507,7 +583,7 @@ def main():
 
             # 首次发布
             if not prev or not prev.get("message_id"):
-                info = send_new(chat_id, thread_id, p)
+                info = send_new(session, chat_id, thread_id, p)
                 state[key] = {
                     "message_id": info["message_id"],
                     "hash": content_hash,
@@ -524,29 +600,28 @@ def main():
 
             # 编辑已有消息
             msg_id = int(prev["message_id"])
-            try:
-                new_meta = edit_existing(chat_id, msg_id, prev, p)
-                state[key] = {
-                    **prev,
-                    "hash": content_hash,
-                    "status": "active",
-                    "kind": new_meta["kind"],
-                    "image_url": new_meta["image_url"],
-                    "ts": int(time.time()),
-                }
-                print("edited:", key, "msg", msg_id)
-                ok_count += 1
-            except Exception as e:
-                err_count += 1
-                print("[error] edit failed but continue:", key, str(e))
-                continue
+            new_meta = edit_existing(session, chat_id, msg_id, prev, p)
+            state[key] = {
+                **prev,
+                "hash": content_hash,
+                "status": "active",
+                "kind": new_meta["kind"],
+                "image_url": new_meta["image_url"],
+                "ts": int(time.time()),
+            }
+            print("edited:", key, "msg", msg_id)
+            ok_count += 1
 
+        except SkipProduct as e:
+            skip_count += 1
+            print(f"[skip] {e}. market={p.get('market')} asin={p.get('asin')}")
+            continue
         except Exception as e:
             err_count += 1
             print(f"[error] product failed but continue. market={p.get('market')} asin={p.get('asin')} err={e}")
             continue
 
-    save_json(STATE_FILE, state)
+    save_json_atomic(STATE_FILE, state)
     print(f"done. ok={ok_count} skip={skip_count} err={err_count}. state saved -> {STATE_FILE}")
 
 
