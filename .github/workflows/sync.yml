@@ -1,13 +1,13 @@
 name: Sync Products
 
-concurrency:
-  group: sync-products-${{ github.ref }}
-  cancel-in-progress: false
-
 on:
   workflow_dispatch:
   schedule:
     - cron: "*/30 * * * *"
+
+concurrency:
+  group: sync-products-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: true
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -33,11 +34,12 @@ jobs:
 
       - name: Run sync
         env:
-          BAD_IMAGE_POLICY: "skip"
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           TG_SEND_DELAY_SEC: "1.2"
+          BAD_IMAGE_POLICY: "skip"   # 你要“图片错误就跳过产品”，就保持 skip
+          FALLBACK_TO_LOCAL_CSV: "1"
         run: python sync_products.py
 
       - name: Commit posted_state.json
@@ -45,9 +47,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add posted_state.json
           git diff --cached --quiet || git commit -m "Update posted_state.json"
-
           git pull --rebase
           git push
