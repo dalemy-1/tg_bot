@@ -1,4 +1,3 @@
-# sync_products.py  (FINAL - STABLE + SAFE + MONEY + NO-COUNTRY-CN)
 import os
 import io
 import csv
@@ -11,7 +10,7 @@ from typing import Dict, Any, List, Optional
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-14-04"
+SYNC_PRODUCTS_VERSION = "2025-12-14-05"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -69,15 +68,14 @@ def _decode_bytes(b: bytes) -> str:
     return b.decode("utf-8", errors="replace")
 
 
-def norm_text(s: str) -> str:
-    # 用于 hash 的稳定化：去两端空格、把多空白压成一个空格
+def norm_text(s) -> str:
     s = safe_str(s)
     if not s:
         return ""
     return " ".join(s.split())
 
 
-def norm_status(s: str) -> str:
+def norm_status(s) -> str:
     s = safe_str(s).lower()
     if s in ("removed", "inactive", "down", "off", "0", "false", "停售", "下架"):
         return "removed"
@@ -88,8 +86,6 @@ def parse_decimal_maybe(v) -> Optional[Decimal]:
     s = safe_str(v)
     if not s:
         return None
-
-    # 去掉常见符号
     cleaned = (
         s.replace(",", "")
          .replace("$", "")
@@ -101,7 +97,6 @@ def parse_decimal_maybe(v) -> Optional[Decimal]:
     )
     if not cleaned:
         return None
-
     try:
         return Decimal(cleaned)
     except (InvalidOperation, ValueError):
@@ -110,9 +105,9 @@ def parse_decimal_maybe(v) -> Optional[Decimal]:
 
 def canonical_money_for_hash(v) -> str:
     """
-    用于 hash：把 10 / 10.0 / 10.00 统一成 "10"
+    用于 hash：10 / 10.0 / 10.00 -> "10"
     为空或 0 -> ""
-    文本无法解析 -> 归一化原文本
+    无法解析 -> 归一化原文本
     """
     s = safe_str(v)
     if not s:
@@ -125,11 +120,8 @@ def canonical_money_for_hash(v) -> str:
     if d == 0:
         return ""
 
-    # 去尾零：10.00 -> 10；10.50 -> 10.5
     normalized = d.normalize()
-    # Decimal('10') normalize 后可能变成 '1E+1'，转成普通字符串
     as_str = format(normalized, "f")
-    # 再去一次尾零和点
     if "." in as_str:
         as_str = as_str.rstrip("0").rstrip(".")
     return as_str
@@ -137,10 +129,10 @@ def canonical_money_for_hash(v) -> str:
 
 def format_money_for_caption(v, market: str) -> Optional[str]:
     """
-    用于文案：
-    - 空 / 0 -> None（不显示）
-    - 已包含货币符号 -> 原样（strip）
-    - 纯数字 -> 拼尾随符号：10$
+    文案显示：
+    - 空/0 不显示
+    - 已带符号原样
+    - 纯数字：尾随符号 10$
     """
     s = safe_str(v)
     if not s:
@@ -158,17 +150,10 @@ def format_money_for_caption(v, market: str) -> Optional[str]:
     sym = CURRENCY_SYMBOL.get((market or "").upper(), "")
     if not sym:
         return s
-
-    # 直接用原始字符串（表格里一般是 10 / 15 / 20）
     return f"{s}{sym}"
 
 
 def tg_api(method: str, payload: dict, max_retry: int = 6):
-    """
-    Telegram API wrapper:
-    - 自动处理 429 限流（按 retry_after 等待后重试）
-    - 其他错误抛出（外层单条 try/except 会吞掉继续）
-    """
     if not TG_TOKEN:
         raise RuntimeError("Missing TG_BOT_TOKEN")
 
@@ -202,12 +187,6 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
 
 
 def load_products() -> List[Dict[str, str]]:
-    """
-    From GOOGLE_SHEET_CSV_URL (preferred) or local products.csv (fallback).
-    支持字段（表头大小写/空格可不同）：
-      market, asin, title, keyword, store, remark, link, image_url, status,
-      Discount Price, Commission
-    """
     def _norm_market(s: str) -> str:
         return safe_str(s).upper()
 
@@ -225,7 +204,7 @@ def load_products() -> List[Dict[str, str]]:
         store = _get(row, "store", "Store")
         remark = _get(row, "remark", "Remark")
         link = _get(row, "link", "Link", "url", "URL")
-        image_url = _get(row, "image_url", "image", "Image", "img", "image_url ")
+        image_url = _get(row, "image_url", "image", "Image", "img")
         status = norm_status(_get(row, "status", "Status"))
 
         discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount")
@@ -361,7 +340,6 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
     new_img = safe_str(p.get("image_url"))
 
     if prev_kind == "photo":
-        # 新图不同则尝试换图；失败就只改 caption
         if new_img and new_img != prev_img:
             try:
                 tg_api("editMessageMedia", {
@@ -382,7 +360,6 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
         time.sleep(SEND_DELAY_SEC)
         return {"kind": "photo", "image_url": prev_img}
 
-    # text：只编辑文本（忽略 new_img）
     tg_api("editMessageText", {
         "chat_id": chat_id,
         "message_id": message_id,
@@ -409,34 +386,6 @@ def pick_chat_id(thread_map_all: dict) -> str:
         "Set env TG_CHAT_ID to choose one. "
         f"Available: {keys}"
     )
-
-
-def make_state_key(chat_id: int, market: str, asin: str) -> str:
-    # 稳定：强制包含 chat_id，避免换群/换 chat_id 导致找不到 message_id
-    return f"{chat_id}:{market}:{asin}"
-
-
-def get_prev_and_migrate(state: Dict[str, Any], new_key: str, legacy_keys: List[str]) -> Optional[dict]:
-    """
-    从 state 里取 prev：
-    - 优先 new_key
-    - 找到 legacy_key 就迁移到 new_key（只迁一次）
-    """
-    if new_key in state:
-        return state.get(new_key)
-
-    for lk in legacy_keys:
-        if lk in state:
-            prev = state.get(lk)
-            state[new_key] = prev
-            try:
-                del state[lk]
-            except Exception:
-                pass
-            print(f"[warn] migrated legacy state key -> {new_key} (legacy removed)")
-            return prev
-
-    return None
 
 
 def main():
@@ -481,17 +430,10 @@ def main():
                 continue
             thread_id = int(thread_id)
 
+            key = f"{market}:{asin}"
             status = norm_status(p.get("status"))
-            new_key = make_state_key(chat_id, market, asin)
 
-            # 兼容旧 key：你之前用过 market:asin（不含 chat_id）
-            legacy_keys = [
-                f"{market}:{asin}",
-            ]
-
-            prev = get_prev_and_migrate(state, new_key, legacy_keys)
-
-            # 用“稳定规范化”的值参与 hash，避免每次都变
+            # 稳定 hash：文本归一化 + 价格规范化，避免重复发送
             content_hash = sha1(
                 "|".join([
                     norm_text(p.get("title")),
@@ -506,45 +448,77 @@ def main():
                 ])
             )
 
-            # removed：删除消息（只有 prev 有 message_id 才能删）
+            prev = state.get(key)
+
+            # -------- removed：删除（关键修复：不清空 message_id）--------
             if status == "removed":
-                if prev and prev.get("message_id"):
+                delete_ok = bool(prev.get("delete_ok")) if isinstance(prev, dict) else False
+
+                # 如果之前已删除成功且 hash 没变，就不再重复 delete
+                if prev and prev.get("status") == "removed" and prev.get("hash") == content_hash and delete_ok:
+                    skip_count += 1
+                    continue
+
+                attempted = False
+                if prev and prev.get("message_id") and not delete_ok:
+                    attempted = True
                     try:
                         tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
-                        print("deleted:", new_key, "msg", prev["message_id"])
+                        delete_ok = True
+                        print("deleted:", key, "msg", prev["message_id"])
                     except Exception as e:
-                        print("[warn] delete failed but continue:", new_key, str(e))
+                        delete_ok = False
+                        print("[warn] delete failed but continue:", key, str(e))
 
-                # 写入 removed 状态；message_id 置空，保证未来 relist 一定重发
-                state[new_key] = {
+                state[key] = {
                     **(prev or {}),
                     "status": "removed",
-                    "message_id": None,
-                    "kind": None,
-                    "image_url": "",
                     "hash": content_hash,
                     "ts": int(time.time()),
+                    "delete_attempted": attempted or bool((prev or {}).get("delete_attempted")),
+                    "delete_ok": delete_ok,
+                    # 注意：不清空 message_id，方便之后还能重试删除
                 }
                 ok_count += 1
                 continue
 
+            # -------- active --------
             # active 且无变化：跳过
             if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
                 skip_count += 1
                 continue
 
-            # 首次发布（或之前 removed 过、message_id 为空）
-            if not prev or not prev.get("message_id"):
+            # relist：removed -> active，强制重发（无论是否保留 message_id）
+            if prev and prev.get("status") == "removed":
                 info = send_new(chat_id, thread_id, p)
-                state[new_key] = {
+                state[key] = {
                     "message_id": info["message_id"],
                     "hash": content_hash,
                     "status": "active",
                     "kind": info["kind"],
                     "image_url": info["image_url"],
                     "ts": int(time.time()),
+                    "delete_attempted": False,
+                    "delete_ok": False,
                 }
-                print("posted:", new_key, "msg", info["message_id"])
+                print("reposted(after relist):", key, "msg", info["message_id"])
+                ok_count += 1
+                continue
+
+            # 首次发布
+            if not prev or not prev.get("message_id"):
+                info = send_new(chat_id, thread_id, p)
+                state[key] = {
+                    "message_id": info["message_id"],
+                    "hash": content_hash,
+                    "status": "active",
+                    "kind": info["kind"],
+                    "image_url": info["image_url"],
+                    "ts": int(time.time()),
+                    "delete_attempted": False,
+                    "delete_ok": False,
+                }
+                print("posted:", key, "msg", info["message_id"])
                 ok_count += 1
                 continue
 
@@ -552,7 +526,7 @@ def main():
             msg_id = int(prev["message_id"])
             try:
                 new_meta = edit_existing(chat_id, msg_id, prev, p)
-                state[new_key] = {
+                state[key] = {
                     **prev,
                     "hash": content_hash,
                     "status": "active",
@@ -560,11 +534,11 @@ def main():
                     "image_url": new_meta["image_url"],
                     "ts": int(time.time()),
                 }
-                print("edited:", new_key, "msg", msg_id)
+                print("edited:", key, "msg", msg_id)
                 ok_count += 1
             except Exception as e:
                 err_count += 1
-                print("[error] edit failed but continue:", new_key, str(e))
+                print("[error] edit failed but continue:", key, str(e))
                 continue
 
         except Exception as e:
