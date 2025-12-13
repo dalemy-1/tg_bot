@@ -1,4 +1,5 @@
 import io
+import os
 SHEET_CSV_URL = os.getenv("GOOGLE_SHEET_CSV_URL", "").strip()
 import os, csv, json, hashlib, time
 from pathlib import Path
@@ -398,3 +399,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
