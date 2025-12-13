@@ -487,11 +487,11 @@ def main():
 
             prev = state.get(key)
             if not prev and legacy_key in state:
-                # 迁移旧 key -> 新 key（只在当前 chat 里使用）
                 prev = state.get(legacy_key)
                 state[key] = prev
-                # 不立刻删除 legacy_key，避免误伤；你确认稳定后可手动清理
-                print(f"[warn] migrated legacy state key -> {key}")
+                del state[legacy_key]   # 清理旧 key，避免文件膨胀（单群使用建议开启）
+                print(f"[warn] migrated legacy state key -> {key} (legacy removed)")
+
 
             # removed：如果已经 removed 且没有 message_id 且 hash 没变，就直接 skip（防止每30分钟写一次 state）
                         if status == "removed":
@@ -576,4 +576,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
