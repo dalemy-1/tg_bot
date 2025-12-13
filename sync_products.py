@@ -494,32 +494,38 @@ def main():
                 print(f"[warn] migrated legacy state key -> {key}")
 
             # removed：如果已经 removed 且没有 message_id 且 hash 没变，就直接 skip（防止每30分钟写一次 state）
-            if status == "removed":
+                        if status == "removed":
+                # 如果已经 removed 且没有 message_id 且 hash 没变，就跳过（防止每次重复处理）
                 if prev and prev.get("status") == "removed" and prev.get("hash") == content_hash and not prev.get("message_id"):
                     skip_count += 1
                     continue
 
+                deleted_ok = False
                 if prev and prev.get("message_id"):
                     try:
                         tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
                         print("deleted:", key, "msg", prev["message_id"])
+                        deleted_ok = True
                     except Exception as e:
-                        print("[warn] delete failed but continue:", key, str(e))
+                        # 删除失败：保留 message_id，下一次还能重试
+                        print("[warn] delete failed (will retry next run):", key, "msg", prev.get("message_id"), "err", str(e))
+
                 else:
-                    # 没有 message_id：你在群里已有旧消息，但 state 没记录，就无法精确删除
                     print("[skip] removed but no message_id in state:", key)
 
                 state[key] = {
                     **(prev or {}),
                     "status": "removed",
-                    "message_id": None,
-                    "kind": None,
-                    "image_url": "",
+                    # 只有删除成功才清空 message_id；否则保留用于重试
+                    "message_id": None if deleted_ok else (prev.get("message_id") if prev else None),
+                    "kind": None if deleted_ok else (prev.get("kind") if prev else None),
+                    "image_url": "" if deleted_ok else (prev.get("image_url") if prev else ""),
                     "hash": content_hash,
                     "ts": int(time.time()),
                 }
                 ok_count += 1
                 continue
+
 
             # active 且无变化：skip
             if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
@@ -570,3 +576,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
