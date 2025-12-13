@@ -183,15 +183,82 @@ def _normalize_row(row: dict) -> dict:
     }
 
 
-def load_products() -> list[dict]:
-    rows: list[dict] = []
+def load_products():
+    """
+    Load products from Google Sheets CSV (if GOOGLE_SHEET_CSV_URL is set) or local products.csv.
+    Returns: list[dict] with normalized keys:
+      market, asin, title, keyword, store, remark, link, image_url, status
+    """
+    import os, io, csv
+    import requests
+    from pathlib import Path
+
+    def _decode_bytes(b: bytes) -> str:
+        for enc in ("utf-8-sig", "utf-8", "gb18030"):
+            try:
+                return b.decode(enc)
+            except UnicodeDecodeError:
+                continue
+        return b.decode("utf-8", errors="replace")
+
+    def _norm_status(s: str) -> str:
+        s = (s or "").strip().lower()
+        if s in ("removed", "inactive", "down", "off", "0", "false", "停售", "下架"):
+            return "removed"
+        return "active"
+
+    def _clean(s: str) -> str:
+        return (s or "").strip()
+
+    def _norm_market(s: str) -> str:
+        return _clean(s).upper()
+
+    def _normalize_row(row: dict) -> dict:
+        # 1) 统一 key：去 BOM、去空格、转小写
+        norm = {}
+        for k, v in (row or {}).items():
+            kk = (k or "")
+            kk = kk.lstrip("\ufeff").strip().lower()
+            norm[kk] = v
+
+        market = _norm_market(norm.get("market"))
+        asin = _clean(norm.get("asin"))
+        title = _clean(norm.get("title"))
+        keyword = _clean(norm.get("keyword"))
+        store = _clean(norm.get("store"))
+        remark = _clean(norm.get("remark"))
+        link = _clean(norm.get("link") or norm.get("url"))
+        image_url = _clean(norm.get("image_url") or norm.get("image") or norm.get("img"))
+        status = _norm_status(norm.get("status"))
+
+        return {
+            "market": market,
+            "asin": asin,
+            "title": title,
+            "keyword": keyword,
+            "store": store,
+            "remark": remark,
+            "link": link,
+            "image_url": image_url,
+            "status": status,
+        }
 
     # 1) 优先：Google Sheets CSV
-    if SHEET_CSV_URL:
-        r = requests.get(SHEET_CSV_URL, timeout=30)
+    sheet_url = (os.getenv("GOOGLE_SHEET_CSV_URL") or "").strip()
+    rows = []
+
+    if sheet_url:
+        r = requests.get(sheet_url, timeout=30)
         r.raise_for_status()
         text = _decode_bytes(r.content)
+
+        # 关键：彻底清 BOM（有些情况下 BOM 会残留在首列表头）
+        text = text.replace("\ufeff", "")
+
         reader = csv.DictReader(io.StringIO(text))
+        # Debug：把 fieldnames 打印出来，便于你确认表头是否正确
+        print("[debug] csv fieldnames:", reader.fieldnames)
+
         for row in reader:
             if not row:
                 continue
@@ -199,33 +266,30 @@ def load_products() -> list[dict]:
         print(f"[ok] loaded from Google Sheets: {len(rows)} rows")
     else:
         # 2) 回退：本地 products.csv
-        if not PRODUCTS_FILE.exists():
-            raise FileNotFoundError(f"products.csv not found: {PRODUCTS_FILE}")
+        base_dir = Path(__file__).resolve().parent
+        csv_path = base_dir / "products.csv"
+        if not csv_path.exists():
+            raise FileNotFoundError(f"products.csv not found: {csv_path}")
 
-        raw = PRODUCTS_FILE.read_bytes()
-        text = _decode_bytes(raw)
+        raw = csv_path.read_bytes()
+        text = _decode_bytes(raw).replace("\ufeff", "")
         reader = csv.DictReader(io.StringIO(text))
+        print("[debug] csv fieldnames:", reader.fieldnames)
+
         for row in reader:
             if not row:
                 continue
             rows.append(_normalize_row(row))
-        print(f"[ok] loaded from local csv: {len(rows)} rows ({PRODUCTS_FILE})")
+        print(f"[ok] loaded from local csv: {len(rows)} rows ({csv_path})")
 
-    # 基本过滤：必须有 market + asin（否则无法定位消息）
-    filtered = [p for p in rows if p["market"] and p["asin"]]
+    # 必须有 market + asin
+    filtered = [p for p in rows if p.get("market") and p.get("asin")]
     dropped = len(rows) - len(filtered)
     if dropped:
         print(f"[warn] dropped {dropped} rows missing market/asin")
 
-    # 过滤 market 范围（避免拼错国家）
-    final = []
-    for p in filtered:
-        if p["market"] not in VALID_MARKETS:
-            print(f"[warn] skipped invalid market: {p['market']} asin={p['asin']}")
-            continue
-        final.append(p)
+    return filtered
 
-    return final
 
 
 # ========== 文案/发送/编辑 ==========
@@ -506,3 +570,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
