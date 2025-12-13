@@ -4756,5 +4756,2595 @@
     "ts": 1765663064,
     "delete_attempted": true,
     "delete_ok": false
+  },
+  "-1003402981917:US:B0G3WXVWNJ": {
+    "message_id": null,
+    "hash": "718503817b18e85f7cdcdb5f846fdc695fd61e99",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663043,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:CA:B0FKGQHBZS": {
+    "message_id": null,
+    "hash": "5c6680093d9228697b26078110a4dcefb171d56a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663044,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FX1TD4GR": {
+    "message_id": null,
+    "hash": "62f3cf6d93b4883dde6d1da44526fdf2cb44b5ef",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663044,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FLVXVVLX": {
+    "message_id": null,
+    "hash": "21ec5e3e476fa5fe17eb1503ca1a6ea48a2bd540",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663045,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0DKTFFLWR": {
+    "message_id": null,
+    "hash": "f08cd028af581daf42ea88073e92b8f939c3d4c1",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663045,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:UK:B0FKBPZJPC": {
+    "message_id": null,
+    "hash": "ad071643cd2b57dab82f0f3bc7a2c07be4184e55",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663046,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0G4G65PYS": {
+    "message_id": null,
+    "hash": "45830371b6c1a6d68d813649bfcfdb272c72d8d4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663046,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FQ5TCLB2": {
+    "message_id": null,
+    "hash": "08868c70982523a36060579f882f1b65bb6775b5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FY26J9MQ": {
+    "message_id": null,
+    "hash": "31bfec38c5f775c8eeca2f437df6659c8ce6c3ee",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663047,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0FR4VSZR8": {
+    "message_id": null,
+    "hash": "4d3b288d6d3943d0c6b3e9e8ddf2b6ac9202b8b1",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663047,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:FR:B0FN8GK19M": {
+    "message_id": null,
+    "hash": "75647be9db6ecbe1163db20e399bd31676863266",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663048,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0DPN3J57K": {
+    "message_id": null,
+    "hash": "75a2064eed09637a486b7b2acdb0c1764df2faf6",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663048,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FL2PDGWR": {
+    "message_id": null,
+    "hash": "5b083c0b433dd31b873b50d5c9950205702f7c4c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663049,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0F89ZCJG8": {
+    "message_id": null,
+    "hash": "b68980555b7deb3c0116df2e8c26903141158f78",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663049,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0F89XYFHN": {
+    "message_id": null,
+    "hash": "84c7a597372accc26713b772a44310d69c8e9bed",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663049,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:ES:B0FXWKZXPY": {
+    "message_id": null,
+    "hash": "cb45088db442fc03e663320eb57dfeb7be1832ae",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663050,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0FT29Z2Y6": {
+    "message_id": null,
+    "hash": "7ab318b6422208dd91ab72f5f68daccb00d44a1f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663050,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0FY12R2VX": {
+    "message_id": null,
+    "hash": "60b042a691b5c073c2130f460d1f20e70019e6fb",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663051,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0F4QFNH37": {
+    "message_id": null,
+    "hash": "b1c7f4a3b1139ca770d0ba6dddc13bd521dc1e93",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663051,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:5985479623": {
+    "message_id": null,
+    "hash": "58612795bdf969ece32fc92ebe5b0e67db87f404",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663051,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0D5MCBGFC": {
+    "message_id": null,
+    "hash": "bfc8a47e43ff0de5406e94f45da47636259cfbae",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663052,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0FN8GK19M": {
+    "message_id": null,
+    "hash": "ba70710afb82f843eca3a3b4a2e1ea6ac15504dd",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663052,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0DW8J2G54": {
+    "message_id": null,
+    "hash": "c9b3317e891ce06599472e1d3fac96bd0635a067",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663053,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FT37QK1V": {
+    "message_id": null,
+    "hash": "55d86b3898c84b0216cd40a1baaa32751ae7175e",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663053,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FJM8NQ4C": {
+    "message_id": null,
+    "hash": "76879433f70fb160636ece4475b45f036aea0afa",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663053,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0D12BD6YL": {
+    "message_id": null,
+    "hash": "18e786f96afa08a716e9c2456bec684ea789faac",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663054,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0F7XWCGDJ": {
+    "message_id": null,
+    "hash": "d22fcdcbf9737459d06535853eb5bcfd611404d2",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663054,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FH67YS3N": {
+    "message_id": null,
+    "hash": "08121819567ccc2a20b8eae1fef317b17af8c318",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663055,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0DMQVRQ98": {
+    "message_id": null,
+    "hash": "6926f82f5440c635d6f532559e0d486e4776a265",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663055,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FLY64DDK": {
+    "message_id": null,
+    "hash": "da45e7be821057687807af23e3d19681e943bbed",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663056,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0D2HSGFG5": {
+    "message_id": null,
+    "hash": "e73e92661a26777dae65ee313436001165467d86",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FC6HNF8G": {
+    "message_id": null,
+    "hash": "5696fccdf8b0e5ff8f9d9fda1fbd671679b6ac86",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663637,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0DJJB7WS9": {
+    "message_id": null,
+    "hash": "1a8d85e94a1dc6303e2bb7f6e03a42591955a1e4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663057,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FP4MQZ16": {
+    "message_id": null,
+    "hash": "60b4ae9f3ddfc38a2e65519be836a75a570c95c3",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663057,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0D6Z571F6": {
+    "message_id": null,
+    "hash": "64b984ea45d58b45afc6b5032aef0b0a4f447093",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663057,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0CZRD28S5": {
+    "message_id": null,
+    "hash": "6d27184d36fd69512c8c6656b309edbd0f45a778",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663058,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:UK:B0B5SR78K1": {
+    "message_id": null,
+    "hash": "3b208e850c45a78789424831c796b8b6d29d12f5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663058,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FZ5KCCMH": {
+    "message_id": null,
+    "hash": "5123d7eb51f43cccc1dac539158878fe5f799340",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663059,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0DYCF9179": {
+    "message_id": null,
+    "hash": "360a6dfd5f2802e5c5fcf11768a40c1ea0970b50",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FPLS2DKS": {
+    "message_id": null,
+    "hash": "1ac27ddd1258bb7a67d18d9c64316d671dde6513",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663059,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0FP8DP3TK": {
+    "message_id": null,
+    "hash": "99f5cbd42ebcb1a18a5ef76d462427198c70abb0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663060,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0FNWSK3Z2": {
+    "message_id": null,
+    "hash": "d3862179cc85d1a419c69fde740b8cf12a995a66",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663060,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:UK:B0BZPGD42Y": {
+    "message_id": null,
+    "hash": "7fbaaa35da6f7aaaa9cc765ca851276d1ab84fee",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663061,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0G2G7C6ZW": {
+    "message_id": null,
+    "hash": "c946297fb69442b238cd135b21057228518b47f8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663061,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FR2NJG8L": {
+    "message_id": null,
+    "hash": "0a6dc93cb1f4c30271b6d0601bd3a4f0bc3f4e19",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663062,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:US:B0FMY2PGT5": {
+    "message_id": null,
+    "hash": "92e7d4c42cb488f3a93ee965521b07fd8e19576a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663062,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:CA:B0D5D48J3B": {
+    "message_id": null,
+    "hash": "2e83e4530f4f568b204be85f9dfef57dba6fcc49",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663062,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0G194N5B5": {
+    "message_id": null,
+    "hash": "29a7f7f3884b4a414656301ccd7ffc6be3dcc4a7",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663063,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:DE:B0FY29G7ZY": {
+    "message_id": null,
+    "hash": "af90040a587813eee508c1985ff1cbd50bbb8ecd",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663063,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:UK:B0FY5PBDTX": {
+    "message_id": null,
+    "hash": "b0e1175ae5cd35ce1068fdd2497259a6c5f77382",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": true
+  },
+  "-1003402981917:UK:B0DQPBC859": {
+    "message_id": null,
+    "hash": "c6c9a26c4dc8d935c111881080e237a1315623d9",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0DCG2KX4N": {
+    "message_id": null,
+    "hash": "8676581097f7d3538a0290e0f14ad0eb9cefb0db",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0DCG12F1K": {
+    "message_id": null,
+    "hash": "1b034907fd80fce9beb59c0b6d76f6781d40c9a4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0D5CV3K4K": {
+    "message_id": null,
+    "hash": "7e7b828225a7ec2c1e25e873b4c8de35cdc00a92",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FYLXDNV9": {
+    "message_id": null,
+    "hash": "c346aba9ceaf595a6e38ac9415bba9ff13709846",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0DZC33VRN": {
+    "message_id": null,
+    "hash": "c76db00b96f688e5445d14de05a56baa8f11f843",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FMJCRZTW": {
+    "message_id": null,
+    "hash": "72addd8e4cf17c41b949cdbf77479494a2956f8c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DQP5FL41": {
+    "message_id": null,
+    "hash": "c5c9fd7da53c42ee1ff60e2da8e9c58f24048a0f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0D1XW2MDY": {
+    "message_id": null,
+    "hash": "1813101ba80d07cf1d497cc4b68bac1faacbefa9",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FYGRYH4K": {
+    "message_id": null,
+    "hash": "c00b969cf623ddd0ec9ad14a5afa439930909572",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FYXNQK3M": {
+    "message_id": null,
+    "hash": "718c65e74de0e49b692a7faabcc5f3b327e25112",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FD2TPKYK": {
+    "message_id": null,
+    "hash": "09f88964ed2b5fe3240cab9efddeecfa897ff61f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:1182856065": {
+    "message_id": null,
+    "hash": "a92927a0490c4c78286496f65b7b3dc00c7bbd74",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0C196X867": {
+    "message_id": null,
+    "hash": "43735b97f3ccbacbe611c988f0d58415e8ff5229",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0G2B9G5TJ": {
+    "message_id": null,
+    "hash": "e96eb799768da79b890d22b3f3729bf5b4ef5194",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FSZWYVGX": {
+    "message_id": null,
+    "hash": "487a927b4dd157771010d5195d87017bd80bb144",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0D3X3RH5Q": {
+    "message_id": null,
+    "hash": "142563336aa0b8d5834a83810107c17b1b2a9446",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FZ5RJ8B9": {
+    "message_id": null,
+    "hash": "5c2747a3dd62736e6fb856d8b2b75cc061c58adb",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FKH9LY3F": {
+    "message_id": null,
+    "hash": "46c455a614b4d74801e60fdb8b3992cb877be2d3",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DPQMN2PD": {
+    "message_id": null,
+    "hash": "d59e3f6c579ad9d34bba506b56b836b12b422237",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FLCPY45R": {
+    "message_id": null,
+    "hash": "6c849d36e03b4655f911a7a5bb03a4d3f1da57dc",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0C7BNFLVW": {
+    "message_id": null,
+    "hash": "47b1d0a522a363bc26f6b7bc3410687ce89242d8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DS8FV69P": {
+    "message_id": null,
+    "hash": "314a61445220c1ce257599091a78023d9c96350d",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FZ88WYVH": {
+    "message_id": null,
+    "hash": "2bea3f6812a414269675ad74dc3825b284f47876",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FVXLY391": {
+    "message_id": null,
+    "hash": "e6930cf081f0002ef4e6ce9548a49ad9aadedcd9",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FMJGFZ24": {
+    "message_id": null,
+    "hash": "99e10e34b7cad85a110003dbc44770166ebfc465",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FLK162VD": {
+    "message_id": null,
+    "hash": "596dbd11d7b30acb21f97a97d9ecbf2cb7fd8da4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DKWGWWD2": {
+    "message_id": null,
+    "hash": "79bbf49d71f5a62b75e08a04f8edf47186ddcccf",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F5QGR68Z": {
+    "message_id": null,
+    "hash": "e076d2c0b7f84e4c755c672f2953d5c071e3b055",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FP2BZ1RJ": {
+    "message_id": null,
+    "hash": "931dcc676e6af2bf8de9c58a41cfb8d976dd4bc1",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B08SCC5JH7": {
+    "message_id": null,
+    "hash": "a7b4f42fb4dba0348d2428673d3628da3a15c78a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0D91BMWZK": {
+    "message_id": null,
+    "hash": "9522970f6186d056f7be1b2b43dc772aaf0551c0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B071SBKLF6": {
+    "message_id": null,
+    "hash": "b8ca6caced37057913e44fb0c955d71c0f6ce628",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:CA:B0F42LWBZD": {
+    "message_id": null,
+    "hash": "3ad4e7b90f8da55367e2376a3b60f4e086072dec",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FP2425DC": {
+    "message_id": null,
+    "hash": "e9e35dd461428fb7e8a7c20b4282041d54034188",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FK2H6V2F": {
+    "message_id": null,
+    "hash": "02ee4b70499a9b011a4282a7c663ae9d7e13d22a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FS6333FR": {
+    "message_id": null,
+    "hash": "606dea884647671e778c6a747c223c6488464d27",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FCCLB76S": {
+    "message_id": null,
+    "hash": "7310f22d08a4b15958e8ed671f7809f86de2457f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:3577273062": {
+    "message_id": null,
+    "hash": "f6c1df15d9a748630ffccb44a4b839e10891ef58",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FCCLTD85": {
+    "message_id": null,
+    "hash": "ec72df843adba20b564a07ba5374ce876ec15b03",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FPMCH8L4": {
+    "message_id": null,
+    "hash": "1840b85f1861c0cbc62f08de1c2d53927103a73d",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FQBT92J7": {
+    "message_id": null,
+    "hash": "95ac1ce88a3c0d5959092f865925b7c3f1127e27",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0G49H5WSL": {
+    "message_id": null,
+    "hash": "32a5f961802f3d6f0ba7ed780ec184c30d3d5276",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FS7BLXR8": {
+    "message_id": null,
+    "hash": "d93cf975c4dcc08348466604340d444a3aebb72d",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FMNBXN6B": {
+    "message_id": null,
+    "hash": "151dd1e94dd0073097157c46f37cd44cad4c5154",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FX9DQJ7T": {
+    "message_id": null,
+    "hash": "004cda6bd6c8fa95360d08b80c97a7531fb9710b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FNRMQ6GQ": {
+    "message_id": null,
+    "hash": "0e04e07864cfb927ac68272d2aea489da5a580d8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FSZX3F9Z": {
+    "message_id": null,
+    "hash": "924e57b166b9d1bea360c47661bcbfb0fff395f8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FSZW4KG9": {
+    "message_id": null,
+    "hash": "4edc638a393e0e1d4ea4acf31a8573ef6f0538aa",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B07J43CWC3": {
+    "message_id": null,
+    "hash": "1e041f96f0e8d7b82195940aba03d6f3b8e99e7a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FH4RYNQW": {
+    "message_id": null,
+    "hash": "9b7b2c12826d5e1943e7131d185d1dd7c11ad5cd",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FRG9T5R7": {
+    "message_id": null,
+    "hash": "25601fa4a14c0bdad611889f26ddf9e2a2a3ea67",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:3577271728": {
+    "message_id": null,
+    "hash": "fc5cd780cdd4acb0edda0ca831e971ea624cde73",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0CN36NTRD": {
+    "message_id": null,
+    "hash": "676a9519c16e238f1af4f19de8b67d8a1ce9d284",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F5H5PPRS": {
+    "message_id": null,
+    "hash": "b6f610d2f91a7575ca13a769357df4c77ae1b5ef",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DQ7ZX83R": {
+    "message_id": null,
+    "hash": "4ce6185fb017070e3565e4503587686f4ed9e2ca",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F8H6H3FG": {
+    "message_id": null,
+    "hash": "0ce88bb24920644b8d5308b2b3b318dde9109f2b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FRF5LYSR": {
+    "message_id": null,
+    "hash": "d1c26d72bda783bdcb1168672a038c2221999665",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B09QH14TB3": {
+    "message_id": null,
+    "hash": "4b45be868d0aa83ac8d95e1048ea3c26186d2ec0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FX3T48T8": {
+    "message_id": null,
+    "hash": "3f941acc96358b8e07b1b6b2887902c90550b321",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FX989M6X": {
+    "message_id": null,
+    "hash": "8b7b75f01f082d9623ba5fb11cf8e8a8d4531a97",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FFX5NZ39": {
+    "message_id": null,
+    "hash": "43151813904f6583bf1b5a83c3ff03364e3f910b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0G1JT2PV4": {
+    "message_id": null,
+    "hash": "5c17d6c0f75e2f020d6fb3a1eb5168262bbe8312",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FXX6CY9P": {
+    "message_id": null,
+    "hash": "6e57b4f3af4d1eeb99d526740ce969dccffc1397",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0G2GR615Z": {
+    "message_id": null,
+    "hash": "058c719bcb49ff34f5735c363448c865a0bf7d6c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FKM4QVKK": {
+    "message_id": null,
+    "hash": "fe89123afb8b4895ec0a418c4204d291bacc6d8e",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0G1S93BZF": {
+    "message_id": null,
+    "hash": "426a23d8b2713b95f858a0aba53ae92ed014e0be",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0DYJWS335": {
+    "message_id": null,
+    "hash": "6200e98cb948145eb56ff8cec0a811c95aab9c0c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0DSQ157VQ": {
+    "message_id": null,
+    "hash": "426b193addf268a0d44a98e2167cafbd17dc1e00",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:CA:B0FJFKF953": {
+    "message_id": null,
+    "hash": "32bedff7e960885798c9a2689c53b26e9955ba91",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FD3PX7GN": {
+    "message_id": null,
+    "hash": "9047c15fee6a1915eef6c31aedfa032466539e85",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FT38CS6L": {
+    "message_id": null,
+    "hash": "1fb4fc4702b74c81b6cf46f4e6230d5b1f2178c6",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F5WR3712": {
+    "message_id": null,
+    "hash": "b6e691ff47e0aef8db7eca353b9822b9603707ab",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DSW9NJV8": {
+    "message_id": null,
+    "hash": "d1ddd91cf3b2545a7f8ea89c9ac1875bcbcac183",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F298G4YP": {
+    "message_id": null,
+    "hash": "620f4b2ab4ff6c303b8b041f3b8af0377b41202f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DZBMB3WX": {
+    "message_id": null,
+    "hash": "017dae08c332338a12c48f86f5f4459bc144cc1c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FVXNNVLR": {
+    "message_id": null,
+    "hash": "b363982f46e6a78912c1ad698ce323f6deb3b835",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FQ57PF4B": {
+    "message_id": null,
+    "hash": "0b8239c053f49a1407b41d028aba33d1ea74a7d6",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FWJ8NBGD": {
+    "message_id": null,
+    "hash": "912c0fd94716f3c6bee8d04272911ac73a01c48c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F24FQFWT": {
+    "message_id": null,
+    "hash": "d4f371454eed452acf111ef82e4434425fa45887",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DWMYN4H7": {
+    "message_id": null,
+    "hash": "64bd61184cfcf7bbf659b97af0948b5a2c475bf8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0CG374PV4": {
+    "message_id": null,
+    "hash": "d53c226745c7b26b76df404a3de786e688da50bb",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FX4F7827": {
+    "message_id": null,
+    "hash": "655cfa2812550880204474c0bc4e30970c45ca51",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FX4BJTSD": {
+    "message_id": null,
+    "hash": "179bcb786e9648c4d8bb5e0dea9db5d20fe4a24e",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FX4G8SYM": {
+    "message_id": null,
+    "hash": "8803ecbb58f96de40be33cd484fafe0e4f7ff6b6",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FQBR1PV9": {
+    "message_id": null,
+    "hash": "af52881ffe13270a31f77639ea992ec72e5be1c5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FQ9Y9FX2": {
+    "message_id": null,
+    "hash": "353c4cdae7389ae0fe3ae255f925cfc42f6cdef4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FFLX21F3": {
+    "message_id": null,
+    "hash": "b8f7d8fb30cae67b158234fadadbfd3a0973c17c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F48FJDT5": {
+    "message_id": null,
+    "hash": "22180b8f7b80b2912d798f05dcaa2c24c6509a7c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0DZMZBVTQ": {
+    "message_id": null,
+    "hash": "82359632794b942f6322fb979e05af7c936c547d",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FDGBXTRD": {
+    "message_id": null,
+    "hash": "703a2d48f5d612bb55dcfd83565d7f4b36840445",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FRG5FWMM": {
+    "message_id": null,
+    "hash": "17f78b9b8a3f6f5e4d1de3f98da0dac02e64ca7a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FPFVSDQW": {
+    "message_id": null,
+    "hash": "fa5b4b5485fb24811fe42ed112bb4bd44adc7d97",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FX3TSZDZ": {
+    "message_id": null,
+    "hash": "d34aaf5cd264949aea8c4bfb27ce3c23bec500e7",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FQ58T4D9": {
+    "message_id": null,
+    "hash": "d35604fbeb2ceae2342b4312841e75185f16fb61",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0BNXHY7C9": {
+    "message_id": null,
+    "hash": "7e7d2adc8d551a0cf10bf406a156728062e928d5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B09HQH477J": {
+    "message_id": null,
+    "hash": "d11ed834c53e8a3f1a6d488ccf9473f196f9d896",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FQ5KKDBP": {
+    "message_id": null,
+    "hash": "36664307dd523ff6e55e045fc372550bd412ca3b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FXX1NJ33": {
+    "message_id": null,
+    "hash": "288676af6d8f9b0a34ab6637541396662b766275",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DSKCL38Y": {
+    "message_id": null,
+    "hash": "d99144ef4e667f562260973dd5a7a409686d67c5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FNR871MG": {
+    "message_id": null,
+    "hash": "fde39cd9471552180e209b27b4985b1c8441091f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FQBR2X9T": {
+    "message_id": null,
+    "hash": "1f365891d5ecf0a52f6d12f923f7f3fd9e7e4a76",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FQV8D8XZ": {
+    "message_id": null,
+    "hash": "78c74dd82fff6978e9b7518ef805e56abce163ac",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FMRJX3P7": {
+    "message_id": null,
+    "hash": "21412d358072007d05a6386f703a33c56fc417a8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FK4XD3K5": {
+    "message_id": null,
+    "hash": "4f5beee702070024b3b666a78f3961034ecaced0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FQ9T668J": {
+    "message_id": null,
+    "hash": "3c66f40638ec200ca6534448ec4df7aba13f2edc",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FY4Q6H7G": {
+    "message_id": null,
+    "hash": "01737a54b24399f193bb35d1e5bf89036ded9d6d",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0G2GR63BN": {
+    "message_id": null,
+    "hash": "b9d348064faae6ac083e11222a875d758988edec",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FXGFR9M2": {
+    "message_id": null,
+    "hash": "bef73383eeb87c24603d5807e7b759e342e89f27",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:CA:B0F4JK47SD": {
+    "message_id": null,
+    "hash": "dd9d3103ab22a2dc00a267b3c9083ee132172a1a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FX2K3MZR": {
+    "message_id": null,
+    "hash": "ef9b51cd8fc341db4db55d6113bcf6b987bc7ae6",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:ES:B0FS5Y149C": {
+    "message_id": null,
+    "hash": "7080edda2397c4f7fdcb014b1602a7a47c946950",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:ES:B0FXLZM9VX": {
+    "message_id": null,
+    "hash": "60e69137f0bc507c075b77189c29ae614902f777",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FJRRRT8Q": {
+    "message_id": null,
+    "hash": "289760b4463cda7a0c2269d8c38b852cf61d352f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FY5Z24H6": {
+    "message_id": null,
+    "hash": "bec38460c020815797bf8f7644a5ed0a33a3d8d8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0G2GVX7SK": {
+    "message_id": null,
+    "hash": "143e66a9dbb99ce37f3285d94871d0edabeb4e25",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FY2HYMXY": {
+    "message_id": null,
+    "hash": "0df7643eef2dc3dbfc0e39e290adb1c4b76e7e9b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FX2H5XPL": {
+    "message_id": null,
+    "hash": "53b84a2fac486177ad8009637487ac1802b22b93",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FMF26YN1": {
+    "message_id": null,
+    "hash": "961bb13a1e658d58a3753c73d2c3577c3f1a93a5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0D7QNMBF3": {
+    "message_id": null,
+    "hash": "36e467fef1ab8c4c40a6755600ba8569d2a2ce5b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:2569874589": {
+    "message_id": null,
+    "hash": "bf23104a49dbc4036c3615ed1ca45c282486c1e8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FQBRQN8H": {
+    "message_id": null,
+    "hash": "76b21e98ed8cadeafea1ebeb20168e9a9d31725c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:IT:B0FFMFG7FT": {
+    "message_id": null,
+    "hash": "25d27767ca8ac57c8b9d0b5bff3a3ac21dba70b1",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:IT:B0FQ5Y77KY": {
+    "message_id": null,
+    "hash": "510d453d1588dc8b141d327998475ffa669ff3a3",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FS5CP1VZ": {
+    "message_id": null,
+    "hash": "c4248477bef63332c631e63bb90aac2f24a6971c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:IT:B0FM3WQYL4": {
+    "message_id": null,
+    "hash": "341cf2898c37db43ef4716518c26e5fbd993b89c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FQV4VLMV": {
+    "message_id": null,
+    "hash": "e2038cad61cd7a1acd157ebb676fd85cc3d7aea7",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0DX1T4B5F": {
+    "message_id": null,
+    "hash": "237be7297893b78d21196f9de7f8c565977d933e",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:IT:B0F1CKJ5Q1": {
+    "message_id": null,
+    "hash": "f06d7b6542e8efc54e329aa4a48a11a4a6b69a14",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FSYSK75P": {
+    "message_id": null,
+    "hash": "83f67232c917aaaa64706f7a3787ee23c8bcaa28",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0F8PWYCDF": {
+    "message_id": null,
+    "hash": "5ff1201fdce2c4d6fe29e62451409d14315fc09b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FNWH9J8B": {
+    "message_id": null,
+    "hash": "7ff022afb359014b3a75de68fa0d30ac664c28c2",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FZJ9JVLY": {
+    "message_id": null,
+    "hash": "0a91164284483b7b68d36fc1e1fe728ed9978dbe",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FF8CQGZH": {
+    "message_id": null,
+    "hash": "dd84b4c93f2131d20063aaa1ed658be5c2261cf2",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F3WKNF84": {
+    "message_id": null,
+    "hash": "959e63c76b66bc3429fb82d822e8d6ec86eb9539",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FJFKSK3N": {
+    "message_id": null,
+    "hash": "9a41f026ee41ed33c7fa96f103614eab53d7acd8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FYDBDFKN": {
+    "message_id": null,
+    "hash": "b342fb235a71cbf2d2946c3df32bed01657e1db4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0FS1NRDBD": {
+    "message_id": null,
+    "hash": "db38c054e8dbcc2414020dc5b2229fb6e7d0f368",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FHDBQ8RD": {
+    "message_id": null,
+    "hash": "c4c68a03a8d94c0bb73002177bb5a44c23ebc051",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0G1BX8N3G": {
+    "message_id": null,
+    "hash": "00554bfbbde4b9aa559ae5f6b07d664b9cd7a2c6",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FCLQY2XW": {
+    "message_id": null,
+    "hash": "4a402153da749ec778a9f1709e99e119ddf4d6d6",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FL22DW8N": {
+    "message_id": null,
+    "hash": "562e6cc3471a23e2ffc12c6e3e9641320b5ee7b5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FMXXGPRS": {
+    "message_id": null,
+    "hash": "d6e63a63c965ecbbfab69cdf1bc6ef2d29000de8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0B7GQ1QB8": {
+    "message_id": null,
+    "hash": "341600e5b1b23d8a533c59fdf66883985887e771",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FQ54YRR4": {
+    "message_id": null,
+    "hash": "73b994b5377c0248113cce736b33874bb8e92c3b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F4Q5YG47": {
+    "message_id": null,
+    "hash": "6a3dc7a5adc2a0b9c5e0d5e98703a6deaef9fd41",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B07RYTFHCR": {
+    "message_id": null,
+    "hash": "f8cf46b58ba00280ff07f7f74ce7062bf7a66d94",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DPW3V7MY": {
+    "message_id": null,
+    "hash": "835a1efe876c3182e264041981b13ecf0adcfe6b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0F6X7GKQQ": {
+    "message_id": null,
+    "hash": "d26800a3eb04804e37a65025f063b8caa4108ae7",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FH6R2P4S": {
+    "message_id": null,
+    "hash": "c857cf664b1c4a47f95df8aae1238d173c108dc9",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0CS66Q66Q": {
+    "message_id": null,
+    "hash": "be45c513db669f6884730acb33cdd078ec6b66df",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FLXD4ZPS": {
+    "message_id": null,
+    "hash": "4387b13fbf9c31072431972cf54832292fd4ec3f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FW3YWVBZ": {
+    "message_id": null,
+    "hash": "776ebbad82b5efd9ac974eea9b32ff97666b4cd0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0DDC2LF1D": {
+    "message_id": null,
+    "hash": "67db67c6fbd103980b7ee96160606f6bf241bb27",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0F62165VW": {
+    "message_id": null,
+    "hash": "4951caf267b306f408fe1e183702b01c3b7ffbb7",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FPK8MH85": {
+    "message_id": null,
+    "hash": "e267b38de489abb076bc3081bd7b5b491ee1138a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FJ57WFF2": {
+    "message_id": null,
+    "hash": "42f9be8bca45052b972cd213e355e4e396c776c5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FVSJDYWR": {
+    "message_id": null,
+    "hash": "1df3b01f5bde5c99ed5613c9ee49c3b09fd0ec20",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FC6HC37D": {
+    "message_id": null,
+    "hash": "576872a4044d5adde6593aca324b1c35d537c771",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FN7KZJXH": {
+    "message_id": null,
+    "hash": "4a2f554f635f66328cc7e112cae4e60a2f64b02b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FHCTWB2Z": {
+    "message_id": null,
+    "hash": "99a188ed0eacf0f56c51d5cefb30dc0f16642fea",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FHCT75DP": {
+    "message_id": null,
+    "hash": "8d539ea2acc609cca89b02329fd2176ef118734e",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0DDWMJ7BH": {
+    "message_id": null,
+    "hash": "936be7cd3eabe7b28b660b335fccb7c4cba5e462",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0FHCYKTNB": {
+    "message_id": null,
+    "hash": "fedde7ae984a4621acb8c2e5bac6ee64f6db7e63",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B08HMHJKCK": {
+    "message_id": null,
+    "hash": "0dc4d6f12416acb6781e84f6f6b5c60e48dfe60c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:JP:B0DSK8D4T4": {
+    "message_id": null,
+    "hash": "79b00a45aa3d899b0439f9d2a61402fa5821b4c4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:CA:B0F99PSYSZ": {
+    "message_id": null,
+    "hash": "347f8791cfcd27e9b91862221c55231ce3f423b6",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:ES:B0FLXQKRNB": {
+    "message_id": null,
+    "hash": "49f4925bac7cc68076e338407061e4942c3559ce",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:IT:B0FMRNC2W8": {
+    "message_id": null,
+    "hash": "f42535f8726776cf1327486e838a2bcc6ecb3c40",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FR5D34MX": {
+    "message_id": null,
+    "hash": "5386ac23fd33fe2b406da9e1a8ba1d4f1456ebc9",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0DCFX852B": {
+    "message_id": null,
+    "hash": "8e1ca029e2771c74ba67b4398b5baeef423474cb",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0D1XM7GRW": {
+    "message_id": null,
+    "hash": "e53ab83fea6c4d4ca82fc9c4b029f2d90e6a1eff",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:FR:B0FMRQ1PR1": {
+    "message_id": null,
+    "hash": "63130e7ee7f01a847dfbe10940595ac040b7a630",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:DE:B0F7PG5G9L": {
+    "message_id": null,
+    "hash": "05844140d45938b05532b8a26286bd258afbe0a5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DHR9QXPZ": {
+    "message_id": null,
+    "hash": "4c168028a760b6104f055706003d2b25f378797a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FX2TWX1S": {
+    "message_id": null,
+    "hash": "10a863a1db1c31954d161b926348451d01b4fac0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DZ6WLFFQ": {
+    "message_id": null,
+    "hash": "bc43671248676bfb27cbb9f8269d4c6906a65ae4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FQ9Y4BJK": {
+    "message_id": null,
+    "hash": "2e9e6472bad65f7fb20df71c882b9b5bd10df182",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F13DJM8T": {
+    "message_id": null,
+    "hash": "26c9e9d1315c6b8628e4406ab3ef1928b2def4c9",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0G1XKKCPJ": {
+    "message_id": null,
+    "hash": "01f138cba5f0538fdfb8c7572be4835edf7f69f0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DS8HHPMN": {
+    "message_id": null,
+    "hash": "9ee6965c16fd81230a6378df7bdb4ae0c8b67131",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0DXBBK7WH": {
+    "message_id": null,
+    "hash": "82840c1f4a116222d4748be882427f99e88592db",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F1MSNY5R": {
+    "message_id": null,
+    "hash": "8197877cead82e223fd1abde29977b10c6097ba2",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F1ZZ7CV3": {
+    "message_id": null,
+    "hash": "728a77704a9e2ce20b1b1320478ad04add1bffd4",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FNQK2PZK": {
+    "message_id": null,
+    "hash": "15eb218b0c27a4d5431e872c8ecbe92f99b7a6f8",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FJ216F6J": {
+    "message_id": null,
+    "hash": "cc1d6f5cd7ed2c553a6dc0ced83970afe2f8c447",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0FHH2RWDS": {
+    "message_id": null,
+    "hash": "32f02effa7c80168f5d8be39c4438bfdebaf4ad0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:UK:B0F21MWK76": {
+    "message_id": null,
+    "hash": "66d9bb91b44758921cd486aa2a33e08b82471409",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0C17LTN9M": {
+    "message_id": null,
+    "hash": "0a8ea2d799f39dec3eb5209bef03e24b7528319b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0G3V555LS": {
+    "message_id": null,
+    "hash": "9e6ac6067b656bc561d5ff751c9a6dd924bef9e9",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0DSF75WVR": {
+    "message_id": null,
+    "hash": "1796da350944e8284109438a3fbdfc8c1d198795",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0DD6C46DB": {
+    "message_id": null,
+    "hash": "e9506b775706dd26db60bf2a202dcd9ade3db48d",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FGHZCN4Q": {
+    "message_id": null,
+    "hash": "62e94887f1184d06387c2977d854b91a7c0f0189",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FN3XPCTC": {
+    "message_id": null,
+    "hash": "ed573b551aba508a5457b54ba5268ca04328d4ca",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FLPQQTB6": {
+    "message_id": null,
+    "hash": "3f787b6e7c098529d76bc5178a67820ec27277f0",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F8HZJHX2": {
+    "message_id": null,
+    "hash": "e97469a154d59aa5f82781375cd49fb089d26de5",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FFLX5WMY": {
+    "message_id": null,
+    "hash": "3db6218e177373c3af0aa8a4f456dcb42dafa07a",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F83ZDG94": {
+    "message_id": null,
+    "hash": "13bc9ac7fc5cbed1d315243addc419cf646b8720",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FBW9VGRG": {
+    "message_id": null,
+    "hash": "cb0202a7db8a63db261539fa8d1e557bd22c623c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F5W8S4DL": {
+    "message_id": null,
+    "hash": "8edc42fdb301e7491c24a97214528cbe1cc20173",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0D7QMMF9Y": {
+    "message_id": null,
+    "hash": "7c758264fdbc2f5b3a9fce78cdf53c7a2a9ac578",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FF4QCGKF": {
+    "message_id": null,
+    "hash": "dae2863d1c2e13160cc790867340e8e0ea507e30",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F1F9777B": {
+    "message_id": null,
+    "hash": "51b7659bb642f983b2f20e72c9763e86df4cb82b",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FK4XJ7PT": {
+    "message_id": null,
+    "hash": "a0be66a9d0c9548ccb9df17eb774dde1d3538e0c",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F6V36S1G": {
+    "message_id": null,
+    "hash": "4bccc9c987bebf75f11583bcaddf6a6f50111651",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FJFKSL9D": {
+    "message_id": null,
+    "hash": "03f84fca5c6421014ea5c47fcd10b03e257c6251",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0FNDLLF8S": {
+    "message_id": null,
+    "hash": "76d7e46fe20be295068b8c6722a7625083b83130",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F1TGRTMX": {
+    "message_id": null,
+    "hash": "ce26719911b6164169c10eb771631c1bbba03075",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
+  },
+  "-1003402981917:US:B0F9Y6Z5LR": {
+    "message_id": null,
+    "hash": "ced65543969a119502f6b468bb803babbf81507f",
+    "status": "removed",
+    "kind": null,
+    "image_url": "",
+    "ts": 1765663064,
+    "delete_attempted": true,
+    "delete_ok": false
   }
 }
