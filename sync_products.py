@@ -280,28 +280,27 @@ def load_products() -> List[Dict[str, str]]:
 
 def build_caption(p: dict) -> str:
     market = safe_str(p.get("market")).upper()
-    country = COUNTRY_CN.get(market, market or "未知国家")
     flag = FLAG.get(market, "")
 
     title = safe_str(p.get("title"))
     keyword = safe_str(p.get("keyword"))
     store = safe_str(p.get("store"))
     remark = safe_str(p.get("remark"))
-    link = safe_str(p.get("link"))
 
-    # 新增金额字段（为 0/空 -> None，不输出）
     discount_price = format_money(p.get("discount_price"), market)
     commission = format_money(p.get("commission"), market)
 
-    lines = []
-    # 标题为空也能发：至少给个占位
-    # 只显示国旗，不显示中文国家名
-if not title:
-    head = f"{flag}(无标题)".strip() if flag else "(无标题)"
-else:
-    head = f"{flag}{title}".strip() if flag else title
+    link = safe_str(p.get("link"))
 
-lines.append(head)
+    lines = []
+
+    # 只显示国旗，不显示中文国家名
+    if not title:
+        head = f"{flag}(无标题)".strip() if flag else "(无标题)"
+    else:
+        head = f"{flag}{title}".strip() if flag else title
+
+    lines.append(head)
 
     if keyword:
         lines.append(f"Keyword: {keyword}")
@@ -310,17 +309,18 @@ lines.append(head)
     if remark:
         lines.append(f"Remark: {remark}")
 
+    # 为 0 / 空 就不显示
     if discount_price:
         lines.append(f"Discount Price: {discount_price}")
     if commission:
         lines.append(f"Commission: {commission}")
 
-    # link 不是必填；为空就不输出
     if link:
-        lines.append(f"link:{link}")  # 按你示例：link:紧贴
+        lines.append(f"link:{link}")
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
+
 
 
 def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
@@ -546,4 +546,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
