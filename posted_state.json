@@ -21,7 +21,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662090
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DZC33VRN": {
     "message_id": null,
@@ -29,7 +31,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662111
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0G49H5WSL": {
     "message_id": null,
@@ -37,7 +41,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662129
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FNRMQ6GQ": {
     "message_id": null,
@@ -45,7 +51,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662131
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FMJCRZTW": {
     "message_id": null,
@@ -53,7 +61,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662111
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FH9QT9XS": {
     "message_id": null,
@@ -69,7 +79,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662098
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F4QFNH37": {
     "message_id": null,
@@ -77,7 +89,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662093
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FR2NJG8L": {
     "message_id": null,
@@ -85,7 +99,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662106
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FD2TPKYK": {
     "message_id": null,
@@ -93,7 +109,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662114
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:1182856065": {
     "message_id": null,
@@ -101,7 +119,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662128
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0CZRD28S5": {
     "message_id": null,
@@ -109,7 +129,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662101
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:3577273062": {
     "message_id": null,
@@ -117,7 +139,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662127
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0D2HSGFG5": {
     "message_id": null,
@@ -125,7 +149,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662128
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DKTFFLWR": {
     "message_id": null,
@@ -133,7 +159,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662086
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FKH9LY3F": {
     "message_id": null,
@@ -141,7 +169,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662117
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0G4G65PYS": {
     "message_id": null,
@@ -149,7 +179,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662087
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FMY2PGT5": {
     "message_id": null,
@@ -157,7 +189,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662106
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FMJGFZ24": {
     "message_id": null,
@@ -165,7 +199,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662121
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FX1TD4GR": {
     "message_id": null,
@@ -173,7 +209,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662085
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B07J43CWC3": {
     "message_id": null,
@@ -181,7 +219,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662133
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0G3WXVWNJ": {
     "message_id": null,
@@ -189,7 +229,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662084
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B08SCC5JH7": {
     "message_id": null,
@@ -197,7 +239,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662123
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FQ5TCLB2": {
     "message_id": null,
@@ -205,7 +249,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662124
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FH67YS3N": {
     "message_id": null,
@@ -213,7 +259,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662097
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FJM8NQ4C": {
     "message_id": null,
@@ -221,7 +269,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662096
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FT37QK1V": {
     "message_id": null,
@@ -229,7 +279,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662095
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DJJB7WS9": {
     "message_id": null,
@@ -237,7 +289,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662100
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FWXZZR1Y": {
     "message_id": null,
@@ -253,7 +307,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662124
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0D6Z571F6": {
     "message_id": null,
@@ -261,7 +317,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662101
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FLY64DDK": {
     "message_id": null,
@@ -269,7 +327,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662098
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DPN3J57K": {
     "message_id": null,
@@ -277,7 +337,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662089
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FB3BQ5YJ": {
     "message_id": null,
@@ -293,7 +355,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662085
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FKBPZJPC": {
     "message_id": null,
@@ -301,7 +365,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662086
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FY26J9MQ": {
     "message_id": null,
@@ -309,7 +375,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662088
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FR4VSZR8": {
     "message_id": null,
@@ -317,7 +385,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662088
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FN8GK19M": {
     "message_id": null,
@@ -325,7 +395,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662089
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F89ZCJG8": {
     "message_id": null,
@@ -333,7 +405,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662090
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F89XYFHN": {
     "message_id": null,
@@ -341,7 +415,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662091
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "ES:B0FXWKZXPY": {
     "message_id": null,
@@ -349,7 +425,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662091
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FY12R2VX": {
     "message_id": null,
@@ -357,7 +435,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662092
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FT29Z2Y6": {
     "message_id": null,
@@ -365,7 +445,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662092
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:5985479623": {
     "message_id": null,
@@ -373,7 +455,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662093
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0D5MCBGFC": {
     "message_id": null,
@@ -381,7 +465,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662094
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FN8GK19M": {
     "message_id": null,
@@ -389,7 +475,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662094
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DW8J2G54": {
     "message_id": null,
@@ -397,7 +485,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662095
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0D12BD6YL": {
     "message_id": null,
@@ -405,7 +495,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662096
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F7XWCGDJ": {
     "message_id": null,
@@ -413,7 +505,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662097
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FC6HNF8G": {
     "message_id": null,
@@ -421,7 +515,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662099
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FP4MQZ16": {
     "message_id": null,
@@ -429,7 +525,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662100
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0B5SR78K1": {
     "message_id": null,
@@ -437,7 +535,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662102
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FZ5KCCMH": {
     "message_id": null,
@@ -445,7 +545,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662102
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DYCF9179": {
     "message_id": null,
@@ -453,7 +555,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662182
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FPLS2DKS": {
     "message_id": null,
@@ -461,7 +565,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662103
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FP8DP3TK": {
     "message_id": null,
@@ -469,7 +575,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662104
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FNWSK3Z2": {
     "message_id": null,
@@ -477,7 +585,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662104
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0BZPGD42Y": {
     "message_id": null,
@@ -485,7 +595,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662105
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0G2G7C6ZW": {
     "message_id": null,
@@ -493,7 +605,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662105
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "CA:B0D5D48J3B": {
     "message_id": null,
@@ -501,7 +615,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662107
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0G194N5B5": {
     "message_id": null,
@@ -509,7 +625,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662107
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FY29G7ZY": {
     "message_id": null,
@@ -517,7 +635,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662108
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FY5PBDTX": {
     "message_id": null,
@@ -525,7 +645,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662108
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DQPBC859": {
     "message_id": null,
@@ -533,7 +655,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662109
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0DCG2KX4N": {
     "message_id": null,
@@ -541,7 +665,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662109
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0DCG12F1K": {
     "message_id": null,
@@ -549,7 +675,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662193
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0D5CV3K4K": {
     "message_id": null,
@@ -557,7 +685,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662110
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FYLXDNV9": {
     "message_id": null,
@@ -565,7 +695,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662111
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DQP5FL41": {
     "message_id": null,
@@ -573,7 +705,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662112
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0D1XW2MDY": {
     "message_id": null,
@@ -581,7 +715,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662112
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FYGRYH4K": {
     "message_id": null,
@@ -589,7 +725,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662113
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FYXNQK3M": {
     "message_id": null,
@@ -597,7 +735,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662113
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0C196X867": {
     "message_id": null,
@@ -605,7 +745,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662115
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0G2B9G5TJ": {
     "message_id": null,
@@ -613,7 +755,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662115
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FSZWYVGX": {
     "message_id": null,
@@ -621,7 +765,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662116
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0D3X3RH5Q": {
     "message_id": null,
@@ -629,7 +775,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662116
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FZ5RJ8B9": {
     "message_id": null,
@@ -637,7 +785,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662117
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0C8MFNTZR": {
     "status": "removed",
@@ -653,7 +803,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662118
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FLCPY45R": {
     "message_id": null,
@@ -661,7 +813,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662118
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0C7BNFLVW": {
     "message_id": null,
@@ -669,7 +823,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662119
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DS8FV69P": {
     "message_id": null,
@@ -677,7 +833,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662119
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FZ88WYVH": {
     "message_id": null,
@@ -685,7 +843,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662120
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FVXLY391": {
     "message_id": null,
@@ -693,7 +853,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662120
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FLK162VD": {
     "message_id": null,
@@ -701,7 +863,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662121
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F5QGR68Z": {
     "message_id": null,
@@ -709,7 +873,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662122
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DKWGWWD2": {
     "message_id": null,
@@ -717,7 +883,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662122
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FP2BZ1RJ": {
     "message_id": null,
@@ -725,7 +893,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662123
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0D91BMWZK": {
     "message_id": null,
@@ -733,7 +903,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662124
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "CA:B0F42LWBZD": {
     "message_id": null,
@@ -741,7 +913,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662125
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FP2425DC": {
     "message_id": null,
@@ -749,7 +923,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662125
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FK2H6V2F": {
     "message_id": null,
@@ -757,7 +933,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662126
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FS6333FR": {
     "message_id": null,
@@ -765,7 +943,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662126
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FCCLB76S": {
     "message_id": null,
@@ -773,7 +953,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662127
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FCCLTD85": {
     "message_id": null,
@@ -781,7 +963,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662128
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FPMCH8L4": {
     "message_id": null,
@@ -789,7 +973,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662204
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FQBT92J7": {
     "message_id": null,
@@ -797,7 +983,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662129
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FKT86S35": {
     "status": "removed",
@@ -813,7 +1001,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662143
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0G1T4WRVB": {
     "status": "removed",
@@ -829,7 +1019,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662130
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FX9DQJ7T": {
     "message_id": null,
@@ -837,7 +1029,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662131
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FSZW4KG9": {
     "message_id": null,
@@ -845,7 +1039,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662132
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FSZX3F9Z": {
     "message_id": null,
@@ -853,7 +1049,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662132
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FVVXV92D": {
     "status": "removed",
@@ -885,7 +1083,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662133
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FRG9T5R7": {
     "message_id": null,
@@ -893,7 +1093,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662134
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:3577271728": {
     "message_id": null,
@@ -901,7 +1103,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662134
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0CN36NTRD": {
     "message_id": null,
@@ -909,7 +1113,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662135
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DQ7ZX83R": {
     "message_id": null,
@@ -917,7 +1123,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662136
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F5H5PPRS": {
     "message_id": null,
@@ -925,7 +1133,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662135
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FWC9SPJ8": {
     "status": "removed",
@@ -941,7 +1151,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662136
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FRF5LYSR": {
     "message_id": null,
@@ -949,7 +1161,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662137
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0C2T9D2PB": {
     "status": "removed",
@@ -965,7 +1179,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662137
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FHJSQD1V": {
     "status": "removed",
@@ -1037,7 +1253,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662138
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FX989M6X": {
     "message_id": null,
@@ -1045,7 +1263,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662138
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FFX5NZ39": {
     "message_id": null,
@@ -1053,7 +1273,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662139
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FSJSJMYH": {
     "status": "removed",
@@ -1069,7 +1291,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662140
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FXX6CY9P": {
     "message_id": null,
@@ -1077,7 +1301,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662140
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "IT:B0FC2HWYKY": {
     "status": "removed",
@@ -1093,7 +1319,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662140
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FKM4QVKK": {
     "message_id": null,
@@ -1101,7 +1329,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662171
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0G1S93BZF": {
     "message_id": null,
@@ -1109,7 +1339,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662141
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DYJWS335": {
     "message_id": null,
@@ -1117,7 +1349,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662142
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DSQ157VQ": {
     "message_id": null,
@@ -1125,7 +1359,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662142
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "CA:B0FJFKF953": {
     "message_id": null,
@@ -1133,7 +1369,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662143
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FD3PX7GN": {
     "message_id": null,
@@ -1141,7 +1379,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662143
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FT38CS6L": {
     "message_id": null,
@@ -1149,7 +1389,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662144
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F5WR3712": {
     "message_id": null,
@@ -1157,7 +1399,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662144
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DSW9NJV8": {
     "message_id": null,
@@ -1165,7 +1409,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662145
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F298G4YP": {
     "message_id": null,
@@ -1173,7 +1419,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662145
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FMQ2B5DL": {
     "status": "removed",
@@ -1189,7 +1437,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662146
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FVXNNVLR": {
     "message_id": null,
@@ -1197,7 +1447,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662146
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FQ57PF4B": {
     "message_id": null,
@@ -1205,7 +1457,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662147
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FWJ8NBGD": {
     "message_id": null,
@@ -1213,7 +1467,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662147
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F24FQFWT": {
     "message_id": null,
@@ -1221,7 +1477,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662148
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "CA:B0FLXBNFS1": {
     "status": "removed",
@@ -1245,7 +1503,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662148
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FQJLSZJQ": {
     "status": "removed",
@@ -1261,7 +1521,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662148
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FX4F7827": {
     "message_id": null,
@@ -1269,7 +1531,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662149
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FX4BJTSD": {
     "message_id": null,
@@ -1277,7 +1541,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662149
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FX4G8SYM": {
     "message_id": null,
@@ -1285,7 +1551,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662150
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:1762440686": {
     "status": "removed",
@@ -1317,7 +1585,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662168
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FQ9Y9FX2": {
     "message_id": null,
@@ -1325,7 +1595,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662151
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FFLX21F3": {
     "message_id": null,
@@ -1333,7 +1605,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662209
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DZMZBVTQ": {
     "message_id": null,
@@ -1341,7 +1615,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662152
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F48FJDT5": {
     "message_id": null,
@@ -1349,7 +1625,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662152
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FDGBXTRD": {
     "message_id": null,
@@ -1357,7 +1635,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662153
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FRG5FWMM": {
     "message_id": null,
@@ -1365,7 +1645,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662153
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FPFVSDQW": {
     "message_id": null,
@@ -1373,7 +1655,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662154
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FX3TSZDZ": {
     "message_id": null,
@@ -1381,7 +1665,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662154
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FQ58T4D9": {
     "message_id": null,
@@ -1389,7 +1675,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662155
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0BNXHY7C9": {
     "message_id": null,
@@ -1397,7 +1685,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662155
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B09HQH477J": {
     "message_id": null,
@@ -1405,7 +1695,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662156
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FQ5KKDBP": {
     "message_id": null,
@@ -1413,7 +1705,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662156
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FXX1NJ33": {
     "message_id": null,
@@ -1421,7 +1715,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662157
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DSKCL38Y": {
     "message_id": null,
@@ -1429,7 +1725,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662157
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FNR871MG": {
     "message_id": null,
@@ -1437,7 +1735,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662158
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FQBR2X9T": {
     "message_id": null,
@@ -1445,7 +1745,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662159
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FQV8D8XZ": {
     "message_id": null,
@@ -1453,7 +1755,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662159
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FMRJX3P7": {
     "message_id": null,
@@ -1461,7 +1765,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662159
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FK4XD3K5": {
     "message_id": null,
@@ -1469,7 +1775,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662160
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FQ9T668J": {
     "message_id": null,
@@ -1477,7 +1785,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662160
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FY4Q6H7G": {
     "message_id": null,
@@ -1485,7 +1795,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662161
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0G2GR63BN": {
     "message_id": null,
@@ -1493,7 +1805,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662161
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FXGFR9M2": {
     "message_id": null,
@@ -1501,7 +1815,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662162
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "CA:B0F4JK47SD": {
     "message_id": null,
@@ -1509,7 +1825,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662162
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FX2K3MZR": {
     "message_id": null,
@@ -1517,7 +1835,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662163
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FLH7WDDS": {
     "status": "removed",
@@ -1557,7 +1877,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662163
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "ES:B0FXLZM9VX": {
     "message_id": null,
@@ -1565,7 +1887,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662164
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FJRRRT8Q": {
     "message_id": null,
@@ -1573,7 +1897,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662164
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FY5Z24H6": {
     "message_id": null,
@@ -1581,7 +1907,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662165
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0G2GVX7SK": {
     "message_id": null,
@@ -1589,7 +1917,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662165
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FY2HYMXY": {
     "message_id": null,
@@ -1597,7 +1927,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662166
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FX2H5XPL": {
     "message_id": null,
@@ -1605,7 +1937,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662166
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FMF26YN1": {
     "message_id": null,
@@ -1613,7 +1947,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662167
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0D7QNMBF3": {
     "message_id": null,
@@ -1621,7 +1957,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662167
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:2569874589": {
     "message_id": null,
@@ -1629,7 +1967,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662168
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FQBRQN8H": {
     "message_id": null,
@@ -1637,7 +1977,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662173
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "IT:B0FFMFG7FT": {
     "message_id": null,
@@ -1645,7 +1987,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662169
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "IT:B0FQ5Y77KY": {
     "message_id": null,
@@ -1653,7 +1997,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662169
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FS5CP1VZ": {
     "message_id": null,
@@ -1661,7 +2007,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662170
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "IT:B0FM3WQYL4": {
     "message_id": null,
@@ -1669,7 +2017,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662170
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0G3PNYG2K": {
     "status": "removed",
@@ -1693,7 +2043,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662171
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DX1T4B5F": {
     "message_id": null,
@@ -1701,7 +2053,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662171
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "IT:B0F1CKJ5Q1": {
     "message_id": null,
@@ -1709,7 +2063,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662172
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FSYSK75P": {
     "message_id": null,
@@ -1717,7 +2073,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662172
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "IT:B0FN8GK19M": {
     "status": "removed",
@@ -1749,7 +2107,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662173
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FNWH9J8B": {
     "message_id": null,
@@ -1757,7 +2117,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662173
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "ES:B0FDBCMVC8": {
     "status": "removed",
@@ -1797,7 +2159,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662174
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FF8CQGZH": {
     "message_id": null,
@@ -1805,7 +2169,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662174
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FPX1X73Z": {
     "status": "removed",
@@ -1829,7 +2195,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662175
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FJFKSK3N": {
     "message_id": null,
@@ -1837,7 +2205,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662175
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FN3BKFTG": {
     "status": "removed",
@@ -1853,7 +2223,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662176
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FS1NRDBD": {
     "message_id": null,
@@ -1861,7 +2233,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662176
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FHDBQ8RD": {
     "message_id": null,
@@ -1869,7 +2243,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662177
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0G1BX8N3G": {
     "message_id": null,
@@ -1877,7 +2253,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662177
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FJ1D5C2C": {
     "status": "removed",
@@ -1893,7 +2271,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662178
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FL22DW8N": {
     "message_id": null,
@@ -1901,7 +2281,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662178
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0FQ54YRR4": {
     "status": "removed",
@@ -1917,7 +2299,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662179
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0B7GQ1QB8": {
     "message_id": null,
@@ -1925,7 +2309,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662179
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FQ54YRR4": {
     "message_id": null,
@@ -1933,7 +2319,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662180
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F4Q5YG47": {
     "message_id": null,
@@ -1941,7 +2329,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662180
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B07RYTFHCR": {
     "message_id": null,
@@ -1949,7 +2339,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662181
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DPW3V7MY": {
     "message_id": null,
@@ -1957,7 +2349,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662181
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0F6X7GKQQ": {
     "message_id": null,
@@ -1965,7 +2359,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662182
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FPSSKQFT": {
     "status": "removed",
@@ -1989,7 +2385,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662182
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FSKTZ6BG": {
     "status": "removed",
@@ -2029,7 +2427,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662183
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FLXD4ZPS": {
     "message_id": null,
@@ -2037,7 +2437,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662187
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FW3YWVBZ": {
     "message_id": null,
@@ -2045,7 +2447,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662184
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0DDC2LF1D": {
     "message_id": null,
@@ -2053,7 +2457,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662184
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0F62165VW": {
     "message_id": null,
@@ -2061,7 +2467,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662184
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FPK8MH85": {
     "message_id": null,
@@ -2069,7 +2477,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662187
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FJ57WFF2": {
     "message_id": null,
@@ -2077,7 +2487,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662185
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FVSJDYWR": {
     "message_id": null,
@@ -2085,7 +2497,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662186
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FC6HC37D": {
     "message_id": null,
@@ -2093,7 +2507,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662186
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FN7KZJXH": {
     "message_id": null,
@@ -2101,7 +2517,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662187
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FHCTWB2Z": {
     "message_id": null,
@@ -2109,7 +2527,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662187
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FHCT75DP": {
     "message_id": null,
@@ -2117,7 +2537,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662188
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0DDWMJ7BH": {
     "message_id": null,
@@ -2125,7 +2547,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662188
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0FHCYKTNB": {
     "message_id": null,
@@ -2133,7 +2557,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662189
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B08HMHJKCK": {
     "message_id": null,
@@ -2141,7 +2567,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662189
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "JP:B0DSK8D4T4": {
     "message_id": null,
@@ -2149,7 +2577,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662190
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "ES:B0FLXQKRNB": {
     "message_id": null,
@@ -2157,7 +2587,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662191
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "IT:B0FMRNC2W8": {
     "message_id": null,
@@ -2165,7 +2597,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662191
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FR5D34MX": {
     "message_id": null,
@@ -2173,7 +2607,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662192
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0DCFX852B": {
     "message_id": null,
@@ -2181,7 +2617,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662193
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0D1XM7GRW": {
     "message_id": null,
@@ -2189,7 +2627,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662193
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "FR:B0FMRQ1PR1": {
     "message_id": null,
@@ -2197,7 +2637,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662193
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "DE:B0F7PG5G9L": {
     "message_id": null,
@@ -2205,7 +2647,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662194
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DHR9QXPZ": {
     "message_id": null,
@@ -2213,7 +2657,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662194
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FX2TWX1S": {
     "message_id": null,
@@ -2221,7 +2667,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662195
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DZ6WLFFQ": {
     "message_id": null,
@@ -2229,7 +2677,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662195
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FQ9Y4BJK": {
     "message_id": null,
@@ -2237,7 +2687,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662196
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F13DJM8T": {
     "message_id": null,
@@ -2245,7 +2697,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662196
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0G1XKKCPJ": {
     "message_id": null,
@@ -2253,7 +2707,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662197
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DS8HHPMN": {
     "message_id": null,
@@ -2261,7 +2717,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662197
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0DXBBK7WH": {
     "message_id": null,
@@ -2269,7 +2727,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662198
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F1MSNY5R": {
     "message_id": null,
@@ -2277,7 +2737,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662198
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F1ZZ7CV3": {
     "message_id": null,
@@ -2285,7 +2747,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662199
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FNQK2PZK": {
     "message_id": null,
@@ -2293,7 +2757,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662200
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FJ216F6J": {
     "message_id": null,
@@ -2301,7 +2767,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662200
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0FHH2RWDS": {
     "message_id": null,
@@ -2309,7 +2777,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662200
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "UK:B0F21MWK76": {
     "message_id": null,
@@ -2317,7 +2787,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662201
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DSF75WVR": {
     "message_id": null,
@@ -2325,7 +2797,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662202
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0DD6C46DB": {
     "message_id": null,
@@ -2333,7 +2807,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662203
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FGHZCN4Q": {
     "message_id": null,
@@ -2341,7 +2817,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662203
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FN3XPCTC": {
     "message_id": null,
@@ -2349,7 +2827,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662204
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FLPQQTB6": {
     "message_id": null,
@@ -2357,7 +2837,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662204
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F8HZJHX2": {
     "message_id": null,
@@ -2365,7 +2847,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662205
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FFLX5WMY": {
     "message_id": null,
@@ -2373,7 +2857,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662205
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F83ZDG94": {
     "message_id": null,
@@ -2381,7 +2867,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662206
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FBW9VGRG": {
     "message_id": null,
@@ -2389,7 +2877,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662206
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F5W8S4DL": {
     "message_id": null,
@@ -2397,7 +2887,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662207
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0D7QMMF9Y": {
     "message_id": null,
@@ -2405,7 +2897,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662207
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FF4QCGKF": {
     "message_id": null,
@@ -2413,7 +2907,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662208
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F1F9777B": {
     "message_id": null,
@@ -2421,7 +2917,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662208
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FK4XJ7PT": {
     "message_id": null,
@@ -2429,7 +2927,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662209
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F6V36S1G": {
     "message_id": null,
@@ -2437,7 +2937,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662209
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FJFKSL9D": {
     "message_id": null,
@@ -2445,7 +2947,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662209
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "CA:B0FGJ31377": {
     "status": "removed",
@@ -2709,7 +3213,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662211
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FT376BD3": {
     "status": "removed",
@@ -4197,7 +4703,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662084
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "CA:B0F99PSYSZ": {
     "message_id": null,
@@ -4205,7 +4713,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662190
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0C17LTN9M": {
     "message_id": null,
@@ -4213,7 +4723,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662201
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0G3V555LS": {
     "message_id": null,
@@ -4221,7 +4733,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662202
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0FNDLLF8S": {
     "message_id": null,
@@ -4229,7 +4743,9 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662210
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   },
   "US:B0F1TGRTMX": {
     "message_id": null,
@@ -4237,6 +4753,8 @@
     "status": "removed",
     "kind": null,
     "image_url": "",
-    "ts": 1765662210
+    "ts": 1765662654,
+    "delete_attempted": true,
+    "delete_ok": false
   }
 }
