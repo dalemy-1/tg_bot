@@ -1,18 +1,16 @@
 name: Sync Products
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"   # 每10分钟
   workflow_dispatch:
-
-permissions:
-  contents: write
+  schedule:
+    - cron: "*/10 * * * *"
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -20,20 +18,19 @@ jobs:
           python-version: "3.11"
 
       - name: Install deps
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run sync
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
-        run: |
-          python sync_products.py
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }} # 可选：多群时才需要
+        run: python sync_products.py
 
       - name: Commit posted_state.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add posted_state.json
-          git commit -m "Update posted_state.json" || echo "No changes"
+          git diff --cached --quiet || git commit -m "Update posted_state.json"
           git push
