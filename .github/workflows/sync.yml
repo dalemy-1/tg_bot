@@ -3,6 +3,7 @@ name: Sync Products
 concurrency:
   group: sync-products-${{ github.ref }}
   cancel-in-progress: false
+timeout-minutes: 60
 
 on:
   workflow_dispatch:
