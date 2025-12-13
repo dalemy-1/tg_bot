@@ -34,6 +34,7 @@ jobs:
 
       - name: Run sync
         env:
+          BAD_IMAGE_POLICY: "skip"
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
