@@ -1,3 +1,4 @@
+print("SYNC_PRODUCTS VERSION = 2025-12-14-01")
 # sync_products.py
 # 功能：
 # 1) 从 GOOGLE_SHEET_CSV_URL 读取产品（公开CSV链接），否则读取本地 products.csv
@@ -570,4 +571,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
