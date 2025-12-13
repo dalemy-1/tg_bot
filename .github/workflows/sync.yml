@@ -37,7 +37,7 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-          TG_SEND_DELAY_SEC: "1.2"
+          TG_SEND_DELAY_SEC: "2.2"
           BAD_IMAGE_POLICY: "skip"   # 你要“图片错误就跳过产品”，就保持 skip
           FALLBACK_TO_LOCAL_CSV: "1"
         run: python sync_products.py
