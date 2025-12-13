@@ -295,10 +295,13 @@ def build_caption(p: dict) -> str:
 
     lines = []
     # 标题为空也能发：至少给个占位
-    head = f"{country} {flag}{title}".strip()
-    if not title:
-        head = f"{country} {flag}(无标题)".strip()
-    lines.append(head)
+    # 只显示国旗，不显示中文国家名
+if not title:
+    head = f"{flag}(无标题)".strip() if flag else "(无标题)"
+else:
+    head = f"{flag}{title}".strip() if flag else title
+
+lines.append(head)
 
     if keyword:
         lines.append(f"Keyword: {keyword}")
@@ -543,3 +546,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
