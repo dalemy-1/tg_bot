@@ -1,4 +1,4 @@
-# sync_products.py  (FINAL)
+# sync_products.py  (FINAL - SAFE)
 import os
 import io
 import csv
@@ -6,10 +6,11 @@ import json
 import time
 import hashlib
 from pathlib import Path
+from typing import Dict, Any, List
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-14-01"
+SYNC_PRODUCTS_VERSION = "2025-12-14-02"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -19,14 +20,14 @@ STATE_FILE = BASE_DIR / "posted_state.json"
 
 VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
 
-# 编辑失败是否兜底“删旧重发”（默认关闭，避免刷屏）
-EDIT_FALLBACK_REPOST = False
-
 # 文本最大长度（caption/text）
 CAPTION_MAX = 900
 
 # 节流：每条消息后睡眠（秒），降低 429 概率
 SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "1.2"))
+
+# 如果 Google Sheet 拉取失败，是否自动回退本地 products.csv（建议开启）
+FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 
 FLAG = {
     "US": "🇺🇸", "UK": "🇬🇧", "DE": "🇩🇪", "FR": "🇫🇷",
@@ -37,6 +38,10 @@ COUNTRY_CN = {
     "US": "美国", "UK": "英国", "DE": "德国", "FR": "法国",
     "IT": "意大利", "ES": "西班牙", "CA": "加拿大", "JP": "日本",
 }
+
+
+def safe_str(x) -> str:
+    return (x or "").strip()
 
 
 def load_json(p: Path, default):
@@ -62,9 +67,26 @@ def _decode_bytes(b: bytes) -> str:
     return b.decode("utf-8", errors="replace")
 
 
+def is_bad_image_error(err: Exception) -> bool:
+    """识别 Telegram 对图片 URL 的常见报错，遇到就降级发文本或跳过，不要中止。"""
+    s = str(err).lower()
+    keywords = [
+        "wrong file identifier",
+        "wrong type of the web page content",
+        "webpage_media_empty",
+        "failed to get http url content",
+        "http url specified",
+        "can't parse",
+        "bad request",
+    ]
+    return any(k in s for k in keywords)
+
+
 def tg_api(method: str, payload: dict, max_retry: int = 6):
     """
-    Telegram API wrapper with auto retry on 429.
+    Telegram API wrapper:
+    - 自动处理 429 限流（按 retry_after 等待后重试）
+    - 其他错误直接抛出（由外层单条 try/except 吃掉，继续下一个产品）
     """
     if not TG_TOKEN:
         raise RuntimeError("Missing TG_BOT_TOKEN")
@@ -76,58 +98,54 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
         try:
             data = r.json()
         except Exception:
-            # 非 JSON
             raise RuntimeError(f"{method} HTTP {r.status_code}: {r.text}")
 
         if data.get("ok"):
             return data["result"]
 
-        # 处理限流 429
         err_code = data.get("error_code")
+
+        # 429 限流：等待后重试
         if err_code == 429:
             retry_after = 5
             params = data.get("parameters") or {}
             if isinstance(params, dict) and params.get("retry_after"):
                 retry_after = int(params["retry_after"])
-            # 多等 1 秒更稳
             wait_s = retry_after + 1
             print(f"[warn] 429 Too Many Requests, wait {wait_s}s then retry... ({attempt+1}/{max_retry})")
             time.sleep(wait_s)
             continue
 
-        # 其他错误：直接抛出
+        # 其他错误：抛出
         raise RuntimeError(f"{method} failed: {data}")
 
     raise RuntimeError(f"{method} failed after retries (429).")
 
 
-def load_products():
+def load_products() -> List[Dict[str, str]]:
     """
     From GOOGLE_SHEET_CSV_URL (preferred) or local products.csv (fallback).
-    Required headers:
+    支持字段：
       market, asin, title, keyword, store, remark, link, image_url, status
     """
     def _norm_status(s: str) -> str:
-        s = (s or "").strip().lower()
+        s = safe_str(s).lower()
         if s in ("removed", "inactive", "down", "off", "0", "false", "停售", "下架"):
             return "removed"
         return "active"
 
     def _norm_market(s: str) -> str:
-        return (s or "").strip().upper()
-
-    def _clean(s: str) -> str:
-        return (s or "").strip()
+        return safe_str(s).upper()
 
     def _normalize_row(row: dict) -> dict:
         market = _norm_market(row.get("market") or row.get("Market"))
-        asin = _clean(row.get("asin") or row.get("ASIN"))
-        title = _clean(row.get("title") or row.get("Title"))
-        keyword = _clean(row.get("keyword") or row.get("Keyword"))
-        store = _clean(row.get("store") or row.get("Store"))
-        remark = _clean(row.get("remark") or row.get("Remark"))
-        link = _clean(row.get("link") or row.get("Link") or row.get("url") or row.get("URL"))
-        image_url = _clean(row.get("image_url") or row.get("image") or row.get("Image") or row.get("img"))
+        asin = safe_str(row.get("asin") or row.get("ASIN"))
+        title = safe_str(row.get("title") or row.get("Title"))
+        keyword = safe_str(row.get("keyword") or row.get("Keyword"))
+        store = safe_str(row.get("store") or row.get("Store"))
+        remark = safe_str(row.get("remark") or row.get("Remark"))
+        link = safe_str(row.get("link") or row.get("Link") or row.get("url") or row.get("URL"))
+        image_url = safe_str(row.get("image_url") or row.get("image") or row.get("Image") or row.get("img"))
         status = _norm_status(row.get("status") or row.get("Status"))
         return {
             "market": market,
@@ -141,57 +159,63 @@ def load_products():
             "status": status,
         }
 
-    sheet_url = (os.getenv("GOOGLE_SHEET_CSV_URL") or "").strip()
-    rows = []
+    sheet_url = safe_str(os.getenv("GOOGLE_SHEET_CSV_URL"))
+    rows: List[Dict[str, str]] = []
 
-    if sheet_url:
-        r = requests.get(sheet_url, timeout=30)
-        r.raise_for_status()
-        text = _decode_bytes(r.content)
-        reader = csv.DictReader(io.StringIO(text))
-        print(f"[debug] csv fieldnames: {reader.fieldnames}")
-        for row in reader:
-            if not row:
-                continue
-            rows.append(_normalize_row(row))
-        print(f"[ok] loaded from Google Sheets: {len(rows)} rows")
-    else:
+    def _load_from_local():
         csv_path = BASE_DIR / "products.csv"
         if not csv_path.exists():
             raise FileNotFoundError(f"products.csv not found: {csv_path}")
         raw = csv_path.read_bytes()
         text = _decode_bytes(raw)
         reader = csv.DictReader(io.StringIO(text))
-        print(f"[debug] csv fieldnames: {reader.fieldnames}")
+        print(f"[debug] local csv fieldnames: {reader.fieldnames}")
         for row in reader:
-            if not row:
-                continue
-            rows.append(_normalize_row(row))
+            if row:
+                rows.append(_normalize_row(row))
         print(f"[ok] loaded from local csv: {len(rows)} rows ({csv_path})")
 
-    # 必须有 market + asin 才能定位 state key
-    filtered = [p for p in rows if p["market"] and p["asin"]]
-    dropped = len(rows) - len(filtered)
-    if dropped:
-        print(f"[warn] dropped {dropped} rows missing market/asin")
+    if sheet_url:
+        try:
+            r = requests.get(sheet_url, timeout=30)
+            r.raise_for_status()
+            text = _decode_bytes(r.content)
+            reader = csv.DictReader(io.StringIO(text))
+            print(f"[debug] sheet csv fieldnames: {reader.fieldnames}")
+            for row in reader:
+                if row:
+                    rows.append(_normalize_row(row))
+            print(f"[ok] loaded from Google Sheets: {len(rows)} rows")
+        except Exception as e:
+            print(f"[warn] failed to load Google Sheets CSV, err={e}")
+            if FALLBACK_TO_LOCAL_CSV:
+                print("[warn] fallback to local products.csv ...")
+                _load_from_local()
+            else:
+                raise
+    else:
+        _load_from_local()
 
-    return filtered
+    return rows
 
 
 def build_caption(p: dict) -> str:
-    market = (p.get("market") or "").upper().strip()
-    country = COUNTRY_CN.get(market, market)
+    market = safe_str(p.get("market")).upper()
+    country = COUNTRY_CN.get(market, market or "未知国家")
     flag = FLAG.get(market, "")
 
-    title = (p.get("title") or "").strip()
-    keyword = (p.get("keyword") or "").strip()
-    store = (p.get("store") or "").strip()
-    remark = (p.get("remark") or "").strip()
-    link = (p.get("link") or "").strip()
+    title = safe_str(p.get("title"))
+    keyword = safe_str(p.get("keyword"))
+    store = safe_str(p.get("store"))
+    remark = safe_str(p.get("remark"))
+    link = safe_str(p.get("link"))
 
     lines = []
-    # 国家 + 旗帜 + 标题
-    lines.append(f"{country} {flag}{title}".strip())
+    # 标题为空也能发：至少给个占位
+    head = f"{country} {flag}{title}".strip()
+    if not title:
+        head = f"{country} {flag}(无标题)".strip()
+    lines.append(head)
 
     if keyword:
         lines.append(f"Keyword: {keyword}")
@@ -200,15 +224,22 @@ def build_caption(p: dict) -> str:
     if remark:
         lines.append(f"Remark: {remark}")
 
-    lines.append(f"link: {link}")
+    # link 不是必填；为空就不输出
+    if link:
+        lines.append(f"link: {link}")
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
 
 
 def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
+    """
+    发新消息：
+    - 有图先发图
+    - 图片失败：自动降级发文本（不会中止）
+    """
     caption = build_caption(p)
-    img = (p.get("image_url") or "").strip()
+    img = safe_str(p.get("image_url"))
 
     if img:
         try:
@@ -221,8 +252,9 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
             time.sleep(SEND_DELAY_SEC)
             return {"message_id": res["message_id"], "kind": "photo", "image_url": img}
         except Exception as e:
-            print("sendPhoto failed (fallback to text):", p.get("market"), p.get("asin"), str(e))
+            print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
 
+    # 文本兜底
     res = tg_api("sendMessage", {
         "chat_id": chat_id,
         "message_thread_id": thread_id,
@@ -234,54 +266,58 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
 
 
 def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
+    """
+    编辑已有消息（不让“类型变化”导致终止）：
+    - 之前是 photo：无论新数据有没有 image_url，都只编辑 caption；
+      如果新 image_url 与旧不同，尝试 editMessageMedia；失败则退回只改 caption。
+    - 之前是 text：只编辑 text；就算新数据有 image_url，也忽略图片（避免无法 edit text->photo）。
+    """
     caption = build_caption(p)
 
-    prev_kind = (prev.get("kind") or "text").strip()
-    prev_img = (prev.get("image_url") or "").strip()
-    new_img = (p.get("image_url") or "").strip()
+    prev_kind = safe_str(prev.get("kind") or "text")
+    prev_img = safe_str(prev.get("image_url"))
+    new_img = safe_str(p.get("image_url"))
 
     if prev_kind == "photo":
-        if not new_img:
-            raise RuntimeError("TYPE_CHANGE_PHOTO_TO_TEXT")
+        # 1) 优先：如果新图与旧图不同，尝试改 media
+        if new_img and new_img != prev_img:
+            try:
+                tg_api("editMessageMedia", {
+                    "chat_id": chat_id,
+                    "message_id": message_id,
+                    "media": {"type": "photo", "media": new_img, "caption": caption}
+                })
+                time.sleep(SEND_DELAY_SEC)
+                return {"kind": "photo", "image_url": new_img}
+            except Exception as e:
+                # 新图不可用：退回只改 caption（保持旧图）
+                print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
 
-        if new_img == prev_img:
-            tg_api("editMessageCaption", {
-                "chat_id": chat_id,
-                "message_id": message_id,
-                "caption": caption,
-            })
-            time.sleep(SEND_DELAY_SEC)
-            return {"kind": "photo", "image_url": new_img}
-
-        tg_api("editMessageMedia", {
+        # 2) 只改 caption（不管 new_img 是否为空）
+        tg_api("editMessageCaption", {
             "chat_id": chat_id,
             "message_id": message_id,
-            "media": {"type": "photo", "media": new_img, "caption": caption}
+            "caption": caption,
         })
         time.sleep(SEND_DELAY_SEC)
-        return {"kind": "photo", "image_url": new_img}
+        return {"kind": "photo", "image_url": prev_img}
 
-    if prev_kind == "text":
-        if new_img:
-            raise RuntimeError("TYPE_CHANGE_TEXT_TO_PHOTO")
-
-        tg_api("editMessageText", {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": caption,
-            "disable_web_page_preview": True,
-        })
-        time.sleep(SEND_DELAY_SEC)
-        return {"kind": "text", "image_url": ""}
-
-    raise RuntimeError("UNKNOWN_KIND")
+    # text：只改文本（忽略 new_img，避免无法编辑为图片）
+    tg_api("editMessageText", {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": caption,
+        "disable_web_page_preview": True,
+    })
+    time.sleep(SEND_DELAY_SEC)
+    return {"kind": "text", "image_url": ""}
 
 
 def pick_chat_id(thread_map_all: dict) -> str:
-    env_chat = (os.getenv("TG_CHAT_ID") or "").strip()
+    env_chat = safe_str(os.getenv("TG_CHAT_ID"))
     if env_chat:
-        if str(env_chat) in thread_map_all:
-            return str(env_chat)
+        if env_chat in thread_map_all:
+            return env_chat
         raise RuntimeError(f"TG_CHAT_ID={env_chat} not found in thread_map.json keys={list(thread_map_all.keys())}")
 
     keys = list(thread_map_all.keys())
@@ -298,6 +334,7 @@ def pick_chat_id(thread_map_all: dict) -> str:
 def main():
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
 
+    # 这些是“必须正确”的，否则没法工作；这里仍然要中止
     if not TG_TOKEN:
         raise SystemExit("Missing TG_BOT_TOKEN env var.")
     if not MAP_FILE.exists():
@@ -308,100 +345,83 @@ def main():
     chat_id = int(chat_id_str)
     thread_map = thread_map_all.get(chat_id_str, {})
 
-    state = load_json(STATE_FILE, {})
+    state: Dict[str, Any] = load_json(STATE_FILE, {})
+
+    # products 拉取失败不应该“产品级跳过”，因为是全局数据源问题；
+    # 这里依然让它抛出（或者你开启 FALLBACK_TO_LOCAL_CSV）
     products = load_products()
 
+    ok_count = 0
+    skip_count = 0
+    err_count = 0
+
     for p in products:
-        if not p["asin"] or not p.get("link"):
-            continue
+        # 核心：单条产品保护壳，任何异常只影响这一条
+        try:
+            market = safe_str(p.get("market")).upper()
+            asin = safe_str(p.get("asin"))
 
-        key = f"{p['market']}:{p['asin']}"
-        content_hash = sha1(f"{p.get('title','')}|{p.get('keyword','')}|{p.get('store','')}|{p.get('remark','')}|{p.get('link','')}|{p.get('image_url','')}|{p.get('status','')}")
-        prev = state.get(key)
-
-        # 下架：删除原消息（必须 bot 有删除权限 & state 里要有 message_id）
-        if p["status"] == "removed":
-            if prev and prev.get("message_id"):
-                try:
-                    tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
-                    print("deleted:", key, "msg", prev["message_id"])
-                except Exception as e:
-                    print("delete failed:", key, str(e))
-
-            state[key] = {
-                **(prev or {}),
-                "status": "removed",
-                "message_id": None,   # 确保再次上架一定重发
-                "kind": None,
-                "image_url": "",
-                "hash": content_hash,
-                "ts": int(time.time())
-            }
-            continue
-
-        # removed -> active：重新发送
-        if prev and prev.get("status") == "removed":
-            thread_id = thread_map.get(p["market"])
-            if not thread_id:
-                print("no thread bound for:", p["market"])
+            # asin 必须有，否则 state key 无法定位 -> 直接跳过
+            if not asin:
+                skip_count += 1
+                print("[skip] missing asin:", p)
                 continue
 
-            info = send_new(chat_id, int(thread_id), p)
-            state[key] = {
-                "message_id": info["message_id"],
-                "hash": content_hash,
-                "status": "active",
-                "kind": info["kind"],
-                "image_url": info["image_url"],
-                "ts": int(time.time())
-            }
-            print("reposted(after relist):", key, "msg", info["message_id"])
-            continue
+            # market 不合法也跳过（防止写错国家导致乱发）
+            if market not in VALID_MARKETS:
+                skip_count += 1
+                print("[skip] invalid market:", market, "asin:", asin)
+                continue
 
-        # active 且无变化：跳过
-        if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
-            continue
+            # 找线程
+            thread_id = thread_map.get(market)
+            if not thread_id:
+                skip_count += 1
+                print("[skip] no thread bound for:", market, "asin:", asin)
+                continue
+            thread_id = int(thread_id)
 
-        thread_id = thread_map.get(p["market"])
-        if not thread_id:
-            print("no thread bound for:", p["market"])
-            continue
-        thread_id = int(thread_id)
+            key = f"{market}:{asin}"
+            status = safe_str(p.get("status") or "active").lower()
+            if status not in ("active", "removed"):
+                status = "active"
 
-        # 首次：发新
-        if not prev or not prev.get("message_id"):
-            info = send_new(chat_id, thread_id, p)
-            state[key] = {
-                "message_id": info["message_id"],
-                "hash": content_hash,
-                "status": "active",
-                "kind": info["kind"],
-                "image_url": info["image_url"],
-                "ts": int(time.time())
-            }
-            print("posted:", key, "msg", info["message_id"])
-            continue
+            content_hash = sha1(
+                f"{safe_str(p.get('title'))}|{safe_str(p.get('keyword'))}|{safe_str(p.get('store'))}|"
+                f"{safe_str(p.get('remark'))}|{safe_str(p.get('link'))}|{safe_str(p.get('image_url'))}|{status}"
+            )
 
-        # 变化：编辑原消息（不重发）
-        msg_id = int(prev["message_id"])
-        try:
-            new_meta = edit_existing(chat_id, msg_id, prev, p)
-            state[key] = {
-                **prev,
-                "hash": content_hash,
-                "status": "active",
-                "kind": new_meta["kind"],
-                "image_url": new_meta["image_url"],
-                "ts": int(time.time())
-            }
-            print("edited:", key, "msg", msg_id)
-        except Exception as e:
-            print("edit failed:", key, str(e))
-            if EDIT_FALLBACK_REPOST:
-                try:
-                    tg_api("deleteMessage", {"chat_id": chat_id, "message_id": msg_id})
-                except Exception:
-                    pass
+            prev = state.get(key)
+
+            # 下架：删消息 + 写 removed 状态
+            if status == "removed":
+                if prev and prev.get("message_id"):
+                    try:
+                        tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
+                        print("deleted:", key, "msg", prev["message_id"])
+                    except Exception as e:
+                        # 删除失败也不终止
+                        print("[warn] delete failed but continue:", key, str(e))
+
+                state[key] = {
+                    **(prev or {}),
+                    "status": "removed",
+                    "message_id": None,
+                    "kind": None,
+                    "image_url": "",
+                    "hash": content_hash,
+                    "ts": int(time.time()),
+                }
+                ok_count += 1
+                continue
+
+            # active 且无变化：跳过
+            if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
+                skip_count += 1
+                continue
+
+            # 首次发布
+            if not prev or not prev.get("message_id"):
                 info = send_new(chat_id, thread_id, p)
                 state[key] = {
                     "message_id": info["message_id"],
@@ -409,12 +429,40 @@ def main():
                     "status": "active",
                     "kind": info["kind"],
                     "image_url": info["image_url"],
-                    "ts": int(time.time())
+                    "ts": int(time.time()),
                 }
-                print("reposted(fallback):", key, "msg", info["message_id"])
+                print("posted:", key, "msg", info["message_id"])
+                ok_count += 1
+                continue
+
+            # 编辑已有消息
+            msg_id = int(prev["message_id"])
+            try:
+                new_meta = edit_existing(chat_id, msg_id, prev, p)
+                state[key] = {
+                    **prev,
+                    "hash": content_hash,
+                    "status": "active",
+                    "kind": new_meta["kind"],
+                    "image_url": new_meta["image_url"],
+                    "ts": int(time.time()),
+                }
+                print("edited:", key, "msg", msg_id)
+                ok_count += 1
+            except Exception as e:
+                # 单条编辑失败：不终止，记录后继续
+                err_count += 1
+                print("[error] edit failed but continue:", key, str(e))
+                continue
+
+        except Exception as e:
+            # 单条产品任何未预料错误：吞掉继续
+            err_count += 1
+            print(f"[error] product failed but continue. market={p.get('market')} asin={p.get('asin')} err={e}")
+            continue
 
     save_json(STATE_FILE, state)
-    print("done. state saved ->", STATE_FILE)
+    print(f"done. ok={ok_count} skip={skip_count} err={err_count}. state saved -> {STATE_FILE}")
 
 
 if __name__ == "__main__":
