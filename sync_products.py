@@ -277,6 +277,38 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
         return {"kind": "text", "image_url": ""}
 
     raise RuntimeError("UNKNOWN_KIND")
+def pick_chat_id(thread_map_all: dict) -> str:
+    """
+    Choose which chat_id to use from thread_map.json.
+
+    Priority:
+    1) env TG_CHAT_ID if set
+    2) if only one chat_id exists in thread_map_all, use it
+    3) otherwise raise with readable message
+    """
+    import os
+
+    # 1) allow explicit chat id via env
+    env_chat = (os.getenv("TG_CHAT_ID") or "").strip()
+    if env_chat:
+        if env_chat in thread_map_all:
+            return env_chat
+        # also allow numeric chat id without quotes
+        if str(env_chat) in thread_map_all:
+            return str(env_chat)
+        raise RuntimeError(f"TG_CHAT_ID={env_chat} not found in thread_map.json keys={list(thread_map_all.keys())}")
+
+    # 2) auto-pick if only one
+    keys = list(thread_map_all.keys())
+    if len(keys) == 1:
+        return keys[0]
+
+    # 3) ambiguous
+    raise RuntimeError(
+        "Multiple chat_id found in thread_map.json. "
+        "Set env TG_CHAT_ID to choose one. "
+        f"Available: {keys}"
+    )
 
 def main():
     if not TG_TOKEN:
@@ -399,4 +431,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
