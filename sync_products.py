@@ -1,4 +1,4 @@
-# sync_products.py  (FINAL - SAFE)
+# sync_products.py  (FINAL - SAFE + MONEY)
 import os
 import io
 import csv
@@ -10,7 +10,7 @@ from typing import Dict, Any, List
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-14-02"
+SYNC_PRODUCTS_VERSION = "2025-12-14-03"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -37,6 +37,18 @@ FLAG = {
 COUNTRY_CN = {
     "US": "美国", "UK": "英国", "DE": "德国", "FR": "法国",
     "IT": "意大利", "ES": "西班牙", "CA": "加拿大", "JP": "日本",
+}
+
+# 市场默认货币符号
+CURRENCY_SYMBOL = {
+    "US": "$",
+    "UK": "£",
+    "DE": "€",
+    "FR": "€",
+    "IT": "€",
+    "ES": "€",
+    "CA": "$",
+    "JP": "¥",
 }
 
 
@@ -67,8 +79,63 @@ def _decode_bytes(b: bytes) -> str:
     return b.decode("utf-8", errors="replace")
 
 
+def _to_number(s: str):
+    """
+    把 '10', '10.00', ' 10$ ' -> 10.0；解析失败返回 None
+    """
+    if s is None:
+        return None
+    s = safe_str(str(s))
+    if not s:
+        return None
+
+    cleaned = (
+        s.replace(",", "")
+         .replace("$", "")
+         .replace("£", "")
+         .replace("€", "")
+         .replace("¥", "")
+         .replace("￥", "")
+         .strip()
+    )
+    try:
+        return float(cleaned)
+    except Exception:
+        return None
+
+
+def format_money(value, market: str):
+    """
+    规则：
+    - 空/解析为0/文本等于0 -> 返回 None（不输出）
+    - 若 value 已包含货币符号（$ £ € ¥ ￥）-> 原样返回（只 strip）
+    - 若是纯数字 -> 按市场货币符号拼成 '10$' 这种尾随格式
+    """
+    if value is None:
+        return None
+    s = safe_str(str(value))
+    if not s:
+        return None
+
+    n = _to_number(s)
+    if n is not None and abs(n) < 1e-12:
+        return None
+    if s in ("0", "0.0", "0.00"):
+        return None
+
+    if any(sym in s for sym in ("$", "£", "€", "¥", "￥")):
+        return s
+
+    sym = CURRENCY_SYMBOL.get((market or "").upper(), "")
+    if not sym:
+        return s
+
+    # 输出：10$ 这种尾随符号格式（按你的示例）
+    return f"{s}{sym}"
+
+
 def is_bad_image_error(err: Exception) -> bool:
-    """识别 Telegram 对图片 URL 的常见报错，遇到就降级发文本或跳过，不要中止。"""
+    """识别 Telegram 对图片 URL 的常见报错，遇到就降级发文本，不要中止。"""
     s = str(err).lower()
     keywords = [
         "wrong file identifier",
@@ -126,7 +193,8 @@ def load_products() -> List[Dict[str, str]]:
     """
     From GOOGLE_SHEET_CSV_URL (preferred) or local products.csv (fallback).
     支持字段：
-      market, asin, title, keyword, store, remark, link, image_url, status
+      market, asin, title, keyword, store, remark, link, image_url, status,
+      discount_price, commission
     """
     def _norm_status(s: str) -> str:
         s = safe_str(s).lower()
@@ -147,6 +215,15 @@ def load_products() -> List[Dict[str, str]]:
         link = safe_str(row.get("link") or row.get("Link") or row.get("url") or row.get("URL"))
         image_url = safe_str(row.get("image_url") or row.get("image") or row.get("Image") or row.get("img"))
         status = _norm_status(row.get("status") or row.get("Status"))
+
+        # 新增：Discount Price / Commission（兼容多种列名）
+        discount_price = safe_str(
+            row.get("discount_price") or row.get("Discount Price") or row.get("DiscountPrice") or row.get("discount")
+        )
+        commission = safe_str(
+            row.get("commission") or row.get("Commission") or row.get("comm")
+        )
+
         return {
             "market": market,
             "asin": asin,
@@ -157,6 +234,8 @@ def load_products() -> List[Dict[str, str]]:
             "link": link,
             "image_url": image_url,
             "status": status,
+            "discount_price": discount_price,
+            "commission": commission,
         }
 
     sheet_url = safe_str(os.getenv("GOOGLE_SHEET_CSV_URL"))
@@ -210,6 +289,10 @@ def build_caption(p: dict) -> str:
     remark = safe_str(p.get("remark"))
     link = safe_str(p.get("link"))
 
+    # 新增金额字段（为 0/空 -> None，不输出）
+    discount_price = format_money(p.get("discount_price"), market)
+    commission = format_money(p.get("commission"), market)
+
     lines = []
     # 标题为空也能发：至少给个占位
     head = f"{country} {flag}{title}".strip()
@@ -224,9 +307,14 @@ def build_caption(p: dict) -> str:
     if remark:
         lines.append(f"Remark: {remark}")
 
+    if discount_price:
+        lines.append(f"Discount Price: {discount_price}")
+    if commission:
+        lines.append(f"Commission: {commission}")
+
     # link 不是必填；为空就不输出
     if link:
-        lines.append(f"link: {link}")
+        lines.append(f"link:{link}")  # 按你示例：link:紧贴
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
@@ -290,7 +378,6 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
                 time.sleep(SEND_DELAY_SEC)
                 return {"kind": "photo", "image_url": new_img}
             except Exception as e:
-                # 新图不可用：退回只改 caption（保持旧图）
                 print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
 
         # 2) 只改 caption（不管 new_img 是否为空）
@@ -347,8 +434,6 @@ def main():
 
     state: Dict[str, Any] = load_json(STATE_FILE, {})
 
-    # products 拉取失败不应该“产品级跳过”，因为是全局数据源问题；
-    # 这里依然让它抛出（或者你开启 FALLBACK_TO_LOCAL_CSV）
     products = load_products()
 
     ok_count = 0
@@ -356,24 +441,20 @@ def main():
     err_count = 0
 
     for p in products:
-        # 核心：单条产品保护壳，任何异常只影响这一条
         try:
             market = safe_str(p.get("market")).upper()
             asin = safe_str(p.get("asin"))
 
-            # asin 必须有，否则 state key 无法定位 -> 直接跳过
             if not asin:
                 skip_count += 1
                 print("[skip] missing asin:", p)
                 continue
 
-            # market 不合法也跳过（防止写错国家导致乱发）
             if market not in VALID_MARKETS:
                 skip_count += 1
                 print("[skip] invalid market:", market, "asin:", asin)
                 continue
 
-            # 找线程
             thread_id = thread_map.get(market)
             if not thread_id:
                 skip_count += 1
@@ -386,21 +467,21 @@ def main():
             if status not in ("active", "removed"):
                 status = "active"
 
+            # 把新字段也纳入 hash，确保价格/佣金变化会触发编辑
             content_hash = sha1(
                 f"{safe_str(p.get('title'))}|{safe_str(p.get('keyword'))}|{safe_str(p.get('store'))}|"
-                f"{safe_str(p.get('remark'))}|{safe_str(p.get('link'))}|{safe_str(p.get('image_url'))}|{status}"
+                f"{safe_str(p.get('remark'))}|{safe_str(p.get('link'))}|{safe_str(p.get('image_url'))}|"
+                f"{safe_str(p.get('discount_price'))}|{safe_str(p.get('commission'))}|{status}"
             )
 
             prev = state.get(key)
 
-            # 下架：删消息 + 写 removed 状态
             if status == "removed":
                 if prev and prev.get("message_id"):
                     try:
                         tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
                         print("deleted:", key, "msg", prev["message_id"])
                     except Exception as e:
-                        # 删除失败也不终止
                         print("[warn] delete failed but continue:", key, str(e))
 
                 state[key] = {
@@ -415,12 +496,10 @@ def main():
                 ok_count += 1
                 continue
 
-            # active 且无变化：跳过
             if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
                 skip_count += 1
                 continue
 
-            # 首次发布
             if not prev or not prev.get("message_id"):
                 info = send_new(chat_id, thread_id, p)
                 state[key] = {
@@ -435,7 +514,6 @@ def main():
                 ok_count += 1
                 continue
 
-            # 编辑已有消息
             msg_id = int(prev["message_id"])
             try:
                 new_meta = edit_existing(chat_id, msg_id, prev, p)
@@ -450,13 +528,11 @@ def main():
                 print("edited:", key, "msg", msg_id)
                 ok_count += 1
             except Exception as e:
-                # 单条编辑失败：不终止，记录后继续
                 err_count += 1
                 print("[error] edit failed but continue:", key, str(e))
                 continue
 
         except Exception as e:
-            # 单条产品任何未预料错误：吞掉继续
             err_count += 1
             print(f"[error] product failed but continue. market={p.get('market')} asin={p.get('asin')} err={e}")
             continue
