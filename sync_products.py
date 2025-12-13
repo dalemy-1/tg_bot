@@ -1,10 +1,11 @@
-# sync_products.py  (FINAL - STABLE)
+# sync_products.py  (FINAL - STABLE + SAFE + MONEY + NO-COUNTRY-CN)
 import os
 import io
 import csv
 import json
 import time
 import hashlib
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -24,9 +25,6 @@ CAPTION_MAX = 900
 SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "1.2"))
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 
-# 图片 URL 错误时：是否直接跳过该商品（默认跳过，不发文本，避免垃圾数据刷屏）
-SKIP_ON_BAD_IMAGE = (os.getenv("SKIP_ON_BAD_IMAGE", "1").strip() != "0")
-
 FLAG = {
     "US": "🇺🇸", "UK": "🇬🇧", "DE": "🇩🇪", "FR": "🇫🇷",
     "IT": "🇮🇹", "ES": "🇪🇸", "CA": "🇨🇦", "JP": "🇯🇵",
@@ -44,24 +42,8 @@ CURRENCY_SYMBOL = {
 }
 
 
-class SkipProduct(Exception):
-    """用于跳过单条商品，不影响整体任务。"""
-    pass
-
-
 def safe_str(x) -> str:
-    return (x or "").strip()
-
-
-def norm_text(x) -> str:
-    """做轻量标准化，避免因为不可见字符/换行差异导致 hash 每次都变。"""
-    s = safe_str(x)
-    if not s:
-        return ""
-    s = s.replace("\r\n", "\n").replace("\r", "\n").replace("\u00a0", " ")
-    # 每行 trim
-    s = "\n".join([line.strip() for line in s.split("\n")])
-    return s.strip()
+    return ("" if x is None else str(x)).strip()
 
 
 def load_json(p: Path, default):
@@ -87,12 +69,27 @@ def _decode_bytes(b: bytes) -> str:
     return b.decode("utf-8", errors="replace")
 
 
-def _to_number(val) -> Optional[float]:
-    if val is None:
-        return None
-    s = safe_str(str(val))
+def norm_text(s: str) -> str:
+    # 用于 hash 的稳定化：去两端空格、把多空白压成一个空格
+    s = safe_str(s)
+    if not s:
+        return ""
+    return " ".join(s.split())
+
+
+def norm_status(s: str) -> str:
+    s = safe_str(s).lower()
+    if s in ("removed", "inactive", "down", "off", "0", "false", "停售", "下架"):
+        return "removed"
+    return "active"
+
+
+def parse_decimal_maybe(v) -> Optional[Decimal]:
+    s = safe_str(v)
     if not s:
         return None
+
+    # 去掉常见符号
     cleaned = (
         s.replace(",", "")
          .replace("$", "")
@@ -102,27 +99,55 @@ def _to_number(val) -> Optional[float]:
          .replace("￥", "")
          .strip()
     )
+    if not cleaned:
+        return None
+
     try:
-        return float(cleaned)
-    except Exception:
+        return Decimal(cleaned)
+    except (InvalidOperation, ValueError):
         return None
 
 
-def format_money(value, market: str) -> Optional[str]:
+def canonical_money_for_hash(v) -> str:
     """
-    规则：
-    - 空 / 解析为 0 / 文本等于 0 -> None（不输出）
-    - 若 value 已包含货币符号（$ £ € ¥ ￥）-> 原样输出（strip 后）
-    - 若是纯数字 -> 按市场货币符号输出尾随格式：10$
+    用于 hash：把 10 / 10.0 / 10.00 统一成 "10"
+    为空或 0 -> ""
+    文本无法解析 -> 归一化原文本
     """
-    if value is None:
-        return None
-    s = safe_str(str(value))
+    s = safe_str(v)
+    if not s:
+        return ""
+
+    d = parse_decimal_maybe(s)
+    if d is None:
+        return norm_text(s)
+
+    if d == 0:
+        return ""
+
+    # 去尾零：10.00 -> 10；10.50 -> 10.5
+    normalized = d.normalize()
+    # Decimal('10') normalize 后可能变成 '1E+1'，转成普通字符串
+    as_str = format(normalized, "f")
+    # 再去一次尾零和点
+    if "." in as_str:
+        as_str = as_str.rstrip("0").rstrip(".")
+    return as_str
+
+
+def format_money_for_caption(v, market: str) -> Optional[str]:
+    """
+    用于文案：
+    - 空 / 0 -> None（不显示）
+    - 已包含货币符号 -> 原样（strip）
+    - 纯数字 -> 拼尾随符号：10$
+    """
+    s = safe_str(v)
     if not s:
         return None
 
-    n = _to_number(s)
-    if n is not None and abs(n) < 1e-12:
+    d = parse_decimal_maybe(s)
+    if d is not None and d == 0:
         return None
     if s in ("0", "0.0", "0.00"):
         return None
@@ -134,40 +159,16 @@ def format_money(value, market: str) -> Optional[str]:
     if not sym:
         return s
 
+    # 直接用原始字符串（表格里一般是 10 / 15 / 20）
     return f"{s}{sym}"
 
 
-def canonical_money_for_hash(value) -> str:
-    """让 10 / 10.0 / 10.00 的 hash 一致，避免每次都触发编辑。"""
-    if value is None:
-        return ""
-    s = safe_str(str(value))
-    if not s:
-        return ""
-    n = _to_number(s)
-    if n is None:
-        return norm_text(s)
-    # 去掉无意义的 0
-    if abs(n - int(n)) < 1e-12:
-        return str(int(n))
-    return ("%.4f" % n).rstrip("0").rstrip(".")
-
-
-def is_bad_image_error(err: Exception) -> bool:
-    s = str(err).lower()
-    keywords = [
-        "wrong file identifier",
-        "wrong type of the web page content",
-        "webpage_media_empty",
-        "failed to get http url content",
-        "http url specified",
-        "can't parse",
-        "bad request",
-    ]
-    return any(k in s for k in keywords)
-
-
 def tg_api(method: str, payload: dict, max_retry: int = 6):
+    """
+    Telegram API wrapper:
+    - 自动处理 429 限流（按 retry_after 等待后重试）
+    - 其他错误抛出（外层单条 try/except 会吞掉继续）
+    """
     if not TG_TOKEN:
         raise RuntimeError("Missing TG_BOT_TOKEN")
 
@@ -202,36 +203,33 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
 
 def load_products() -> List[Dict[str, str]]:
     """
-    支持字段：
+    From GOOGLE_SHEET_CSV_URL (preferred) or local products.csv (fallback).
+    支持字段（表头大小写/空格可不同）：
       market, asin, title, keyword, store, remark, link, image_url, status,
       Discount Price, Commission
     """
-    def _norm_status(s: str) -> str:
-        s = safe_str(s).lower()
-        if s in ("removed", "inactive", "down", "off", "0", "false", "停售", "下架"):
-            return "removed"
-        return "active"
-
     def _norm_market(s: str) -> str:
         return safe_str(s).upper()
 
-    def _normalize_row(row: dict) -> dict:
-        market = _norm_market(row.get("market") or row.get("Market"))
-        asin = safe_str(row.get("asin") or row.get("ASIN"))
-        title = norm_text(row.get("title") or row.get("Title"))
-        keyword = norm_text(row.get("keyword") or row.get("Keyword"))
-        store = norm_text(row.get("store") or row.get("Store"))
-        remark = norm_text(row.get("remark") or row.get("Remark"))
-        link = safe_str(row.get("link") or row.get("Link") or row.get("url") or row.get("URL"))
-        image_url = safe_str(row.get("image_url") or row.get("image") or row.get("Image") or row.get("img") or row.get("image_url ") or row.get("image_url\t"))
-        status = _norm_status(row.get("status") or row.get("Status"))
+    def _get(row: dict, *keys: str) -> str:
+        for k in keys:
+            if k in row and row.get(k) is not None:
+                return safe_str(row.get(k))
+        return ""
 
-        discount_price = safe_str(
-            row.get("discount_price") or row.get("Discount Price") or row.get("DiscountPrice") or row.get("discount")
-        )
-        commission = safe_str(
-            row.get("commission") or row.get("Commission") or row.get("comm")
-        )
+    def _normalize_row(row: dict) -> Dict[str, str]:
+        market = _norm_market(_get(row, "market", "Market"))
+        asin = _get(row, "asin", "ASIN")
+        title = _get(row, "title", "Title")
+        keyword = _get(row, "keyword", "Keyword")
+        store = _get(row, "store", "Store")
+        remark = _get(row, "remark", "Remark")
+        link = _get(row, "link", "Link", "url", "URL")
+        image_url = _get(row, "image_url", "image", "Image", "img", "image_url ")
+        status = norm_status(_get(row, "status", "Status"))
+
+        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount")
+        commission = _get(row, "commission", "Commission", "comm")
 
         return {
             "market": market,
@@ -284,42 +282,29 @@ def load_products() -> List[Dict[str, str]]:
     else:
         _load_from_local()
 
-    # 去重：同 market+asin 只取最后一行（避免同一轮里互相覆盖）
-    dedup: Dict[str, Dict[str, str]] = {}
-    for p in rows:
-        m = safe_str(p.get("market")).upper()
-        a = safe_str(p.get("asin"))
-        if not m or not a:
-            continue
-        dedup[f"{m}:{a}"] = p
-
-    out = list(dedup.values())
-    if len(out) != len(rows):
-        print(f"[warn] dedup applied: {len(rows)} -> {len(out)} by market+asin (kept last)")
-    return out
+    return rows
 
 
 def build_caption(p: dict) -> str:
     market = safe_str(p.get("market")).upper()
     flag = FLAG.get(market, "")
 
-    title = norm_text(p.get("title"))
-    keyword = norm_text(p.get("keyword"))
-    store = norm_text(p.get("store"))
-    remark = norm_text(p.get("remark"))
-
-    discount_price = format_money(p.get("discount_price"), market)
-    commission = format_money(p.get("commission"), market)
-
+    title = safe_str(p.get("title"))
+    keyword = safe_str(p.get("keyword"))
+    store = safe_str(p.get("store"))
+    remark = safe_str(p.get("remark"))
     link = safe_str(p.get("link"))
 
-    lines = []
+    discount_price = format_money_for_caption(p.get("discount_price"), market)
+    commission = format_money_for_caption(p.get("commission"), market)
 
-    # 只显示国旗 + 标题，不显示中文国家名
-    if not title:
-        head = f"{flag}(无标题)".strip() if flag else "(无标题)"
-    else:
+    lines: List[str] = []
+
+    # 只显示国旗，不显示中文国家名
+    if title:
         head = f"{flag}{title}".strip() if flag else title
+    else:
+        head = f"{flag}(无标题)".strip() if flag else "(无标题)"
     lines.append(head)
 
     if keyword:
@@ -356,10 +341,6 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
             time.sleep(SEND_DELAY_SEC)
             return {"message_id": res["message_id"], "kind": "photo", "image_url": img}
         except Exception as e:
-            # 图片错误：按你的要求，跳过该产品，不中止
-            if SKIP_ON_BAD_IMAGE and is_bad_image_error(e):
-                raise SkipProduct(f"bad image url, skip. img={img} err={e}")
-            # 否则才降级文本
             print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
 
     res = tg_api("sendMessage", {
@@ -380,6 +361,7 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
     new_img = safe_str(p.get("image_url"))
 
     if prev_kind == "photo":
+        # 新图不同则尝试换图；失败就只改 caption
         if new_img and new_img != prev_img:
             try:
                 tg_api("editMessageMedia", {
@@ -390,7 +372,6 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
                 time.sleep(SEND_DELAY_SEC)
                 return {"kind": "photo", "image_url": new_img}
             except Exception as e:
-                # 新图不行：只改 caption
                 print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
 
         tg_api("editMessageCaption", {
@@ -401,6 +382,7 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
         time.sleep(SEND_DELAY_SEC)
         return {"kind": "photo", "image_url": prev_img}
 
+    # text：只编辑文本（忽略 new_img）
     tg_api("editMessageText", {
         "chat_id": chat_id,
         "message_id": message_id,
@@ -427,6 +409,34 @@ def pick_chat_id(thread_map_all: dict) -> str:
         "Set env TG_CHAT_ID to choose one. "
         f"Available: {keys}"
     )
+
+
+def make_state_key(chat_id: int, market: str, asin: str) -> str:
+    # 稳定：强制包含 chat_id，避免换群/换 chat_id 导致找不到 message_id
+    return f"{chat_id}:{market}:{asin}"
+
+
+def get_prev_and_migrate(state: Dict[str, Any], new_key: str, legacy_keys: List[str]) -> Optional[dict]:
+    """
+    从 state 里取 prev：
+    - 优先 new_key
+    - 找到 legacy_key 就迁移到 new_key（只迁一次）
+    """
+    if new_key in state:
+        return state.get(new_key)
+
+    for lk in legacy_keys:
+        if lk in state:
+            prev = state.get(lk)
+            state[new_key] = prev
+            try:
+                del state[lk]
+            except Exception:
+                pass
+            print(f"[warn] migrated legacy state key -> {new_key} (legacy removed)")
+            return prev
+
+    return None
 
 
 def main():
@@ -458,6 +468,7 @@ def main():
                 skip_count += 1
                 print("[skip] missing asin:", p)
                 continue
+
             if market not in VALID_MARKETS:
                 skip_count += 1
                 print("[skip] invalid market:", market, "asin:", asin)
@@ -470,72 +481,62 @@ def main():
                 continue
             thread_id = int(thread_id)
 
-            # 新 key：加 chat_id，避免换群/多群导致删不掉、重复发
-            key = f"{chat_id_str}:{market}:{asin}"
-            legacy_key = f"{market}:{asin}"  # 兼容旧 state（无 chat_id 的版本）
+            status = norm_status(p.get("status"))
+            new_key = make_state_key(chat_id, market, asin)
 
-            status = safe_str(p.get("status") or "active").lower()
-            if status not in ("active", "removed"):
-                status = "active"
+            # 兼容旧 key：你之前用过 market:asin（不含 chat_id）
+            legacy_keys = [
+                f"{market}:{asin}",
+            ]
 
-            # 价格/佣金用 canonical 形式参与 hash，避免 10 / 10.0 / 10.00 每次都触发编辑
+            prev = get_prev_and_migrate(state, new_key, legacy_keys)
+
+            # 用“稳定规范化”的值参与 hash，避免每次都变
             content_hash = sha1(
-                f"{norm_text(p.get('title'))}|{norm_text(p.get('keyword'))}|{norm_text(p.get('store'))}|"
-                f"{norm_text(p.get('remark'))}|{safe_str(p.get('link'))}|{safe_str(p.get('image_url'))}|"
-                f"{canonical_money_for_hash(p.get('discount_price'))}|{canonical_money_for_hash(p.get('commission'))}|{status}"
+                "|".join([
+                    norm_text(p.get("title")),
+                    norm_text(p.get("keyword")),
+                    norm_text(p.get("store")),
+                    norm_text(p.get("remark")),
+                    norm_text(p.get("link")),
+                    norm_text(p.get("image_url")),
+                    canonical_money_for_hash(p.get("discount_price")),
+                    canonical_money_for_hash(p.get("commission")),
+                    status,
+                ])
             )
 
-            prev = state.get(key)
-            if not prev and legacy_key in state:
-                prev = state.get(legacy_key)
-                state[key] = prev
-                del state[legacy_key]   # 清理旧 key，避免文件膨胀（单群使用建议开启）
-                print(f"[warn] migrated legacy state key -> {key} (legacy removed)")
-
-
-            # removed：如果已经 removed 且没有 message_id 且 hash 没变，就直接 skip（防止每30分钟写一次 state）
-                        if status == "removed":
-                # 如果已经 removed 且没有 message_id 且 hash 没变，就跳过（防止每次重复处理）
-                if prev and prev.get("status") == "removed" and prev.get("hash") == content_hash and not prev.get("message_id"):
-                    skip_count += 1
-                    continue
-
-                deleted_ok = False
+            # removed：删除消息（只有 prev 有 message_id 才能删）
+            if status == "removed":
                 if prev and prev.get("message_id"):
                     try:
                         tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
-                        print("deleted:", key, "msg", prev["message_id"])
-                        deleted_ok = True
+                        print("deleted:", new_key, "msg", prev["message_id"])
                     except Exception as e:
-                        # 删除失败：保留 message_id，下一次还能重试
-                        print("[warn] delete failed (will retry next run):", key, "msg", prev.get("message_id"), "err", str(e))
+                        print("[warn] delete failed but continue:", new_key, str(e))
 
-                else:
-                    print("[skip] removed but no message_id in state:", key)
-
-                state[key] = {
+                # 写入 removed 状态；message_id 置空，保证未来 relist 一定重发
+                state[new_key] = {
                     **(prev or {}),
                     "status": "removed",
-                    # 只有删除成功才清空 message_id；否则保留用于重试
-                    "message_id": None if deleted_ok else (prev.get("message_id") if prev else None),
-                    "kind": None if deleted_ok else (prev.get("kind") if prev else None),
-                    "image_url": "" if deleted_ok else (prev.get("image_url") if prev else ""),
+                    "message_id": None,
+                    "kind": None,
+                    "image_url": "",
                     "hash": content_hash,
                     "ts": int(time.time()),
                 }
                 ok_count += 1
                 continue
 
-
-            # active 且无变化：skip
+            # active 且无变化：跳过
             if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
                 skip_count += 1
                 continue
 
-            # 首次发布
+            # 首次发布（或之前 removed 过、message_id 为空）
             if not prev or not prev.get("message_id"):
                 info = send_new(chat_id, thread_id, p)
-                state[key] = {
+                state[new_key] = {
                     "message_id": info["message_id"],
                     "hash": content_hash,
                     "status": "active",
@@ -543,28 +544,29 @@ def main():
                     "image_url": info["image_url"],
                     "ts": int(time.time()),
                 }
-                print("posted:", key, "msg", info["message_id"])
+                print("posted:", new_key, "msg", info["message_id"])
                 ok_count += 1
                 continue
 
             # 编辑已有消息
             msg_id = int(prev["message_id"])
-            new_meta = edit_existing(chat_id, msg_id, prev, p)
-            state[key] = {
-                **prev,
-                "hash": content_hash,
-                "status": "active",
-                "kind": new_meta["kind"],
-                "image_url": new_meta["image_url"],
-                "ts": int(time.time()),
-            }
-            print("edited:", key, "msg", msg_id)
-            ok_count += 1
+            try:
+                new_meta = edit_existing(chat_id, msg_id, prev, p)
+                state[new_key] = {
+                    **prev,
+                    "hash": content_hash,
+                    "status": "active",
+                    "kind": new_meta["kind"],
+                    "image_url": new_meta["image_url"],
+                    "ts": int(time.time()),
+                }
+                print("edited:", new_key, "msg", msg_id)
+                ok_count += 1
+            except Exception as e:
+                err_count += 1
+                print("[error] edit failed but continue:", new_key, str(e))
+                continue
 
-        except SkipProduct as e:
-            skip_count += 1
-            print("[skip] product skipped:", e)
-            continue
         except Exception as e:
             err_count += 1
             print(f"[error] product failed but continue. market={p.get('market')} asin={p.get('asin')} err={e}")
@@ -576,5 +578,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
