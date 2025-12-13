@@ -1,4 +1,4 @@
-# sync_products.py  (FINAL - SAFE + MONEY + NO DUPLICATE)
+# sync_products.py  (FINAL - STABLE)
 import os
 import io
 import csv
@@ -21,22 +21,17 @@ STATE_FILE = BASE_DIR / "posted_state.json"
 VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
 
 CAPTION_MAX = 900
-
-# 节流：每条消息后睡眠（秒），降低 429 概率
 SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "1.2"))
-
-# Google Sheet 拉取失败，是否回退本地 products.csv
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 
-# 图片链接错误时：是否直接跳过该产品（1=跳过；0=降级发文本）
-SKIP_ON_BAD_IMAGE = (os.getenv("TG_SKIP_ON_BAD_IMAGE", "1").strip() != "0")
+# 图片 URL 错误时：是否直接跳过该商品（默认跳过，不发文本，避免垃圾数据刷屏）
+SKIP_ON_BAD_IMAGE = (os.getenv("SKIP_ON_BAD_IMAGE", "1").strip() != "0")
 
 FLAG = {
     "US": "🇺🇸", "UK": "🇬🇧", "DE": "🇩🇪", "FR": "🇫🇷",
     "IT": "🇮🇹", "ES": "🇪🇸", "CA": "🇨🇦", "JP": "🇯🇵",
 }
 
-# 市场默认货币符号（按你要求：尾随符号，如 10$）
 CURRENCY_SYMBOL = {
     "US": "$",
     "UK": "£",
@@ -49,12 +44,24 @@ CURRENCY_SYMBOL = {
 }
 
 
-# -----------------------
-# Helpers
-# -----------------------
+class SkipProduct(Exception):
+    """用于跳过单条商品，不影响整体任务。"""
+    pass
+
+
 def safe_str(x) -> str:
-    # 关键修复：0 不能被 (x or "") 吃掉
-    return ("" if x is None else str(x)).strip()
+    return (x or "").strip()
+
+
+def norm_text(x) -> str:
+    """做轻量标准化，避免因为不可见字符/换行差异导致 hash 每次都变。"""
+    s = safe_str(x)
+    if not s:
+        return ""
+    s = s.replace("\r\n", "\n").replace("\r", "\n").replace("\u00a0", " ")
+    # 每行 trim
+    s = "\n".join([line.strip() for line in s.split("\n")])
+    return s.strip()
 
 
 def load_json(p: Path, default):
@@ -80,14 +87,10 @@ def _decode_bytes(b: bytes) -> str:
     return b.decode("utf-8", errors="replace")
 
 
-class SkipProduct(Exception):
-    pass
-
-
-def _to_number(s) -> Optional[float]:
-    if s is None:
+def _to_number(val) -> Optional[float]:
+    if val is None:
         return None
-    s = safe_str(s)
+    s = safe_str(str(val))
     if not s:
         return None
     cleaned = (
@@ -108,13 +111,13 @@ def _to_number(s) -> Optional[float]:
 def format_money(value, market: str) -> Optional[str]:
     """
     规则：
-    - 空/解析为0/文本等于0 -> None（不输出）
-    - 已包含货币符号 -> 原样输出（strip 后）
-    - 纯数字 -> 按市场货币符号拼成 '10$' 这种尾随格式
+    - 空 / 解析为 0 / 文本等于 0 -> None（不输出）
+    - 若 value 已包含货币符号（$ £ € ¥ ￥）-> 原样输出（strip 后）
+    - 若是纯数字 -> 按市场货币符号输出尾随格式：10$
     """
     if value is None:
         return None
-    s = safe_str(value)
+    s = safe_str(str(value))
     if not s:
         return None
 
@@ -130,7 +133,24 @@ def format_money(value, market: str) -> Optional[str]:
     sym = CURRENCY_SYMBOL.get((market or "").upper(), "")
     if not sym:
         return s
+
     return f"{s}{sym}"
+
+
+def canonical_money_for_hash(value) -> str:
+    """让 10 / 10.0 / 10.00 的 hash 一致，避免每次都触发编辑。"""
+    if value is None:
+        return ""
+    s = safe_str(str(value))
+    if not s:
+        return ""
+    n = _to_number(s)
+    if n is None:
+        return norm_text(s)
+    # 去掉无意义的 0
+    if abs(n - int(n)) < 1e-12:
+        return str(int(n))
+    return ("%.4f" % n).rstrip("0").rstrip(".")
 
 
 def is_bad_image_error(err: Exception) -> bool:
@@ -147,15 +167,7 @@ def is_bad_image_error(err: Exception) -> bool:
     return any(k in s for k in keywords)
 
 
-# -----------------------
-# Telegram API
-# -----------------------
 def tg_api(method: str, payload: dict, max_retry: int = 6):
-    """
-    Telegram API wrapper:
-    - 自动处理 429（按 retry_after 等待后重试）
-    - 其他错误抛出（由外层单条产品 try/except 吃掉继续）
-    """
     if not TG_TOKEN:
         raise RuntimeError("Missing TG_BOT_TOKEN")
 
@@ -188,9 +200,6 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
     raise RuntimeError(f"{method} failed after retries (429).")
 
 
-# -----------------------
-# Load products
-# -----------------------
 def load_products() -> List[Dict[str, str]]:
     """
     支持字段：
@@ -207,29 +216,21 @@ def load_products() -> List[Dict[str, str]]:
         return safe_str(s).upper()
 
     def _normalize_row(row: dict) -> dict:
-        # 统一 header（去空格），避免 'Discount Price ' 这类问题
-        row = {safe_str(k): ("" if v is None else v) for k, v in row.items()}
-
         market = _norm_market(row.get("market") or row.get("Market"))
         asin = safe_str(row.get("asin") or row.get("ASIN"))
-        title = safe_str(row.get("title") or row.get("Title"))
-        keyword = safe_str(row.get("keyword") or row.get("Keyword"))
-        store = safe_str(row.get("store") or row.get("Store"))
-        remark = safe_str(row.get("remark") or row.get("Remark"))
+        title = norm_text(row.get("title") or row.get("Title"))
+        keyword = norm_text(row.get("keyword") or row.get("Keyword"))
+        store = norm_text(row.get("store") or row.get("Store"))
+        remark = norm_text(row.get("remark") or row.get("Remark"))
         link = safe_str(row.get("link") or row.get("Link") or row.get("url") or row.get("URL"))
-        image_url = safe_str(row.get("image_url") or row.get("image") or row.get("Image") or row.get("img") or row.get("image_url "))
+        image_url = safe_str(row.get("image_url") or row.get("image") or row.get("Image") or row.get("img") or row.get("image_url ") or row.get("image_url\t"))
         status = _norm_status(row.get("status") or row.get("Status"))
 
         discount_price = safe_str(
-            row.get("discount_price")
-            or row.get("Discount Price")
-            or row.get("DiscountPrice")
-            or row.get("discount")
+            row.get("discount_price") or row.get("Discount Price") or row.get("DiscountPrice") or row.get("discount")
         )
         commission = safe_str(
-            row.get("commission")
-            or row.get("Commission")
-            or row.get("comm")
+            row.get("commission") or row.get("Commission") or row.get("comm")
         )
 
         return {
@@ -283,20 +284,29 @@ def load_products() -> List[Dict[str, str]]:
     else:
         _load_from_local()
 
-    return rows
+    # 去重：同 market+asin 只取最后一行（避免同一轮里互相覆盖）
+    dedup: Dict[str, Dict[str, str]] = {}
+    for p in rows:
+        m = safe_str(p.get("market")).upper()
+        a = safe_str(p.get("asin"))
+        if not m or not a:
+            continue
+        dedup[f"{m}:{a}"] = p
+
+    out = list(dedup.values())
+    if len(out) != len(rows):
+        print(f"[warn] dedup applied: {len(rows)} -> {len(out)} by market+asin (kept last)")
+    return out
 
 
-# -----------------------
-# Caption builder
-# -----------------------
 def build_caption(p: dict) -> str:
     market = safe_str(p.get("market")).upper()
     flag = FLAG.get(market, "")
 
-    title = safe_str(p.get("title"))
-    keyword = safe_str(p.get("keyword"))
-    store = safe_str(p.get("store"))
-    remark = safe_str(p.get("remark"))
+    title = norm_text(p.get("title"))
+    keyword = norm_text(p.get("keyword"))
+    store = norm_text(p.get("store"))
+    remark = norm_text(p.get("remark"))
 
     discount_price = format_money(p.get("discount_price"), market)
     commission = format_money(p.get("commission"), market)
@@ -305,7 +315,7 @@ def build_caption(p: dict) -> str:
 
     lines = []
 
-    # 只显示国旗，不显示中文国家名
+    # 只显示国旗 + 标题，不显示中文国家名
     if not title:
         head = f"{flag}(无标题)".strip() if flag else "(无标题)"
     else:
@@ -319,7 +329,6 @@ def build_caption(p: dict) -> str:
     if remark:
         lines.append(f"Remark: {remark}")
 
-    # 为 0 / 空 就不显示
     if discount_price:
         lines.append(f"Discount Price: {discount_price}")
     if commission:
@@ -332,9 +341,6 @@ def build_caption(p: dict) -> str:
     return cap[:CAPTION_MAX]
 
 
-# -----------------------
-# Send / Edit
-# -----------------------
 def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
     caption = build_caption(p)
     img = safe_str(p.get("image_url"))
@@ -350,12 +356,12 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> dict:
             time.sleep(SEND_DELAY_SEC)
             return {"message_id": res["message_id"], "kind": "photo", "image_url": img}
         except Exception as e:
-            if is_bad_image_error(e) and SKIP_ON_BAD_IMAGE:
-                # 按你的要求：图片链接错误就跳过该产品，不中止脚本
-                raise SkipProduct(f"bad image url -> skip. img={img} err={e}")
+            # 图片错误：按你的要求，跳过该产品，不中止
+            if SKIP_ON_BAD_IMAGE and is_bad_image_error(e):
+                raise SkipProduct(f"bad image url, skip. img={img} err={e}")
+            # 否则才降级文本
             print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
 
-    # 文本兜底
     res = tg_api("sendMessage", {
         "chat_id": chat_id,
         "message_thread_id": thread_id,
@@ -374,7 +380,6 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
     new_img = safe_str(p.get("image_url"))
 
     if prev_kind == "photo":
-        # 尝试换图（新图坏则回退只改 caption）
         if new_img and new_img != prev_img:
             try:
                 tg_api("editMessageMedia", {
@@ -385,6 +390,7 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
                 time.sleep(SEND_DELAY_SEC)
                 return {"kind": "photo", "image_url": new_img}
             except Exception as e:
+                # 新图不行：只改 caption
                 print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
 
         tg_api("editMessageCaption", {
@@ -395,7 +401,6 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
         time.sleep(SEND_DELAY_SEC)
         return {"kind": "photo", "image_url": prev_img}
 
-    # text：只改文本（忽略 new_img，避免 text->photo 的类型问题）
     tg_api("editMessageText", {
         "chat_id": chat_id,
         "message_id": message_id,
@@ -424,9 +429,6 @@ def pick_chat_id(thread_map_all: dict) -> str:
     )
 
 
-# -----------------------
-# Main
-# -----------------------
 def main():
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
 
@@ -456,7 +458,6 @@ def main():
                 skip_count += 1
                 print("[skip] missing asin:", p)
                 continue
-
             if market not in VALID_MARKETS:
                 skip_count += 1
                 print("[skip] invalid market:", market, "asin:", asin)
@@ -469,86 +470,63 @@ def main():
                 continue
             thread_id = int(thread_id)
 
-            key = f"{market}:{asin}"
+            # 新 key：加 chat_id，避免换群/多群导致删不掉、重复发
+            key = f"{chat_id_str}:{market}:{asin}"
+            legacy_key = f"{market}:{asin}"  # 兼容旧 state（无 chat_id 的版本）
+
             status = safe_str(p.get("status") or "active").lower()
             if status not in ("active", "removed"):
                 status = "active"
 
-            # hash：把金额字段也纳入，确保变化触发编辑
+            # 价格/佣金用 canonical 形式参与 hash，避免 10 / 10.0 / 10.00 每次都触发编辑
             content_hash = sha1(
-                f"{safe_str(p.get('title'))}|{safe_str(p.get('keyword'))}|{safe_str(p.get('store'))}|"
-                f"{safe_str(p.get('remark'))}|{safe_str(p.get('link'))}|{safe_str(p.get('image_url'))}|"
-                f"{safe_str(p.get('discount_price'))}|{safe_str(p.get('commission'))}|{status}"
+                f"{norm_text(p.get('title'))}|{norm_text(p.get('keyword'))}|{norm_text(p.get('store'))}|"
+                f"{norm_text(p.get('remark'))}|{safe_str(p.get('link'))}|{safe_str(p.get('image_url'))}|"
+                f"{canonical_money_for_hash(p.get('discount_price'))}|{canonical_money_for_hash(p.get('commission'))}|{status}"
             )
 
             prev = state.get(key)
+            if not prev and legacy_key in state:
+                # 迁移旧 key -> 新 key（只在当前 chat 里使用）
+                prev = state.get(legacy_key)
+                state[key] = prev
+                # 不立刻删除 legacy_key，避免误伤；你确认稳定后可手动清理
+                print(f"[warn] migrated legacy state key -> {key}")
 
-            # -------------------
-            # removed：删除（但删除失败绝不清空 message_id，防止重复发）
-            # 同时：避免每次 run 都重复尝试 delete（用 delete_attempted 记一次）
-            # -------------------
+            # removed：如果已经 removed 且没有 message_id 且 hash 没变，就直接 skip（防止每30分钟写一次 state）
             if status == "removed":
-                already_attempted = bool(prev and prev.get("delete_attempted"))
-                deleted_ok = False
+                if prev and prev.get("status") == "removed" and prev.get("hash") == content_hash and not prev.get("message_id"):
+                    skip_count += 1
+                    continue
 
-                if prev and prev.get("message_id") and not already_attempted:
+                if prev and prev.get("message_id"):
                     try:
                         tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
                         print("deleted:", key, "msg", prev["message_id"])
-                        deleted_ok = True
                     except Exception as e:
-                        print("[warn] delete failed; keep message_id to prevent duplicates:", key, str(e))
+                        print("[warn] delete failed but continue:", key, str(e))
+                else:
+                    # 没有 message_id：你在群里已有旧消息，但 state 没记录，就无法精确删除
+                    print("[skip] removed but no message_id in state:", key)
 
                 state[key] = {
                     **(prev or {}),
                     "status": "removed",
-                    # 只有删成功才清空；删失败保留 message_id / kind / image_url
-                    "message_id": None if deleted_ok else (prev.get("message_id") if prev else None),
-                    "kind": None if deleted_ok else (prev.get("kind") if prev else None),
-                    "image_url": "" if deleted_ok else (prev.get("image_url") if prev else ""),
+                    "message_id": None,
+                    "kind": None,
+                    "image_url": "",
                     "hash": content_hash,
                     "ts": int(time.time()),
-                    "delete_attempted": True,     # 标记已尝试过
-                    "delete_ok": deleted_ok,
                 }
                 ok_count += 1
                 continue
 
-            # -------------------
-            # active：无变化跳过
-            # -------------------
+            # active 且无变化：skip
             if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
                 skip_count += 1
                 continue
 
-            # -------------------
-            # removed -> active：
-            # 如果之前删失败仍保留 message_id，就优先编辑旧消息避免重发
-            # -------------------
-            if prev and prev.get("status") == "removed" and prev.get("message_id"):
-                msg_id = int(prev["message_id"])
-                try:
-                    new_meta = edit_existing(chat_id, msg_id, prev, p)
-                    state[key] = {
-                        **prev,
-                        "hash": content_hash,
-                        "status": "active",
-                        "kind": new_meta["kind"],
-                        "image_url": new_meta["image_url"],
-                        "ts": int(time.time()),
-                        "delete_attempted": False,
-                        "delete_ok": False,
-                    }
-                    print("edited(after relist):", key, "msg", msg_id)
-                    ok_count += 1
-                    continue
-                except Exception as e:
-                    # 编辑失败（例如 message not found）再走重发
-                    print("[warn] relist edit failed -> will repost:", key, str(e))
-
-            # -------------------
-            # 首次发布（或之前删成功 message_id 已为空）
-            # -------------------
+            # 首次发布
             if not prev or not prev.get("message_id"):
                 info = send_new(chat_id, thread_id, p)
                 state[key] = {
@@ -558,16 +536,12 @@ def main():
                     "kind": info["kind"],
                     "image_url": info["image_url"],
                     "ts": int(time.time()),
-                    "delete_attempted": False,
-                    "delete_ok": False,
                 }
                 print("posted:", key, "msg", info["message_id"])
                 ok_count += 1
                 continue
 
-            # -------------------
             # 编辑已有消息
-            # -------------------
             msg_id = int(prev["message_id"])
             new_meta = edit_existing(chat_id, msg_id, prev, p)
             state[key] = {
@@ -577,15 +551,13 @@ def main():
                 "kind": new_meta["kind"],
                 "image_url": new_meta["image_url"],
                 "ts": int(time.time()),
-                "delete_attempted": False,
-                "delete_ok": False,
             }
             print("edited:", key, "msg", msg_id)
             ok_count += 1
 
         except SkipProduct as e:
             skip_count += 1
-            print("[skip]", str(e))
+            print("[skip] product skipped:", e)
             continue
         except Exception as e:
             err_count += 1
