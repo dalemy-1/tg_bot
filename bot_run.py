@@ -125,22 +125,47 @@ async def reply_last_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=int(last_user_id), text=text)
     await update.message.reply_text("已发送（reply last）。")
 
+import os
+import hashlib
+
+def _pick_webhook_secret(token: str) -> str:
+    # 固定且不太长，作为 url_path
+    return os.getenv("WEBHOOK_SECRET", hashlib.sha1(token.encode("utf-8")).hexdigest()[:20])
+
 def main():
-    if not TOKEN:
-        raise SystemExit("Missing TG_BOT_TOKEN env var.")
+    # ...你原来的 Application 构建、handler 注册逻辑保持不变...
+    # application = Application.builder().token(TOKEN).build()
+    # application.add_handler(...)
 
-    app = Application.builder().token(TOKEN).build()
+    token = (os.getenv("TG_BOT_TOKEN") or "").strip()  # 或你原来的 TOKEN 变量
+    if not token:
+        raise SystemExit("Missing TG_BOT_TOKEN")
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("bind", bind))
-    app.add_handler(CommandHandler("map", show_map))
+    # Render 会自动注入这些变量：RENDER / RENDER_EXTERNAL_URL / PORT
+    render_external_url = (os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
+    port = int(os.getenv("PORT", "10000"))
 
-    # 客服转发与回复
-    app.add_handler(CommandHandler("reply", reply_cmd))
-    app.add_handler(CommandHandler("r", reply_last_cmd))
-    app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.ALL, forward_private_to_admin))
+    # 你也可以手动设置 WEBHOOK_URL（优先级更高）
+    webhook_base = (os.getenv("WEBHOOK_URL") or render_external_url).rstrip("/")
+    use_webhook = bool(webhook_base)
 
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    if use_webhook:
+        secret = _pick_webhook_secret(token)
+        webhook_url = f"{webhook_base}/{secret}"
+        print("[ok] run webhook:", webhook_url)
+
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            url_path=secret,          # 注意：这里不要加前导 /
+            webhook_url=webhook_url,  # 必须是完整可访问 URL
+            drop_pending_updates=True
+        )
+    else:
+        print("[ok] run polling")
+        application.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
+
+
