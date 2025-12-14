@@ -17,7 +17,7 @@ from telegram.ext import (
 )
 
 # =========================
-# 环境变量
+# ENV
 # =========================
 TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 ADMIN_ID = int(os.getenv("TG_ADMIN_ID", "0") or "0")
@@ -29,12 +29,16 @@ WEBHOOK_SECRET = (os.getenv("WEBHOOK_SECRET") or "").strip()
 HEALTH_PATH = "/healthz"
 
 BASE_DIR = Path(__file__).resolve().parent
-STATE_FILE = BASE_DIR / "state.json"         # 存 last_uid / thread_map
+STATE_FILE = BASE_DIR / "state.json"
+
 VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
+
+# fwd message_id -> user_id 记录上限
+FWD_MAP_LIMIT = 3000
 
 
 # =========================
-# 简单持久化
+# STATE
 # =========================
 def load_state() -> Dict[str, Any]:
     if STATE_FILE.exists():
@@ -52,7 +56,38 @@ def is_admin(uid: int) -> bool:
 
 
 # =========================
-# 管理命令
+# UTIL
+# =========================
+async def safe_send(bot, chat_id: int, text: str) -> bool:
+    try:
+        await bot.send_message(chat_id=chat_id, text=text)
+        return True
+    except Exception:
+        return False
+
+def remember_forward(admin_fwd_msg_id: int, user_id: int) -> None:
+    s = load_state()
+    fm = s.get("fwd_map", {})
+    fm[str(admin_fwd_msg_id)] = int(user_id)
+
+    # 控制大小：超过就删最早的一批（这里用简单做法：按 key 插入顺序截断）
+    if len(fm) > FWD_MAP_LIMIT:
+        # 保留后 2500 条
+        items = list(fm.items())[-2500:]
+        fm = dict(items)
+
+    s["fwd_map"] = fm
+    save_state(s)
+
+def lookup_forward(replied_message_id: int) -> Optional[int]:
+    s = load_state()
+    fm = s.get("fwd_map", {})
+    v = fm.get(str(replied_message_id))
+    return int(v) if v else None
+
+
+# =========================
+# COMMANDS
 # =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -62,7 +97,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "管理员回复：\n"
         "  /reply <user_id> <text>\n"
         "  /r <text>  （回复最近一个私聊用户）\n\n"
-        "也支持：直接 Reply 那条“转发自用户”的消息 -> 发送文字，即可自动回对方。\n"
+        "也支持：直接 Reply 那条“转发自用户”的消息 -> 输入文字发送（已修复）。\n"
     )
 
 async def bind(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,74 +129,6 @@ async def show_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
     m = s.get("thread_map", {})
     await update.message.reply_text(json.dumps(m, ensure_ascii=False, indent=2)[:3500])
 
-
-# =========================
-# 发送消息的安全封装
-# =========================
-async def safe_send(bot, chat_id: int, text: str) -> bool:
-    try:
-        await bot.send_message(chat_id=chat_id, text=text)
-        return True
-    except Exception:
-        return False
-
-
-# =========================
-# 用户私聊 -> 转发给管理员
-# =========================
-async def forward_private_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.effective_chat:
-        return
-
-    # 只处理“用户私聊机器人”
-    if update.effective_chat.type != ChatType.PRIVATE:
-        return
-
-    user = update.effective_user
-    uid = user.id if user else 0
-    uname = f"@{user.username}" if user and user.username else "-"
-    name = (user.full_name if user else "-").strip()
-
-    # 没设置管理员，就只自动回复
-    if ADMIN_ID <= 0:
-        await update.message.reply_text(AUTO_REPLY_TEXT)
-        return
-
-    # 1) 先用 Telegram 原生 forward（你要的“转发自用户”样式就在这里）
-    try:
-        await context.bot.forward_message(
-            chat_id=ADMIN_ID,
-            from_chat_id=update.effective_chat.id,
-            message_id=update.message.message_id,
-        )
-    except Exception:
-        # forward 失败也继续走
-        pass
-
-    # 2) 再给管理员发一张“信息卡片”（确保你永远拿得到 user_id，用于 /reply）
-    card = (
-        "New DM\n"
-        f"Name: {name}\n"
-        f"Username: {uname}\n"
-        f"UserID: {uid}\n\n"
-        f"用法：/reply {uid} 你的回复内容\n"
-        f"快捷：/r 你的回复内容（回复最近一个用户）\n"
-        f"或：直接 Reply（回复）上面那条“转发自用户”的消息 -> 输入文字发送\n"
-    )
-    await context.bot.send_message(chat_id=ADMIN_ID, text=card)
-
-    # 3) 记录“最近一个用户”，支持 /r
-    s = load_state()
-    s["last_uid"] = uid
-    save_state(s)
-
-    # 4) 对用户自动回复
-    await update.message.reply_text(AUTO_REPLY_TEXT)
-
-
-# =========================
-# 管理员命令：/reply /r
-# =========================
 async def reply_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
@@ -169,7 +136,6 @@ async def reply_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(uid):
         await update.message.reply_text("无权限。")
         return
-
     if len(context.args) < 2:
         await update.message.reply_text("用法：/reply <user_id> <text>")
         return
@@ -203,15 +169,15 @@ async def reply_last_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # =========================
-# 管理员：直接 Reply “转发自用户”消息即可回复
+# ADMIN: Reply 转发消息 -> 自动回用户（稳定版）
 # =========================
 def extract_uid_from_replied_message(replied_msg) -> Optional[int]:
-    """
-    你 Reply 的那条消息可能是：
-    A) Telegram 原生转发消息（带 forward_origin / forward_from）
-    B) 机器人发的 New DM 卡片（文本里有 UserID: xxxx）
-    """
-    # A1: 新版字段 forward_origin.sender_user.id
+    # 1) 优先：查“转发消息ID -> 原用户ID”的映射（最稳）
+    uid = lookup_forward(replied_msg.message_id)
+    if uid:
+        return uid
+
+    # 2) 兜底：解析 forward_origin / forward_from（可能失败）
     try:
         origin = getattr(replied_msg, "forward_origin", None)
         sender_user = getattr(origin, "sender_user", None) if origin else None
@@ -220,7 +186,6 @@ def extract_uid_from_replied_message(replied_msg) -> Optional[int]:
     except Exception:
         pass
 
-    # A2: 旧字段 forward_from.id
     try:
         fwd = getattr(replied_msg, "forward_from", None)
         if fwd and getattr(fwd, "id", None):
@@ -228,7 +193,7 @@ def extract_uid_from_replied_message(replied_msg) -> Optional[int]:
     except Exception:
         pass
 
-    # B: 从卡片文字解析 UserID
+    # 3) 兜底：从卡片里解析 UserID
     try:
         body = (replied_msg.text or "") + "\n" + (replied_msg.caption or "")
         m = re.search(r"UserID:\s*(\d+)", body)
@@ -240,12 +205,6 @@ def extract_uid_from_replied_message(replied_msg) -> Optional[int]:
     return None
 
 async def admin_reply_by_replying(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    管理员在私聊里：
-    - Reply（回复）“转发自用户”的那条消息
-    - 输入文字
-    机器人自动识别 user_id 并发回给对方
-    """
     if not update.message or not update.effective_chat:
         return
     if update.effective_chat.type != ChatType.PRIVATE:
@@ -255,14 +214,14 @@ async def admin_reply_by_replying(update: Update, context: ContextTypes.DEFAULT_
     if not is_admin(uid):
         return
 
+    # 管理员发普通文字但没有 reply，就不处理（避免误触）
     text = (update.message.text or "").strip()
     if not text or text.startswith("/"):
         return
-
-    replied = update.message.reply_to_message
-    if not replied:
+    if not update.message.reply_to_message:
         return
 
+    replied = update.message.reply_to_message
     to_user = extract_uid_from_replied_message(replied)
     if not to_user:
         await update.message.reply_text("我没能识别原用户ID。请用 /reply <user_id> <text> 或 /r <text>。")
@@ -273,7 +232,64 @@ async def admin_reply_by_replying(update: Update, context: ContextTypes.DEFAULT_
 
 
 # =========================
-# Webhook Server（Render）
+# USER DM -> forward to admin
+# =========================
+async def forward_private_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_chat:
+        return
+    if update.effective_chat.type != ChatType.PRIVATE:
+        return
+
+    user = update.effective_user
+    uid = user.id if user else 0
+
+    # 关键修复：管理员自己发给机器人的消息，不要当成“用户私聊”
+    if is_admin(uid):
+        return
+
+    if ADMIN_ID <= 0:
+        await update.message.reply_text(AUTO_REPLY_TEXT)
+        return
+
+    uname = f"@{user.username}" if user and user.username else "-"
+    name = (user.full_name if user else "-").strip()
+
+    # 1) 先转发，拿到“转发消息”的 message_id（用于建立映射）
+    try:
+        fwd_msg = await context.bot.forward_message(
+            chat_id=ADMIN_ID,
+            from_chat_id=update.effective_chat.id,
+            message_id=update.message.message_id,
+        )
+        # 建立：管理员收到的“转发消息ID” -> 原用户ID
+        remember_forward(fwd_msg.message_id, uid)
+    except Exception:
+        # forward 失败继续
+        pass
+
+    # 2) 发卡片（永远提供 UserID）
+    card = (
+        "New DM\n"
+        f"Name: {name}\n"
+        f"Username: {uname}\n"
+        f"UserID: {uid}\n\n"
+        f"用法：/reply {uid} 你的回复内容\n"
+        f"快捷：/r 你的回复内容（回复最近一个用户）\n"
+        f"或：直接 Reply（回复）上面那条“转发自用户”的消息 -> 输入文字发送\n"
+    )
+    await context.bot.send_message(chat_id=ADMIN_ID, text=card)
+
+    # 3) 更新 last_uid（只会被真正的用户消息更新，不会被管理员覆盖）
+    s = load_state()
+    s["last_uid"] = uid
+    save_state(s)
+
+    # 4) 给用户自动回复
+    await update.message.reply_text(AUTO_REPLY_TEXT)
+
+
+# =========================
+# WEBHOOK (Render)
 # =========================
 async def run_webhook_server(tg_app: Application):
     if not PUBLIC_URL:
@@ -323,20 +339,17 @@ def main():
 
     tg_app = Application.builder().token(TOKEN).build()
 
-    # commands
     tg_app.add_handler(CommandHandler("start", start))
     tg_app.add_handler(CommandHandler("bind", bind))
     tg_app.add_handler(CommandHandler("map", show_map))
     tg_app.add_handler(CommandHandler("reply", reply_cmd))
     tg_app.add_handler(CommandHandler("r", reply_last_cmd))
 
-    # handlers
-    # 1) 管理员“Reply 一条消息 -> 自动回复”
+    # 先处理管理员 reply 自动回复
     tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply_by_replying), group=0)
-    # 2) 用户私聊消息 -> 转发给管理员
+    # 再处理用户私聊转发
     tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_private_to_admin), group=1)
 
-    # Render 用 webhook，本地没 PUBLIC_URL 用 polling
     if PUBLIC_URL:
         asyncio.run(run_webhook_server(tg_app))
     else:
