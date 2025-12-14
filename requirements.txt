@@ -1,2 +1,4 @@
 requests==2.32.3
 python-telegram-bot[webhooks]==21.6
+aiohttp==3.9.5
+
