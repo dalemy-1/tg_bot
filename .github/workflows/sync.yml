@@ -1,8 +1,6 @@
 name: Sync Products
 
 on:
-  schedule:
-    - cron: "3-59/5 * * * *"
   workflow_dispatch:
 
 
