@@ -2,10 +2,10 @@ import os
 import json
 import asyncio
 from pathlib import Path
+from typing import Optional
 
 from aiohttp import web
 from telegram import Update
-from telegram.constants import ChatType
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -16,44 +16,101 @@ from telegram.ext import (
 
 # ====== ENV ======
 TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
-ADMIN_ID = int(os.getenv("TG_ADMIN_ID", "0") or "0")
+ADMIN_ID = int(os.getenv("TG_ADMIN_ID", "0") or "0")  # 你的个人 Telegram 数字ID
 AUTO_REPLY_TEXT = os.getenv("AUTO_REPLY_TEXT", "已收到，请联系 @Dalemy").strip()
-
-BASE_DIR = Path(__file__).resolve().parent
-MAP_FILE = BASE_DIR / "thread_map.json"
-
-VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
 
 PORT = int(os.getenv("PORT", "10000"))
 PUBLIC_URL = (os.getenv("RENDER_EXTERNAL_URL") or os.getenv("PUBLIC_URL") or "").strip().rstrip("/")
 WEBHOOK_SECRET = (os.getenv("WEBHOOK_SECRET") or "").strip()
 HEALTH_PATH = "/healthz"
 
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+DATA_DIR.mkdir(exist_ok=True)
+
+MAP_FILE = DATA_DIR / "thread_map.json"
+STATE_FILE = DATA_DIR / "state.json"
+
+VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
+
+
+# ====== persistence ======
+def _read_json(path: Path, default):
+    try:
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return default
+
+
+def _write_json(path: Path, obj) -> None:
+    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 def load_map() -> dict:
-    if MAP_FILE.exists():
-        try:
-            return json.loads(MAP_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            return {}
-    return {}
+    return _read_json(MAP_FILE, {})
 
 
 def save_map(m: dict) -> None:
-    MAP_FILE.write_text(json.dumps(m, ensure_ascii=False, indent=2), encoding="utf-8")
+    _write_json(MAP_FILE, m)
+
+
+def load_state() -> dict:
+    # state 示例：{"last_private_user_id": 123456789}
+    return _read_json(STATE_FILE, {"last_private_user_id": 0})
+
+
+def save_state(s: dict) -> None:
+    _write_json(STATE_FILE, s)
 
 
 def is_admin(uid: int) -> bool:
     return ADMIN_ID > 0 and uid == ADMIN_ID
 
 
+# ====== helpers ======
+def extract_forwarded_user_id(msg) -> Optional[int]:
+    """
+    从“被转发到管理员”的那条消息中，尽量解析原始用户ID
+    兼容不同 Telegram/库版本字段
+    """
+    if not msg:
+        return None
+
+    # 老字段（部分情况下可用）
+    forward_from = getattr(msg, "forward_from", None)
+    if forward_from and getattr(forward_from, "id", None):
+        return int(forward_from.id)
+
+    # 新字段：forward_origin（更常见）
+    forward_origin = getattr(msg, "forward_origin", None)
+    if forward_origin:
+        sender_user = getattr(forward_origin, "sender_user", None)
+        if sender_user and getattr(sender_user, "id", None):
+            return int(sender_user.id)
+
+    return None
+
+
+async def safe_send(bot, chat_id: int, text: str, reply_to_message_id: Optional[int] = None) -> bool:
+    try:
+        await bot.send_message(chat_id=chat_id, text=text, reply_to_message_id=reply_to_message_id)
+        return True
+    except Exception:
+        return False
+
+
+# ====== commands ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Bot is online.\n\n"
         "群内话题绑定：/bind <US|UK|DE|FR|IT|ES|CA|JP>\n"
-        "查看映射：/map\n"
-        "管理员命令回复：/reply <user_id> <text>\n"
-        "管理员也可以：直接【回复】转发来的消息，机器人会回给原用户。\n"
+        "查看映射：/map\n\n"
+        "管理员回复方式：\n"
+        "1) 直接回复(Reply)管理员私聊里那条转发消息（推荐）\n"
+        "2) /reply <user_id> <text>\n"
+        "3) /r <text>  (回复最近一个私聊用户)\n"
     )
 
 
@@ -86,105 +143,7 @@ async def show_map(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(json.dumps(m, ensure_ascii=False, indent=2)[:3500])
 
 
-def _extract_forwarded_user_id(msg) -> int | None:
-    """
-    兼容 Telegram 不同转发结构：
-    - 旧：msg.forward_from
-    - 新：msg.forward_origin.sender_user
-    """
-    try:
-        ff = getattr(msg, "forward_from", None)
-        if ff:
-            return int(ff.id)
-    except Exception:
-        pass
-
-    try:
-        fo = getattr(msg, "forward_origin", None)
-        if fo:
-            sender_user = getattr(fo, "sender_user", None)
-            if sender_user:
-                return int(sender_user.id)
-    except Exception:
-        pass
-
-    return None
-
-
-async def admin_reply_to_forwarded(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    管理员在私聊里对“转发自用户”的消息点【回复】：
-    机器人把这条回复发回给原用户。
-    """
-    if not update.message:
-        return
-
-    # 必须是管理员、必须在私聊
-    if update.effective_chat.type != ChatType.PRIVATE:
-        return
-    uid = update.effective_user.id if update.effective_user else 0
-    if not is_admin(uid):
-        return
-
-    # 必须是“回复某条消息”
-    replied = update.message.reply_to_message
-    if not replied:
-        return
-
-    target_id = _extract_forwarded_user_id(replied)
-    if not target_id:
-        await update.message.reply_text("这条被回复的消息不是从用户转发来的，无法自动识别对方ID。")
-        return
-
-    text = (update.message.text or "").strip()
-    if not text:
-        await update.message.reply_text("请输入要回复的文字。")
-        return
-
-    try:
-        await context.bot.send_message(chat_id=target_id, text=text)
-        await update.message.reply_text("已回复给对方。")
-    except Exception as e:
-        await update.message.reply_text(f"发送失败：{e!s}")
-
-
-async def forward_private_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    普通用户私聊机器人 -> 转发给管理员，并自动回复用户
-    """
-    if not update.message:
-        return
-
-    # 只处理私聊
-    if not (update.effective_chat and update.effective_chat.type == "private"):
-        return
-
-    # 没设置管理员：只自动回复
-    if ADMIN_ID <= 0:
-        await update.message.reply_text(AUTO_REPLY_TEXT)
-        return
-
-    # 管理员自己发的消息不要再转发给自己
-    from_uid = update.effective_user.id if update.effective_user else 0
-    if is_admin(from_uid):
-        return
-
-    try:
-        await context.bot.forward_message(
-            chat_id=ADMIN_ID,
-            from_chat_id=update.effective_chat.id,
-            message_id=update.message.message_id,
-        )
-    except Exception:
-        pass
-
-    await update.message.reply_text(AUTO_REPLY_TEXT)
-
-
 async def reply_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    /reply <user_id> <text>
-    """
     if not update.message:
         return
 
@@ -197,29 +156,137 @@ async def reply_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("用法：/reply <user_id> <text>")
         return
 
+    to_user = int(context.args[0])
+    text = " ".join(context.args[1:])
+
+    ok = await safe_send(context.bot, to_user, text)
+    await update.message.reply_text("已发送。" if ok else "发送失败：对方可能未 /start 机器人或已屏蔽机器人。")
+
+
+async def reply_last_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    /r <text> 回复最近一个私聊用户
+    """
+    if not update.message:
+        return
+
+    uid = update.effective_user.id if update.effective_user else 0
+    if not is_admin(uid):
+        await update.message.reply_text("无权限。")
+        return
+
+    if len(context.args) < 1:
+        await update.message.reply_text("用法：/r <text>  （回复最近一个私聊用户）")
+        return
+
+    s = load_state()
+    to_user = int(s.get("last_private_user_id", 0) or 0)
+    if to_user <= 0:
+        await update.message.reply_text("暂无“最近私聊用户”。先让用户给机器人发一条私聊消息。")
+        return
+
+    text = " ".join(context.args)
+    ok = await safe_send(context.bot, to_user, text)
+    await update.message.reply_text("已发送。" if ok else "发送失败：对方可能未 /start 机器人或已屏蔽机器人。")
+
+
+# ====== core logic ======
+async def forward_private_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    普通用户私聊机器人：
+    - 转发到管理员
+    - 记录 last_private_user_id，方便 /r
+    - 自动回复用户 AUTO_REPLY_TEXT
+    """
+    if not update.message or not update.effective_chat:
+        return
+
+    if update.effective_chat.type != "private":
+        return
+
+    from_user = update.effective_user
+    if not from_user:
+        return
+
+    # 管理员自己私聊机器人：不走转发逻辑
+    if is_admin(from_user.id):
+        return
+
+    if ADMIN_ID <= 0:
+        await update.message.reply_text(AUTO_REPLY_TEXT)
+        return
+
+    # 记录最近私聊用户
+    s = load_state()
+    s["last_private_user_id"] = int(from_user.id)
+    save_state(s)
+
+    # 转发给管理员
     try:
-        to_user = int(context.args[0])
+        await context.bot.forward_message(
+            chat_id=ADMIN_ID,
+            from_chat_id=update.effective_chat.id,
+            message_id=update.message.message_id,
+        )
     except Exception:
-        await update.message.reply_text("用法：/reply <user_id> <text>（user_id 必须是数字）")
+        pass
+
+    # 给管理员发一条提示（包含 user_id）
+    hint = (
+        "New DM\n"
+        f"Name: {from_user.full_name}\n"
+        f"Username: @{from_user.username}\n" if from_user.username else f"Name: {from_user.full_name}\n"
+    )
+    hint += f"UserID: {from_user.id}\n\n"
+    hint += f"用法：/reply {from_user.id} 你的回复内容\n"
+    hint += f"快捷：/r 你的回复内容（回复最近一个用户）\n"
+    hint += "或：直接 Reply（回复）上面那条转发消息，我会自动回给对方。"
+
+    await safe_send(context.bot, ADMIN_ID, hint)
+
+    # 回复用户
+    await update.message.reply_text(AUTO_REPLY_TEXT)
+
+
+async def admin_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    管理员私聊机器人时：
+    - 如果管理员“回复(Reply)了一条转发消息”，自动回给原用户
+    """
+    if not update.message or not update.effective_chat:
         return
 
-    text = " ".join(context.args[1:]).strip()
-    if not text:
-        await update.message.reply_text("请输入回复内容。")
+    if update.effective_chat.type != "private":
         return
 
-    try:
-        await context.bot.send_message(chat_id=to_user, text=text)
-        await update.message.reply_text("已发送。")
-    except Exception as e:
-        await update.message.reply_text(f"发送失败：{e!s}")
+    uid = update.effective_user.id if update.effective_user else 0
+    if not is_admin(uid):
+        return
+
+    # 只处理“普通文字”（命令交给 CommandHandler）
+    text = (update.message.text or "").strip()
+    if not text or text.startswith("/"):
+        return
+
+    # 必须是“回复(Reply)某条消息”
+    replied = update.message.reply_to_message
+    if not replied:
+        return
+
+    to_user = extract_forwarded_user_id(replied)
+    if not to_user:
+        await update.message.reply_text("我没能识别原用户ID。请用 /reply <user_id> <text> 或 /r <text>。")
+        return
+
+    ok = await safe_send(context.bot, to_user, text)
+    await update.message.reply_text("已发送。" if ok else "发送失败：对方可能未 /start 机器人或已屏蔽机器人。")
 
 
 async def run_webhook_server(tg_app: Application):
     """
     Render Web Service:
     - GET /healthz 健康检查
-    - POST /<WEBHOOK_SECRET> 接收 Telegram webhook
+    - POST /<WEBHOOK_SECRET> Telegram webhook
     """
     if not PUBLIC_URL:
         raise RuntimeError("Missing PUBLIC_URL (or RENDER_EXTERNAL_URL). Please set PUBLIC_URL in Render env.")
@@ -265,6 +332,8 @@ async def run_webhook_server(tg_app: Application):
 def main():
     if not TOKEN:
         raise SystemExit("Missing TG_BOT_TOKEN")
+    if ADMIN_ID <= 0:
+        print("[warn] TG_ADMIN_ID not set; reply feature will be disabled.")
 
     tg_app = Application.builder().token(TOKEN).build()
 
@@ -272,11 +341,15 @@ def main():
     tg_app.add_handler(CommandHandler("bind", bind))
     tg_app.add_handler(CommandHandler("map", show_map))
     tg_app.add_handler(CommandHandler("reply", reply_cmd))
+    tg_app.add_handler(CommandHandler("r", reply_last_cmd))
 
-    # 顺序很关键：先处理“管理员回复转发消息”，再处理“普通用户私聊转发”
-    tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply_to_forwarded), group=0)
-    tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_private_to_admin), group=1)
+    # 用户私聊 -> 转发给管理员
+    tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_private_to_admin))
 
+    # 管理员私聊里“回复转发消息” -> 自动回给原用户
+    tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, admin_text_handler), group=1)
+
+    # Render 上用 webhook；本地没 PUBLIC_URL 就用 polling
     if PUBLIC_URL:
         asyncio.run(run_webhook_server(tg_app))
     else:
