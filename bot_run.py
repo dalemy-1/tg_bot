@@ -3,6 +3,7 @@ import re
 import json
 import time
 import asyncio
+import html
 from pathlib import Path
 from typing import Any, Dict
 
@@ -20,7 +21,7 @@ from telegram.ext import (
 
 # ================== ENV ==================
 TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
-ADMIN_ID = int(os.getenv("TG_ADMIN_ID", "0") or "0")  # 管理员 Telegram user_id（必须填）
+ADMIN_ID = int(os.getenv("TG_ADMIN_ID", "0") or "0")
 PUBLIC_URL = (os.getenv("RENDER_EXTERNAL_URL") or os.getenv("PUBLIC_URL") or "").strip().rstrip("/")
 WEBHOOK_SECRET = (os.getenv("WEBHOOK_SECRET") or "").strip()
 PORT = int(os.getenv("PORT", "10000"))
@@ -32,7 +33,12 @@ AUTO_REPLY_ZH = (os.getenv("AUTO_REPLY_ZH") or "你好，已收到你的消息�
 AUTO_REPLY_EN = (os.getenv("AUTO_REPLY_EN") or "Hello, we received your message and will reply soon.").strip()
 AUTO_REPLY_JA = (os.getenv("AUTO_REPLY_JA") or "メッセージを受け取りました。できるだけ早く返信します。").strip()
 AUTO_REPLY_DEFAULT = (os.getenv("AUTO_REPLY_TEXT") or "已收到，请联系 @Dalemy").strip()
-AUTO_REPLY_COOLDOWN_SEC = int(os.getenv("AUTO_REPLY_COOLDOWN_SEC", "300"))
+
+# 关键：默认 24 小时内自动回复一次
+AUTO_REPLY_COOLDOWN_SEC = int(os.getenv("AUTO_REPLY_COOLDOWN_SEC", "86400"))
+
+# 新加坡时区：UTC+8（用于“当天”判断）
+TZ_OFFSET_SEC = int(os.getenv("TZ_OFFSET_SEC", "28800"))
 
 # 黑名单用户自动回复（可选）
 BLOCKED_REPLY_TEXT = (os.getenv("BLOCKED_REPLY_TEXT") or "该账号已被限制联系。").strip()
@@ -41,12 +47,13 @@ BASE_DIR = Path(__file__).resolve().parent
 STATE_FILE = BASE_DIR / "support_state.json"
 LOG_FILE = BASE_DIR / "history.jsonl"
 
-# 允许自定义标签（管理员按钮会展示这几个）
+# 标签按钮（可自定义）
 DEFAULT_TAGS = (os.getenv("DEFAULT_TAGS") or "VIP,售后,咨询,广告,其他").split(",")
-DEFAULT_TAGS = [t.strip() for t in DEFAULT_TAGS if t.strip()][:8]  # 最多 8 个按钮标签
-MAX_MSG_INDEX = 8000  # admin_message_id -> user_id 的映射上限，防文件变大
+DEFAULT_TAGS = [t.strip() for t in DEFAULT_TAGS if t.strip()][:8]
 
-# ============ 业务状态/关键词 ============
+MAX_MSG_INDEX = 8000
+
+# 业务状态
 STATUS_CHOICES = ["已下单", "退货退款", "已返款"]
 STATUS_KEYWORDS = {
     "已下单": ["已下单", "下单了", "已购买", "已付款", "订单号", "order", "paid"],
@@ -54,10 +61,14 @@ STATUS_KEYWORDS = {
     "已返款": ["已返款", "返款", "已打款", "已到账", "paid back", "refunded", "已退回"],
 }
 
-
 # ================== STATE ==================
 def _now_ts() -> int:
     return int(time.time())
+
+
+def local_day(ts: int) -> str:
+    """按 TZ_OFFSET_SEC 计算本地日期（YYYY-MM-DD），用于“当天管理员已回复”判断。"""
+    return time.strftime("%Y-%m-%d", time.gmtime(int(ts) + TZ_OFFSET_SEC))
 
 
 def load_state() -> Dict[str, Any]:
@@ -68,16 +79,17 @@ def load_state() -> Dict[str, Any]:
             pass
     return {
         "ticket_seq": 0,
-        "tickets": {},          # user_id(str) -> {ticket_id, status, created_at, header_msg_id}
-        "msg_index": {},        # admin_message_id(str) -> user_id(int)
-        "last_user": 0,         # 最近一个用户
-        "user_lang": {},        # user_id(str) -> auto|zh|en|ja
-        "last_auto_reply": {},  # user_id(str) -> ts
-        "user_meta": {},        # user_id(str) -> {name, username, language_code, first_seen, last_seen, msg_count}
-        "user_tags": {},        # user_id(str) -> [tag, ...]
-        "user_note": {},        # user_id(str) -> "..."
-        "user_status": {},      # user_id(str) -> 已下单|退货退款|已返款
-        "blocked": {},          # user_id(str) -> 1/0
+        "tickets": {},           # user_id(str) -> {ticket_id, status, created_at, header_msg_id}
+        "msg_index": {},         # admin_message_id(str) -> user_id(int)
+        "last_user": 0,
+        "user_lang": {},         # user_id(str) -> auto|zh|en|ja
+        "last_auto_reply": {},   # user_id(str) -> ts
+        "last_admin_reply": {},  # user_id(str) -> ts  (新增：管理员最后一次回复用户时间)
+        "user_meta": {},         # user_id(str) -> {name, username, language_code, first_seen, last_seen, msg_count}
+        "user_tags": {},         # user_id(str) -> [tag, ...]
+        "user_note": {},         # user_id(str) -> "..."
+        "user_status": {},       # user_id(str) -> 已下单|退货退款|已返款
+        "blocked": {},           # user_id(str) -> 1/0
     }
 
 
@@ -126,7 +138,6 @@ def remember_msg_index(state: Dict[str, Any], admin_message_id: int, user_id: in
     mi = state.setdefault("msg_index", {})
     mi[str(admin_message_id)] = int(user_id)
 
-    # prune
     if len(mi) > MAX_MSG_INDEX:
         keys = list(mi.keys())
         for k in keys[: len(keys) - MAX_MSG_INDEX]:
@@ -181,30 +192,35 @@ def render_ticket_header(state: Dict[str, Any], uid: int) -> str:
     ticket_id = t.get("ticket_id", "-")
     status = t.get("status", "open")
 
-    name = meta.get("name", "Unknown")
+    name = html.escape((meta.get("name") or "Unknown").strip())
     username = meta.get("username")
+    username = html.escape(username) if username else None
     user_link = f"tg://user?id={uid}"
 
-    tags_str = ", ".join(tags) if tags else "-"
-    note_str = note if note else "-"
+    tags_str = html.escape(", ".join(tags) if tags else "-")
+    note_str = html.escape(note if note else "-")
+    biz_status = html.escape(biz_status)
 
-    base = [
-        f"🧾 *Ticket #{ticket_id}*   *Status:* `{status}`",
-        f"*Name:* {name}",
-    ]
+    first_seen = fmt_time(int(meta.get("first_seen", 0) or 0))
+    last_seen = fmt_time(int(meta.get("last_seen", 0) or 0))
+    msg_count = int(meta.get("msg_count", 0) or 0)
+
+    lines = []
+    lines.append(f"🧾 <b>Ticket #{ticket_id}</b> &nbsp; <b>Status:</b> <code>{html.escape(str(status))}</code>")
+    lines.append(f"<b>Name:</b> {name}")
     if username:
-        base.append(f"*Username:* @{username}")
-    base.append(f"*UserID:* `{uid}`   *Open:* [Click]({user_link})")
-    base.append(f"*Biz Status:* `{biz_status}`   *Blocked:* `{blocked_str}`")
-    base.append(f"*Tags:* `{tags_str}`")
-    base.append(f"*Note:* {note_str}")
-    base.append(f"*First seen:* `{fmt_time(int(meta.get('first_seen', 0) or 0))}`")
-    base.append(f"*Last seen:* `{fmt_time(int(meta.get('last_seen', 0) or 0))}`   *Msg count:* `{int(meta.get('msg_count', 0) or 0)}`")
-    base.append("")
-    base.append("*常用：* 直接 Reply 下面用户消息（可发文字/图片/文件/贴纸等）即可回复。")
-    base.append(f"*历史：* `/history {uid} 20`   *备注：* `/note {uid} ...`   *状态：* `/status {uid} 已下单`")
-    base.append(f"*关闭：* `/close {uid}`   *黑名单：* `/block {uid}`  /unblock {uid}`")
-    return "\n".join(base)
+        lines.append(f"<b>Username:</b> @{username}")
+    lines.append(f"<b>UserID:</b> <code>{uid}</code> &nbsp; <b>Open:</b> <a href=\"{user_link}\">Click</a>")
+    lines.append(f"<b>Biz Status:</b> <code>{biz_status}</code> &nbsp; <b>Blocked:</b> <code>{blocked_str}</code>")
+    lines.append(f"<b>Tags:</b> <code>{tags_str}</code>")
+    lines.append(f"<b>Note:</b> {note_str}")
+    lines.append(f"<b>First seen:</b> <code>{html.escape(first_seen)}</code>")
+    lines.append(f"<b>Last seen:</b> <code>{html.escape(last_seen)}</code> &nbsp; <b>Msg count:</b> <code>{msg_count}</code>")
+    lines.append("")
+    lines.append("<b>推荐：</b>在管理员私聊里 <b>Reply</b> 用户转发消息即可回复（支持文字/图片/文件/贴纸/语音等）。")
+    lines.append(f"<b>历史：</b><code>/history {uid} 20</code> &nbsp; <b>备注：</b><code>/note {uid} ...</code> &nbsp; <b>状态：</b><code>/status {uid} 已下单</code>")
+    lines.append(f"<b>关闭：</b><code>/close {uid}</code> &nbsp; <b>黑名单：</b><code>/block {uid}</code> &nbsp; <code>/unblock {uid}</code>")
+    return "\n".join(lines)
 
 
 def ticket_keyboard(uid: int) -> InlineKeyboardMarkup:
@@ -214,21 +230,18 @@ def ticket_keyboard(uid: int) -> InlineKeyboardMarkup:
     for i in range(0, len(tag_buttons), 3):
         rows.append(tag_buttons[i:i+3])
 
-    # 业务状态按钮
+    # 业务状态
     rows.append([
         InlineKeyboardButton("已下单", callback_data=f"status|{uid}|已下单"),
         InlineKeyboardButton("退货退款", callback_data=f"status|{uid}|退货退款"),
         InlineKeyboardButton("已返款", callback_data=f"status|{uid}|已返款"),
     ])
-
-    # 黑名单/解封 + 清空状态
     rows.append([
         InlineKeyboardButton("黑名单", callback_data=f"block|{uid}|1"),
         InlineKeyboardButton("解封", callback_data=f"block|{uid}|0"),
         InlineKeyboardButton("清空状态", callback_data=f"status|{uid}|-"),
     ])
 
-    # 其它
     rows.append([
         InlineKeyboardButton("Clear Tags", callback_data=f"cleartags|{uid}|-"),
         InlineKeyboardButton("Profile", callback_data=f"profile|{uid}|-"),
@@ -241,7 +254,6 @@ def ticket_keyboard(uid: int) -> InlineKeyboardMarkup:
 
 
 async def ensure_ticket(state: Dict[str, Any], context: ContextTypes.DEFAULT_TYPE, uid: int) -> Dict[str, Any]:
-    """确保存在 open ticket + header_msg_id"""
     tickets = state.setdefault("tickets", {})
     uid_key = str(uid)
     t = tickets.get(uid_key)
@@ -254,11 +266,10 @@ async def ensure_ticket(state: Dict[str, Any], context: ContextTypes.DEFAULT_TYP
         state["ticket_seq"] = int(state.get("ticket_seq", 0)) + 1
         ticket_id = state["ticket_seq"]
 
-        header_text = render_ticket_header(state, uid)
         msg = await context.bot.send_message(
             chat_id=ADMIN_ID,
-            text=header_text,
-            parse_mode=ParseMode.MARKDOWN,
+            text=render_ticket_header(state, uid),
+            parse_mode=ParseMode.HTML,
             disable_web_page_preview=True,
             reply_markup=ticket_keyboard(uid),
         )
@@ -282,7 +293,7 @@ async def refresh_header(state: Dict[str, Any], context: ContextTypes.DEFAULT_TY
             chat_id=ADMIN_ID,
             message_id=int(t["header_msg_id"]),
             text=render_ticket_header(state, uid),
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.HTML,
             disable_web_page_preview=True,
             reply_markup=ticket_keyboard(uid),
         )
@@ -293,17 +304,18 @@ async def refresh_header(state: Dict[str, Any], context: ContextTypes.DEFAULT_TY
 # ================== COMMANDS (Admin) ==================
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "已启用：私聊工单 + 标签归类 + 业务状态 + 黑名单 + 备注 + 历史 + 多媒体。\n\n"
+        "已启用：私聊工单 + 标签 + 状态（已下单/退货退款/已返款）+ 黑名单 + 多媒体。\n"
+        "自动回复规则：每用户 24h 一次；若管理员当天已回复该用户，则当天不再自动回复。\n\n"
         "管理员命令：\n"
-        "/open [tag]  查看未关闭工单（可选按标签过滤）\n"
+        "/open [tag]\n"
         "/profile <uid>\n"
         "/note <uid> <text>\n"
         "/status <uid> <已下单|退货退款|已返款|clear>\n"
-        "/block <uid>  /unblock <uid>\n"
+        "/block <uid>   /unblock <uid>\n"
         "/setlang <uid> <auto|zh|en|ja>\n"
         "/history <uid> [n]\n"
-        "/close <uid> /reopen <uid>\n"
-        "/reply <uid> <text> /r <text>\n\n"
+        "/close <uid>   /reopen <uid>\n"
+        "/reply <uid> <text>   /r <text>\n\n"
         "最推荐：直接 Reply 用户转发消息回复（支持媒体）。"
     )
 
@@ -317,9 +329,12 @@ async def cmd_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = int(context.args[0])
     text = " ".join(context.args[1:])
     await context.bot.send_message(chat_id=uid, text=text)
+
     st = load_state()
     st["last_user"] = uid
+    st.setdefault("last_admin_reply", {})[str(uid)] = _now_ts()  # 记录管理员回复
     save_state(st)
+
     log_event("out", uid, {"type": "text", "text": text[:1000]})
     await update.message.reply_text("已发送。")
 
@@ -337,6 +352,10 @@ async def cmd_r(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     text = " ".join(context.args)
     await context.bot.send_message(chat_id=uid, text=text)
+
+    st.setdefault("last_admin_reply", {})[str(uid)] = _now_ts()  # 记录管理员回复
+    save_state(st)
+
     log_event("out", uid, {"type": "text", "text": text[:1000]})
     await update.message.reply_text("已发送。")
 
@@ -349,6 +368,7 @@ async def cmd_note(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     uid = int(context.args[0])
     note = " ".join(context.args[1:]).strip()
+
     st = load_state()
     st.setdefault("user_note", {})[str(uid)] = note
     save_state(st)
@@ -386,6 +406,7 @@ async def cmd_block(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("用法：/block <uid>")
         return
     uid = int(context.args[0])
+
     st = load_state()
     st.setdefault("blocked", {})[str(uid)] = 1
     save_state(st)
@@ -400,6 +421,7 @@ async def cmd_unblock(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("用法：/unblock <uid>")
         return
     uid = int(context.args[0])
+
     st = load_state()
     st.setdefault("blocked", {})[str(uid)] = 0
     save_state(st)
@@ -418,6 +440,7 @@ async def cmd_setlang(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if lang not in {"auto", "zh", "en", "ja"}:
         await update.message.reply_text("lang 仅支持：auto|zh|en|ja")
         return
+
     st = load_state()
     st.setdefault("user_lang", {})[str(uid)] = lang
     save_state(st)
@@ -432,11 +455,12 @@ async def cmd_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("用法：/profile <uid>")
         return
     uid = int(context.args[0])
+
     st = load_state()
     await context.bot.send_message(
         chat_id=ADMIN_ID,
         text=render_ticket_header(st, uid),
-        parse_mode=ParseMode.MARKDOWN,
+        parse_mode=ParseMode.HTML,
         disable_web_page_preview=True,
         reply_markup=ticket_keyboard(uid),
     )
@@ -449,6 +473,7 @@ async def cmd_close(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("用法：/close <uid>")
         return
     uid = int(context.args[0])
+
     st = load_state()
     t = (st.get("tickets") or {}).get(str(uid))
     if not t:
@@ -467,6 +492,7 @@ async def cmd_reopen(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("用法：/reopen <uid>")
         return
     uid = int(context.args[0])
+
     st = load_state()
     t = (st.get("tickets") or {}).get(str(uid))
     if not t:
@@ -482,8 +508,8 @@ async def cmd_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
         return
     tag_filter = (context.args[0].strip() if context.args else "")
-    st = load_state()
 
+    st = load_state()
     tickets = st.get("tickets") or {}
     user_tags = st.get("user_tags") or {}
     user_meta = st.get("user_meta") or {}
@@ -494,6 +520,7 @@ async def cmd_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for uid_key, t in tickets.items():
         if t.get("status") != "open":
             continue
+
         tags = user_tags.get(uid_key, [])
         if tag_filter and tag_filter not in tags:
             continue
@@ -507,17 +534,17 @@ async def cmd_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stt = user_status.get(uid_key, "-") or "-"
         blk = "Y" if int(blocked.get(uid_key, 0) or 0) == 1 else "N"
 
-        rows.append(f"#{tid} `{uid}` {name}  status:`{stt}` blk:`{blk}` tags:`{tags_str}` last:`{last_seen}`")
+        rows.append(f"#{tid} {uid} {name}  status:{stt} blk:{blk} tags:{tags_str} last:{last_seen}")
 
     if not rows:
         await update.message.reply_text("暂无未关闭工单。")
         return
 
-    header = "📌 *Open Tickets*"
+    header = "Open Tickets"
     if tag_filter:
-        header += f" (tag=`{tag_filter}`)"
+        header += f" (tag={tag_filter})"
     msg = header + "\n" + "\n".join(rows)
-    await update.message.reply_text(msg[:3500], parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(msg[:3500])
 
 
 async def cmd_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -554,16 +581,16 @@ async def cmd_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     recs.reverse()
 
-    out = [f"*History* `{uid}` (last {len(recs)})\n"]
+    out = [f"History {uid} (last {len(recs)})\n"]
     for r in recs:
         ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(r.get("ts", 0))))
         direction = "IN " if r.get("direction") == "in" else "OUT"
         typ = r.get("type", "msg")
         text = (r.get("text") or "").replace("\n", " ")
-        if len(text) > 60:
-            text = text[:60] + "..."
-        out.append(f"`{ts}` *{direction}* _{typ}_  {text}")
-    await update.message.reply_text("\n".join(out)[:3500], parse_mode=ParseMode.MARKDOWN)
+        if len(text) > 80:
+            text = text[:80] + "..."
+        out.append(f"{ts} {direction} {typ}  {text}")
+    await update.message.reply_text("\n".join(out)[:3500])
 
 
 # ================== CALLBACK (Admin buttons) ==================
@@ -583,7 +610,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     action = parts[0]
     uid = int(parts[1])
-
     st = load_state()
 
     if action == "tag" and len(parts) >= 3:
@@ -593,10 +619,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tags.append(tag)
         save_state(st)
         await refresh_header(st, context, uid)
-        try:
-            await q.edit_message_reply_markup(reply_markup=ticket_keyboard(uid))
-        except Exception:
-            pass
         return
 
     if action == "cleartags":
@@ -616,7 +638,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if action == "block" and len(parts) >= 3:
-        v = parts[2]  # 1/0
+        v = parts[2]
         st.setdefault("blocked", {})[str(uid)] = 1 if v == "1" else 0
         save_state(st)
         await refresh_header(st, context, uid)
@@ -643,7 +665,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
                 text=render_ticket_header(st, uid),
-                parse_mode=ParseMode.MARKDOWN,
+                parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True,
                 reply_markup=ticket_keyboard(uid),
             )
@@ -675,7 +697,8 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
         preview = (update.message.text or update.message.caption or "")
         log_event("in", uid, {"type": "blocked", "text": preview[:500]})
         try:
-            await update.message.reply_text(BLOCKED_REPLY_TEXT)
+            if BLOCKED_REPLY_TEXT:
+                await update.message.reply_text(BLOCKED_REPLY_TEXT)
         except Exception:
             pass
         save_state(st)
@@ -711,7 +734,6 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         remember_msg_index(st, fwd.message_id, uid)
     except Exception:
-        # 兜底：copy（仍支持媒体）
         copied = await context.bot.copy_message(
             chat_id=ADMIN_ID,
             from_chat_id=update.effective_chat.id,
@@ -719,7 +741,7 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         remember_msg_index(st, copied.message_id, uid)
 
-    # 同时把“header 卡片”也记到 msg_index，方便管理员误 Reply header 时也能回
+    # header 也绑定到 msg_index（管理员误 Reply header 时也能回）
     if t.get("header_msg_id"):
         remember_msg_index(st, int(t["header_msg_id"]), uid)
 
@@ -728,17 +750,21 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
     preview = (update.message.text or update.message.caption or "")
     log_event("in", uid, {"type": typ, "text": preview[:1000]})
 
-    # 自动回复（冷却）
-    last_ts = int((st.get("last_auto_reply") or {}).get(str(uid), 0) or 0)
+    # 自动回复（24h一次 + 管理员当天回复后抑制）
     now_ts = _now_ts()
-    if now_ts - last_ts >= AUTO_REPLY_COOLDOWN_SEC:
-        lang = pick_lang(st, user)
-        reply_text = auto_reply_text(lang)
-        try:
-            await update.message.reply_text(reply_text)
-        except Exception:
-            pass
-        st.setdefault("last_auto_reply", {})[str(uid)] = now_ts
+    last_admin_ts = int((st.get("last_admin_reply") or {}).get(str(uid), 0) or 0)
+    admin_replied_today = (last_admin_ts > 0 and local_day(last_admin_ts) == local_day(now_ts))
+
+    if not admin_replied_today:
+        last_ts = int((st.get("last_auto_reply") or {}).get(str(uid), 0) or 0)
+        if now_ts - last_ts >= AUTO_REPLY_COOLDOWN_SEC:
+            lang = pick_lang(st, user)
+            reply_text = auto_reply_text(lang)
+            try:
+                await update.message.reply_text(reply_text)
+            except Exception:
+                pass
+            st.setdefault("last_auto_reply", {})[str(uid)] = now_ts
 
     save_state(st)
     await refresh_header(st, context, uid)
@@ -774,18 +800,20 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("没识别到用户ID。请 Reply 用户转发消息，或用 /reply <uid> <text>。")
         return
 
-    # 如果用户已被拉黑，默认不发（避免误操作）
+    # 若用户在黑名单，默认阻止发送（避免误操作）
     if int((st.get("blocked") or {}).get(str(to_user), 0) or 0) == 1:
-        await update.message.reply_text("该用户在黑名单中，已阻止发送。若要发送，请先解封。")
+        await update.message.reply_text("该用户在黑名单中，已阻止发送。如需发送请先解封。")
         return
 
-    # copy 管理员这条消息给用户（支持文字/图片/文件/贴纸/语音等）
     try:
         await context.bot.copy_message(
             chat_id=to_user,
             from_chat_id=update.effective_chat.id,
             message_id=update.message.message_id,
         )
+
+        # 记录：管理员已回复（用于“当天不再自动回复”）
+        st.setdefault("last_admin_reply", {})[str(to_user)] = _now_ts()
         st["last_user"] = to_user
         save_state(st)
 
