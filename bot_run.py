@@ -214,10 +214,6 @@ async def admin_reply_by_replying(update: Update, context: ContextTypes.DEFAULT_
     if not is_admin(uid):
         return
 
-    # 管理员发普通文字但没有 reply，就不处理（避免误触）
-    text = (update.message.text or "").strip()
-    if not text or text.startswith("/"):
-        return
     if not update.message.reply_to_message:
         return
 
@@ -227,8 +223,23 @@ async def admin_reply_by_replying(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text("我没能识别原用户ID。请用 /reply <user_id> <text> 或 /r <text>。")
         return
 
-    ok = await safe_send(context.bot, to_user, text)
-    await update.message.reply_text("已发送。" if ok else "发送失败：对方可能未 /start 机器人或已屏蔽机器人。")
+    # 1) 如果管理员发的是纯文字（非命令），直接发文字
+    if update.message.text and not update.message.text.startswith("/"):
+        ok = await safe_send(context.bot, to_user, update.message.text)
+        await update.message.reply_text("已发送。" if ok else "发送失败：对方可能未 /start 或已屏蔽机器人。")
+        return
+
+    # 2) 如果管理员发的是媒体：把媒体“复制”给用户
+    try:
+        await context.bot.copy_message(
+            chat_id=to_user,
+            from_chat_id=update.effective_chat.id,
+            message_id=update.message.message_id,
+        )
+        await update.message.reply_text("已发送。")
+    except Exception:
+        await update.message.reply_text("发送失败：对方可能未 /start 或已屏蔽机器人。")
+
 
 
 # =========================
@@ -388,4 +399,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
