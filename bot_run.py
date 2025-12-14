@@ -6,10 +6,8 @@ import asyncio
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from aiohttp import web, ClientSession
-
-from langdetect import detect, DetectorFactory
-DetectorFactory.seed = 0  # 让识别更稳定
+import aiohttp
+from aiohttp import web
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatType, ParseMode
@@ -22,39 +20,58 @@ from telegram.ext import (
     filters,
 )
 
+# ====== (Optional) language detection ======
+# pip install langdetect
+try:
+    from langdetect import detect  # type: ignore
+except Exception:
+    detect = None  # fallback
+
+
 # ================== ENV ==================
 TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
-ADMIN_ID = int(os.getenv("TG_ADMIN_ID", "0") or "0")  # 必填：管理员 user_id
+ADMIN_ID = int(os.getenv("TG_ADMIN_ID", "0") or "0")
 
 PUBLIC_URL = (os.getenv("RENDER_EXTERNAL_URL") or os.getenv("PUBLIC_URL") or "").strip().rstrip("/")
 WEBHOOK_SECRET = (os.getenv("WEBHOOK_SECRET") or "").strip()
 PORT = int(os.getenv("PORT", "10000"))
 HEALTH_PATH = "/healthz"
 
-# 给用户“一键联系管理员”按钮（保留）
+# 用户端“一键联系管理员”
 ADMIN_CONTACT_URL = (os.getenv("ADMIN_CONTACT_URL") or "https://t.me/Adalemy").strip()
 
-# 自动回复：24小时一次
-AUTO_REPLY_COOLDOWN_SEC = int(os.getenv("AUTO_REPLY_COOLDOWN_SEC", str(24 * 3600)))
+# 24小时内只自动回复一次（默认 86400 秒）
+AUTO_REPLY_COOLDOWN_SEC = int(os.getenv("AUTO_REPLY_COOLDOWN_SEC", "86400"))
 
-# 自动回复中文模板（其他语言用翻译得到）
-AUTO_REPLY_TEXT_ZH = (os.getenv("AUTO_REPLY_TEXT_ZH") or "你好，已收到你的消息，我们会尽快回复。").strip()
+AUTO_REPLY_ZH = (os.getenv("AUTO_REPLY_ZH") or "你好，已收到你的消息，我们会尽快回复。").strip()
+AUTO_REPLY_EN = (os.getenv("AUTO_REPLY_EN") or "Hello, we received your message and will reply soon.").strip()
+AUTO_REPLY_JA = (os.getenv("AUTO_REPLY_JA") or "メッセージを受け取りました。できるだけ早く返信します。").strip()
+AUTO_REPLY_DEFAULT = (os.getenv("AUTO_REPLY_TEXT") or "已收到，请联系管理员。").strip()
 
-# 免费翻译开关（MyMemory：免费但可能限流/不稳定）
-TRANSLATE_ENABLED = (os.getenv("TRANSLATE_ENABLED", "0").strip() == "1")
-ADMIN_TARGET_LANG = (os.getenv("ADMIN_TARGET_LANG") or "zh-CN").strip()  # 管理员看到用户消息翻成中文
+# 翻译开关：1/0
+TRANSLATE_ENABLED = (os.getenv("TRANSLATE_ENABLED") or "1").strip() == "1"
+# 管理员侧希望看到的语言（通常中文）
+ADMIN_TARGET_LANG = (os.getenv("ADMIN_TARGET_LANG") or "zh-CN").strip()
+
+# 翻译提供方（免费）
+# - mymemory: 免费、无需 key，但有限流/偶发失败
+TRANSLATE_PROVIDER = (os.getenv("TRANSLATE_PROVIDER") or "mymemory").strip().lower()
+MYMEMORY_EMAIL = (os.getenv("MYMEMORY_EMAIL") or "").strip()  # 可不填；填了通常更稳定一点
 
 BASE_DIR = Path(__file__).resolve().parent
 STATE_FILE = BASE_DIR / "support_state.json"
 LOG_FILE = BASE_DIR / "history.jsonl"
-MAX_MSG_INDEX = 8000
 
-# ================== UTILS ==================
+MAX_MSG_INDEX = 12000  # admin_message_id -> user_id 的映射上限（避免文件无限长）
+
+# 精简状态按钮：仅保留你要的
+STATUS_BUTTONS = ["已下单", "退货退款", "已返款", "黑名单", "清空状态"]
+
+
+# ================== STATE ==================
 def _now_ts() -> int:
     return int(time.time())
 
-def html_escape(s: str) -> str:
-    return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 def load_state() -> Dict[str, Any]:
     if STATE_FILE.exists():
@@ -66,24 +83,18 @@ def load_state() -> Dict[str, Any]:
         "ticket_seq": 0,
         "tickets": {},          # user_id(str) -> {ticket_id, status, created_at, header_msg_id}
         "msg_index": {},        # admin_message_id(str) -> user_id(int)
-        "last_user": 0,
-        "user_lang": {},        # user_id(str) -> auto|zh|en|ja|fr|de|es|it|pt|ru
+        "last_user": 0,         # 最近一个用户
+        "user_lang": {},        # user_id(str) -> auto|zh|en|ja|fr|de|es|it|pt|ru...
         "last_auto_reply": {},  # user_id(str) -> ts
-        "user_meta": {},        # user_id(str) -> {name, username, language_code, first_seen, last_seen, msg_count}
-        "user_status": {},      # user_id(str) -> 已下单/退货退款/已返款/黑名单/用户来信
+        "user_meta": {},        # user_id(str) -> {name, username, language_code, first_seen, last_seen, msg_count, last_detected_lang}
+        "user_status": {},      # user_id(str) -> 已下单/退货退款/已返款/黑名单/用户来信/...
         "user_note": {},        # user_id(str) -> "..."
     }
+
 
 def save_state(state: Dict[str, Any]) -> None:
     STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
-def is_admin(update: Update) -> bool:
-    return bool(update.effective_user and update.effective_user.id == ADMIN_ID and ADMIN_ID > 0)
-
-def fmt_time(ts: int) -> str:
-    if not ts:
-        return "-"
-    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
 
 def log_event(direction: str, user_id: int, payload: Dict[str, Any]) -> None:
     rec = {"ts": _now_ts(), "direction": direction, "user_id": user_id, **payload}
@@ -93,13 +104,97 @@ def log_event(direction: str, user_id: int, payload: Dict[str, Any]) -> None:
     except Exception:
         pass
 
+
 def remember_msg_index(state: Dict[str, Any], admin_message_id: int, user_id: int) -> None:
     mi = state.setdefault("msg_index", {})
     mi[str(admin_message_id)] = int(user_id)
+
     if len(mi) > MAX_MSG_INDEX:
         keys = list(mi.keys())
         for k in keys[: len(keys) - MAX_MSG_INDEX]:
             mi.pop(k, None)
+
+
+def is_admin(update: Update) -> bool:
+    return bool(update.effective_user and update.effective_user.id == ADMIN_ID and ADMIN_ID > 0)
+
+
+def fmt_time(ts: int) -> str:
+    if not ts:
+        return "-"
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts))
+
+
+def contains_cjk(text: str) -> bool:
+    # 粗略判断是否包含中文/日文汉字（用于判断管理员是否发中文）
+    return bool(re.search(r"[\u4e00-\u9fff]", text or ""))
+
+
+def normalize_lang(code: str) -> str:
+    """把各种语言码统一成翻译接口常用格式"""
+    c = (code or "").strip()
+    if not c:
+        return "auto"
+    c = c.replace("_", "-")
+    lc = c.lower()
+
+    # Telegram language_code 常见：zh-hans / zh-hant / en / de / fr / es / it / ja / ru / pt-br ...
+    if lc.startswith("zh"):
+        return "zh-CN"
+    if lc.startswith("ja"):
+        return "ja"
+    if lc.startswith("en"):
+        return "en"
+    if lc.startswith("de"):
+        return "de"
+    if lc.startswith("fr"):
+        return "fr"
+    if lc.startswith("es"):
+        return "es"
+    if lc.startswith("it"):
+        return "it"
+    if lc.startswith("pt"):
+        return "pt"
+    if lc.startswith("ru"):
+        return "ru"
+
+    # 其它语言直接返回前两位（更通用）
+    if len(lc) >= 2:
+        return lc[:2]
+    return lc
+
+
+def pick_user_target_lang(state: Dict[str, Any], user: Any) -> str:
+    """用户希望收到的语言：优先 user_lang(用户自己选)，否则 telegram language_code，否则最近检测语言，否则 en"""
+    uid = str(getattr(user, "id", 0) or 0)
+    forced = (state.get("user_lang") or {}).get(uid, "auto")
+
+    if forced and forced != "auto":
+        return normalize_lang(forced)
+
+    tg_code = normalize_lang(getattr(user, "language_code", "") or "")
+    if tg_code != "auto":
+        return tg_code
+
+    meta = (state.get("user_meta") or {}).get(uid, {})
+    last_det = normalize_lang(meta.get("last_detected_lang", "") or "")
+    if last_det != "auto":
+        return last_det
+
+    return "en"
+
+
+def auto_reply_text_for(lang: str) -> str:
+    lang = normalize_lang(lang)
+    if lang.startswith("zh"):
+        return AUTO_REPLY_ZH
+    if lang == "ja":
+        return AUTO_REPLY_JA
+    if lang == "en":
+        return AUTO_REPLY_EN
+    # 其它语言默认英文或通用
+    return AUTO_REPLY_DEFAULT
+
 
 def message_type_name(msg) -> str:
     if msg.photo:
@@ -128,151 +223,82 @@ def message_type_name(msg) -> str:
         return "text"
     return "unknown"
 
-def normalize_lang(code: str) -> str:
-    c = (code or "").lower()
-    if c.startswith("zh"):
-        return "zh"
-    if c.startswith("ja"):
-        return "ja"
-    if c.startswith("en"):
-        return "en"
-    if c.startswith("fr"):
-        return "fr"
-    if c.startswith("de"):
-        return "de"
-    if c.startswith("es"):
-        return "es"
-    if c.startswith("it"):
-        return "it"
-    if c.startswith("pt"):
-        return "pt"
-    if c.startswith("ru"):
-        return "ru"
-    return "en"
 
-def to_mymemory_lang(lang: str) -> str:
-    lang = (lang or "").strip().lower()
-    if lang == "zh":
-        return "zh-CN"
-    return lang
+# ================== TRANSLATION (free) ==================
+async def translate_mymemory(text: str, src: str, dst: str) -> Optional[str]:
+    if not text.strip():
+        return ""
+    q = text.strip()
+    src = normalize_lang(src)
+    dst = normalize_lang(dst)
+    if src == "auto":
+        # MyMemory 不支持 auto 源语言，我们尽量先 detect
+        if detect:
+            try:
+                src = normalize_lang(detect(q))
+            except Exception:
+                src = "en"
+        else:
+            src = "en"
 
-def detect_lang_local(text: str) -> str:
-    t = (text or "").strip()
-    if len(t) < 3:
-        return "en"
+    params = {"q": q, "langpair": f"{src}|{dst}"}
+    if MYMEMORY_EMAIL:
+        params["de"] = MYMEMORY_EMAIL
+
+    url = "https://api.mymemory.translated.net/get"
+    timeout = aiohttp.ClientTimeout(total=12)
+
     try:
-        d = (detect(t) or "").lower()
-        if d.startswith("zh"):
-            return "zh"
-        if d.startswith("ja"):
-            return "ja"
-        if d.startswith("en"):
-            return "en"
-        if d.startswith("de"):
-            return "de"
-        if d.startswith("fr"):
-            return "fr"
-        if d.startswith("es"):
-            return "es"
-        if d.startswith("it"):
-            return "it"
-        if d.startswith("pt"):
-            return "pt"
-        if d.startswith("ru"):
-            return "ru"
-        return "en"
+        async with aiohttp.ClientSession(timeout=timeout) as sess:
+            async with sess.get(url, params=params) as r:
+                if r.status != 200:
+                    return None
+                data = await r.json()
+                out = ((data or {}).get("responseData") or {}).get("translatedText")
+                if isinstance(out, str) and out.strip():
+                    return out.strip()
+                return None
     except Exception:
-        return "en"
+        return None
 
-def get_user_dst_lang(state: Dict[str, Any], uid: int) -> str:
-    """
-    用户最终目标语言：
-    - 优先 user_lang（用户点按钮设置）
-    - 若 auto，则用 Telegram language_code 粗略判断
-    """
-    chosen = (state.get("user_lang") or {}).get(str(uid), "auto")
-    if chosen and chosen != "auto":
-        return to_mymemory_lang(chosen)
-    meta = (state.get("user_meta") or {}).get(str(uid), {})
-    return to_mymemory_lang(normalize_lang(meta.get("language_code", "")))
 
-# ================== FREE TRANSLATE (MyMemory) ==================
-_http: Optional[ClientSession] = None
-_translate_cache: Dict[Tuple[str, str, str], str] = {}
-
-async def translate_text(text: str, src: str, dst: str) -> str:
+async def translate_text(text: str, src: str, dst: str) -> Optional[str]:
     if not TRANSLATE_ENABLED:
-        return text
-    text = (text or "").strip()
-    if not text or src == dst:
-        return text
+        return None
+    if TRANSLATE_PROVIDER == "mymemory":
+        return await translate_mymemory(text, src, dst)
+    # 未来你要换其它免费服务，可在这里扩展
+    return None
 
-    key = (text, src, dst)
-    if key in _translate_cache:
-        return _translate_cache[key]
 
-    global _http
-    if _http is None:
-        _http = ClientSession()
+def detect_lang_best_effort(text: str, fallback: str = "en") -> str:
+    if not text.strip():
+        return fallback
+    if detect:
+        try:
+            return normalize_lang(detect(text))
+        except Exception:
+            return normalize_lang(fallback)
+    return normalize_lang(fallback)
 
-    try:
-        import urllib.parse
-        q = urllib.parse.quote(text)
-        url = f"https://api.mymemory.translated.net/get?q={q}&langpair={src}|{dst}"
-        async with _http.get(url) as resp:
-            data = await resp.json(content_type=None)
-        out = ((data.get("responseData") or {}).get("translatedText") or "").strip()
-        out = out or text
-        _translate_cache[key] = out
-        if len(_translate_cache) > 2000:
-            _translate_cache.clear()
-        return out
-    except Exception:
-        return text
 
-# ================== UI ==================
-def language_keyboard() -> InlineKeyboardMarkup:
-    rows = [
-        [
-            InlineKeyboardButton("✅ Auto", callback_data="ulang|auto"),
-            InlineKeyboardButton("中文", callback_data="ulang|zh"),
-        ],
-        [
-            InlineKeyboardButton("English", callback_data="ulang|en"),
-            InlineKeyboardButton("日本語", callback_data="ulang|ja"),
-        ],
-        [
-            InlineKeyboardButton("Français", callback_data="ulang|fr"),
-            InlineKeyboardButton("Deutsch", callback_data="ulang|de"),
-        ],
-        [
-            InlineKeyboardButton("Español", callback_data="ulang|es"),
-            InlineKeyboardButton("Italiano", callback_data="ulang|it"),
-        ],
-        [
-            InlineKeyboardButton("Português", callback_data="ulang|pt"),
-            InlineKeyboardButton("Русский", callback_data="ulang|ru"),
-        ],
-    ]
+# ================== UI: Buttons ==================
+def user_contact_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [[InlineKeyboardButton("联系管理员", url=ADMIN_CONTACT_URL)]]
+    )
+
+
+def ticket_keyboard(uid: int) -> InlineKeyboardMarkup:
+    # 两列按钮更紧凑
+    rows = []
+    for i in range(0, len(STATUS_BUTTONS), 2):
+        chunk = STATUS_BUTTONS[i:i + 2]
+        rows.append([InlineKeyboardButton(t, callback_data=f"status|{uid}|{t}") for t in chunk])
+
+    rows.append([InlineKeyboardButton("Profile", callback_data=f"profile|{uid}|-")])
     return InlineKeyboardMarkup(rows)
 
-def start_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("联系管理员", url=ADMIN_CONTACT_URL)],
-        [InlineKeyboardButton("选择语言 / Choose language", callback_data="ulang_menu")],
-    ])
-
-# ================== ADMIN: STATUS BUTTONS (精简) ==================
-def admin_ticket_keyboard(uid: int) -> InlineKeyboardMarkup:
-    rows = [
-        [InlineKeyboardButton("已下单", callback_data=f"status|{uid}|已下单"),
-         InlineKeyboardButton("退货退款", callback_data=f"status|{uid}|退货退款")],
-        [InlineKeyboardButton("已返款", callback_data=f"status|{uid}|已返款"),
-         InlineKeyboardButton("黑名单", callback_data=f"status|{uid}|黑名单")],
-        [InlineKeyboardButton("清空状态", callback_data=f"status|{uid}|清空状态"),
-         InlineKeyboardButton("Profile", callback_data=f"profile|{uid}|-")],
-    ]
-    return InlineKeyboardMarkup(rows)
 
 def render_ticket_header(state: Dict[str, Any], uid: int) -> str:
     uid_key = str(uid)
@@ -286,28 +312,32 @@ def render_ticket_header(state: Dict[str, Any], uid: int) -> str:
 
     name = meta.get("name", "Unknown")
     username = meta.get("username")
-    lang_code = meta.get("language_code", "") or "-"
     user_link = f"tg://user?id={uid}"
 
     first_seen = fmt_time(int(meta.get("first_seen", 0) or 0))
     last_seen = fmt_time(int(meta.get("last_seen", 0) or 0))
     msg_count = int(meta.get("msg_count", 0) or 0)
 
-    lines = []
-    lines.append(f"<b>Ticket #{ticket_id}</b>   <b>Status:</b> <code>{html_escape(t_status)}</code>")
-    lines.append(f"<b>工单状态:</b> <code>{html_escape(status)}</code>")
-    lines.append(f"<b>Name:</b> {html_escape(name)}")
+    lines = [
+        f"Ticket #{ticket_id}  Status: {t_status}",
+        f"状态归类: {status}",
+        f"Name: {name}",
+    ]
     if username:
-        lines.append(f"<b>Username:</b> @{html_escape(username)}")
-    lines.append(f"<b>UserID:</b> <code>{uid}</code>   <b>Open:</b> <a href=\"{user_link}\">Click</a>")
-    lines.append(f"<b>User lang:</b> <code>{html_escape(lang_code)}</code>")
-    lines.append(f"<b>First seen:</b> <code>{html_escape(first_seen)}</code>")
-    lines.append(f"<b>Last seen:</b> <code>{html_escape(last_seen)}</code>   <b>Msg count:</b> <code>{msg_count}</code>")
-    lines.append(f"<b>Note:</b> {html_escape(note) if note else '-'}")
+        lines.append(f"Username: @{username}")
+    lines += [
+        f"UserID: {uid}  Open: Click ({user_link})",
+        f"First seen: {first_seen}",
+        f"Last seen: {last_seen}  Msg count: {msg_count}",
+    ]
+    if note:
+        lines.append(f"Note: {note}")
+
     lines.append("")
-    lines.append("推荐：在管理员私聊里 <b>Reply</b> 下面那条“转发自用户”的消息，即可回复对方（支持文字/图片/文件/贴纸/语音等）。")
-    lines.append("命令：<code>/note &lt;uid&gt; ...</code>  <code>/history &lt;uid&gt; 20</code>  <code>/close &lt;uid&gt;</code>  <code>/reopen &lt;uid&gt;</code>")
+    lines.append("推荐：在管理员私聊里 Reply（回复）下面那条“转发自用户”的消息，即可回复对方（支持文字/图片/文件/贴纸/语音等）。")
+    lines.append("备用命令：/reply <uid> <text> 或 /r <text>（回复最近用户）")
     return "\n".join(lines)
+
 
 async def ensure_ticket(state: Dict[str, Any], context: ContextTypes.DEFAULT_TYPE, uid: int) -> Dict[str, Any]:
     tickets = state.setdefault("tickets", {})
@@ -322,12 +352,11 @@ async def ensure_ticket(state: Dict[str, Any], context: ContextTypes.DEFAULT_TYP
         state["ticket_seq"] = int(state.get("ticket_seq", 0)) + 1
         ticket_id = state["ticket_seq"]
 
+        header_text = render_ticket_header(state, uid)
         msg = await context.bot.send_message(
             chat_id=ADMIN_ID,
-            text=render_ticket_header(state, uid),
-            parse_mode=ParseMode.HTML,
-            disable_web_page_preview=True,
-            reply_markup=admin_ticket_keyboard(uid),
+            text=header_text,
+            reply_markup=ticket_keyboard(uid),
         )
 
         tickets[uid_key] = {
@@ -339,6 +368,7 @@ async def ensure_ticket(state: Dict[str, Any], context: ContextTypes.DEFAULT_TYP
 
     return tickets[uid_key]
 
+
 async def refresh_header(state: Dict[str, Any], context: ContextTypes.DEFAULT_TYPE, uid: int) -> None:
     t = (state.get("tickets") or {}).get(str(uid))
     if not t or not t.get("header_msg_id"):
@@ -348,27 +378,105 @@ async def refresh_header(state: Dict[str, Any], context: ContextTypes.DEFAULT_TY
             chat_id=ADMIN_ID,
             message_id=int(t["header_msg_id"]),
             text=render_ticket_header(state, uid),
-            parse_mode=ParseMode.HTML,
-            disable_web_page_preview=True,
-            reply_markup=admin_ticket_keyboard(uid),
+            reply_markup=ticket_keyboard(uid),
         )
     except Exception:
         pass
 
-# ================== COMMANDS ==================
+
+# ================== COMMANDS (Admin) ==================
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
-    if update.effective_chat and update.effective_chat.type == ChatType.PRIVATE and not is_admin(update):
+    if is_admin(update):
         await update.message.reply_text(
-            "Hello, thank you for contacting us.\nPlease contact the administrator:",
-            reply_markup=start_keyboard(),
+            "管理员模式已启用：私聊工单 + 精简状态按钮 + Reply 直接回复 + 多媒体转发 + 可选自动翻译。\n\n"
+            "常用：直接 Reply 用户转发消息即可回复（支持媒体）。\n"
+            "命令：\n"
+            "/reply <uid> <text>\n"
+            "/r <text>\n"
+            "/note <uid> <text>\n"
+            "/lang <uid> <auto|zh|en|ja|fr|de|es|it|pt|ru>\n"
+            "/profile <uid>\n"
         )
+    else:
+        await update.message.reply_text(
+            "你好，已连接客服。\n点击下方可一键联系管理员：",
+            reply_markup=user_contact_keyboard(),
+        )
+
+
+async def cmd_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not is_admin(update):
         return
-    await update.message.reply_text("管理员模式已启用。")
+    if len(context.args) < 2:
+        await update.message.reply_text("用法：/reply <user_id> <text>")
+        return
+
+    uid = int(context.args[0])
+    raw_text = " ".join(context.args[1:])
+
+    st = load_state()
+    # 目标语言：用户选择/自动
+    # 注意：这里没有 user 对象，只能用 state 里 meta 的 last_detected_lang/telegram language_code
+    meta = (st.get("user_meta") or {}).get(str(uid), {})
+    fake_user_lang = meta.get("language_code", "en")
+    # 若 user_lang 强制指定，则优先
+    forced = (st.get("user_lang") or {}).get(str(uid), "auto")
+    target = normalize_lang(forced if forced != "auto" else fake_user_lang)
+    if target == "auto":
+        target = "en"
+
+    send_text = raw_text
+    if TRANSLATE_ENABLED and contains_cjk(raw_text):
+        tr = await translate_text(raw_text, "zh-CN", target)
+        if tr:
+            send_text = tr
+
+    await context.bot.send_message(chat_id=uid, text=send_text)
+    st["last_user"] = uid
+    save_state(st)
+    log_event("out", uid, {"type": "text", "text": send_text[:1000]})
+    await update.message.reply_text("已发送。")
+
+
+async def cmd_r(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not is_admin(update):
+        return
+    if not context.args:
+        await update.message.reply_text("用法：/r <text>")
+        return
+
+    st = load_state()
+    uid = int(st.get("last_user", 0) or 0)
+    if uid <= 0:
+        await update.message.reply_text("没有最近用户。")
+        return
+
+    raw_text = " ".join(context.args)
+
+    meta = (st.get("user_meta") or {}).get(str(uid), {})
+    fake_user_lang = meta.get("language_code", "en")
+    forced = (st.get("user_lang") or {}).get(str(uid), "auto")
+    target = normalize_lang(forced if forced != "auto" else fake_user_lang)
+    if target == "auto":
+        target = "en"
+
+    send_text = raw_text
+    if TRANSLATE_ENABLED and contains_cjk(raw_text):
+        tr = await translate_text(raw_text, "zh-CN", target)
+        if tr:
+            send_text = tr
+
+    await context.bot.send_message(chat_id=uid, text=send_text)
+    st["last_user"] = uid
+    save_state(st)
+    log_event("out", uid, {"type": "text", "text": send_text[:1000]})
+    await update.message.reply_text("已发送。")
+
 
 async def cmd_note(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not (update.message and is_admin(update)):
+    if not update.message or not is_admin(update):
         return
     if len(context.args) < 2:
         await update.message.reply_text("用法：/note <uid> <text>")
@@ -381,112 +489,72 @@ async def cmd_note(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await refresh_header(st, context, uid)
     await update.message.reply_text("已更新备注。")
 
-async def cmd_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not (update.message and is_admin(update)):
+
+async def cmd_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not is_admin(update):
         return
-    if not context.args:
-        await update.message.reply_text("用法：/history <uid> [n]")
+    if len(context.args) < 2:
+        await update.message.reply_text("用法：/lang <uid> <auto|zh|en|ja|fr|de|es|it|pt|ru>")
         return
     uid = int(context.args[0])
-    n = 20
-    if len(context.args) >= 2:
-        try:
-            n = max(1, min(100, int(context.args[1])))
-        except Exception:
-            n = 20
-
-    if not LOG_FILE.exists():
-        await update.message.reply_text("暂无历史记录。")
+    lang = context.args[1].strip().lower()
+    allow = {"auto", "zh", "en", "ja", "fr", "de", "es", "it", "pt", "ru", "zh-cn"}
+    if lang not in allow:
+        await update.message.reply_text("不支持该语言码。")
         return
+    st = load_state()
+    st.setdefault("user_lang", {})[str(uid)] = lang
+    save_state(st)
+    await update.message.reply_text(f"已设置用户 {uid} 语言：{lang}")
 
-    lines = LOG_FILE.read_text(encoding="utf-8").splitlines()
-    recs = []
-    for line in reversed(lines):
-        try:
-            obj = json.loads(line)
-        except Exception:
-            continue
-        if int(obj.get("user_id", 0)) == uid:
-            recs.append(obj)
-            if len(recs) >= n:
-                break
-    if not recs:
-        await update.message.reply_text("该用户暂无记录。")
+
+async def cmd_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not is_admin(update):
         return
-    recs.reverse()
+    if not context.args:
+        await update.message.reply_text("用法：/profile <uid>")
+        return
+    uid = int(context.args[0])
+    st = load_state()
+    await update.message.reply_text(render_ticket_header(st, uid))
 
-    out = [f"History {uid} (last {len(recs)})\n"]
-    for r in recs:
-        ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(r.get("ts", 0))))
-        direction = "IN " if r.get("direction") == "in" else "OUT"
-        typ = r.get("type", "msg")
-        text = (r.get("text") or "").replace("\n", " ")
-        if len(text) > 80:
-            text = text[:80] + "..."
-        out.append(f"{ts} {direction} {typ}  {text}")
-    await update.message.reply_text("\n".join(out)[:3900])
 
-# ================== CALLBACKS ==================
+# ================== CALLBACK (Status buttons) ==================
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.callback_query:
         return
     q = update.callback_query
-    data = q.data or ""
     await q.answer()
 
-    # 用户语言菜单
-    if data == "ulang_menu":
-        if q.message:
-            await q.message.reply_text("请选择语言 / Choose language:", reply_markup=language_keyboard())
-        return
-
-    if data.startswith("ulang|"):
-        lang = data.split("|", 1)[1].strip()
-        if not q.from_user:
-            return
-        st = load_state()
-        st.setdefault("user_lang", {})[str(q.from_user.id)] = lang
-        save_state(st)
-        if q.message:
-            await q.message.reply_text(f"已设置语言：{lang}")
-        return
-
-    # 管理员按钮
     if not is_admin(update):
         return
 
+    data = q.data or ""
     parts = data.split("|")
     if len(parts) < 2:
         return
+
     action = parts[0]
     uid = int(parts[1])
 
     st = load_state()
 
     if action == "status" and len(parts) >= 3:
-        val = parts[2]
-        if val == "清空状态":
-            st.setdefault("user_status", {}).pop(str(uid), None)
+        status = parts[2]
+        if status == "清空状态":
+            st.setdefault("user_status", {})[str(uid)] = "用户来信"
         else:
-            st.setdefault("user_status", {})[str(uid)] = val
+            st.setdefault("user_status", {})[str(uid)] = status
         save_state(st)
         await refresh_header(st, context, uid)
         return
 
     if action == "profile":
-        try:
-            await context.bot.send_message(
-                chat_id=ADMIN_ID,
-                text=render_ticket_header(st, uid),
-                parse_mode=ParseMode.HTML,
-                disable_web_page_preview=True,
-                reply_markup=admin_ticket_keyboard(uid),
-            )
-        except Exception:
-            pass
+        await context.bot.send_message(chat_id=ADMIN_ID, text=render_ticket_header(st, uid))
         return
 
-# ================== CORE: USER -> ADMIN ==================
+
+# ================== USER -> ADMIN ==================
 async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_chat:
         return
@@ -511,68 +579,64 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
     meta["username"] = getattr(user, "username", None)
     meta["language_code"] = getattr(user, "language_code", "")
 
+    # 默认状态：用户来信
+    st.setdefault("user_status", {}).setdefault(str(uid), "用户来信")
+
     # ticket
     t = await ensure_ticket(st, context, uid)
     st["last_user"] = uid
 
-    # 转发原消息（保留“转发自用户”格式）
-    forwarded_msg_id = None
+    # 1) 转发原消息给管理员：保留“转发自用户”格式
     try:
         fwd = await context.bot.forward_message(
             chat_id=ADMIN_ID,
             from_chat_id=update.effective_chat.id,
             message_id=update.message.message_id,
         )
-        forwarded_msg_id = fwd.message_id
         remember_msg_index(st, fwd.message_id, uid)
+        # 同时把 header 也记进索引（防止管理员误 Reply header）
+        if t.get("header_msg_id"):
+            remember_msg_index(st, int(t["header_msg_id"]), uid)
     except Exception:
         copied = await context.bot.copy_message(
             chat_id=ADMIN_ID,
             from_chat_id=update.effective_chat.id,
             message_id=update.message.message_id,
         )
-        forwarded_msg_id = copied.message_id
         remember_msg_index(st, copied.message_id, uid)
+        if t.get("header_msg_id"):
+            remember_msg_index(st, int(t["header_msg_id"]), uid)
 
-    if t.get("header_msg_id"):
-        remember_msg_index(st, int(t["header_msg_id"]), uid)
-
-    # 历史
+    # 2) 翻译：只对 text/caption 做（媒体本身无法“翻译”）
     typ = message_type_name(update.message)
     preview = (update.message.text or update.message.caption or "")
     log_event("in", uid, {"type": typ, "text": preview[:1000]})
 
-    # ✅ 用户 -> 管理员：文本翻译成中文（reply 到转发消息下）
-    if TRANSLATE_ENABLED:
-        raw_text = (update.message.text or update.message.caption or "").strip()
-        if raw_text:
-            chosen = (st.get("user_lang") or {}).get(str(uid), "auto")
-            src_short = chosen if (chosen and chosen != "auto") else detect_lang_local(raw_text)
-            src = to_mymemory_lang(src_short)
-            dst = ADMIN_TARGET_LANG
-            zh = await translate_text(raw_text, src=src, dst=dst)
-
-            if zh and zh.strip() and zh.strip() != raw_text.strip():
+    if TRANSLATE_ENABLED and preview.strip():
+        src_guess = detect_lang_best_effort(preview, fallback=(meta.get("language_code") or "en"))
+        meta["last_detected_lang"] = src_guess
+        # 统一翻译成管理员目标语言（通常中文）
+        if normalize_lang(src_guess) != normalize_lang(ADMIN_TARGET_LANG):
+            tr = await translate_text(preview, src_guess, ADMIN_TARGET_LANG)
+            if tr:
+                # 给管理员发一条“翻译结果”，并 reply 到原转发消息（更清晰）
                 try:
                     await context.bot.send_message(
                         chat_id=ADMIN_ID,
-                        text=f"中文翻译（{src} → {dst}）：\n{zh}",
-                        reply_to_message_id=forwarded_msg_id,
+                        text=f"中文翻译（{src_guess} → {ADMIN_TARGET_LANG}）：\n{tr}",
                     )
                 except Exception:
                     pass
 
-    # ✅ 自动回复（24h 冷却）并按用户选择语言发送
+    # 3) 24h 自动回复一次 + “联系管理员”按钮
     last_ts = int((st.get("last_auto_reply") or {}).get(str(uid), 0) or 0)
     now_ts = _now_ts()
     if now_ts - last_ts >= AUTO_REPLY_COOLDOWN_SEC:
-        dst = get_user_dst_lang(st, uid)
-        auto_text = AUTO_REPLY_TEXT_ZH
-        if TRANSLATE_ENABLED and dst != "zh-CN":
-            auto_text = await translate_text(AUTO_REPLY_TEXT_ZH, src="zh-CN", dst=dst)
-
+        # 用用户目标语言回一条
+        user_target = pick_user_target_lang(st, user)
+        text = auto_reply_text_for(user_target)
         try:
-            await update.message.reply_text(auto_text, reply_markup=start_keyboard())
+            await update.message.reply_text(text, reply_markup=user_contact_keyboard())
         except Exception:
             pass
         st.setdefault("last_auto_reply", {})[str(uid)] = now_ts
@@ -580,7 +644,8 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
     save_state(st)
     await refresh_header(st, context, uid)
 
-# ================== CORE: ADMIN Reply -> USER (多媒体 + 翻译) ==================
+
+# ================== ADMIN Reply -> USER ==================
 async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_chat:
         return
@@ -589,7 +654,7 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
     if not is_admin(update):
         return
 
-    # 必须 Reply
+    # 必须 Reply，避免误发
     if not update.message.reply_to_message:
         return
 
@@ -598,59 +663,57 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
     to_user = None
     if rid in (st.get("msg_index") or {}):
         to_user = int(st["msg_index"][rid])
+
     if not to_user:
-        await update.message.reply_text("没识别到用户ID。请 Reply 用户转发消息。")
+        await update.message.reply_text("没识别到用户ID。请 Reply 用户转发消息，或用 /reply <uid> <text>。")
         return
 
-    dst = get_user_dst_lang(st, to_user)
+    # 如果管理员发的是纯文本：可翻译后发给用户
+    # 非文本（图片/文件/贴纸/语音）：直接 copy 原样发给用户（不翻译媒体内容）
+    try:
+        if update.message.text and update.message.text.strip():
+            raw = update.message.text.strip()
 
-    # 1) 纯文本：直接翻译后发给用户（不 copy 原消息）
-    if update.message.text:
-        text = update.message.text.strip()
-        out = text
-        if TRANSLATE_ENABLED:
-            src_short = detect_lang_local(text)
-            src = to_mymemory_lang(src_short)
-            out = await translate_text(text, src=src, dst=dst)
+            # 用户希望收到的语言：强制 user_lang > telegram language_code > last_detected
+            meta = (st.get("user_meta") or {}).get(str(to_user), {})
+            forced = (st.get("user_lang") or {}).get(str(to_user), "auto")
+            target = normalize_lang(forced if forced != "auto" else (meta.get("language_code") or "en"))
+            if target == "auto":
+                target = normalize_lang(meta.get("last_detected_lang", "en") or "en")
+            if target == "auto":
+                target = "en"
 
-        try:
-            await context.bot.send_message(chat_id=to_user, text=out)
-            log_event("out", to_user, {"type": "text", "text": out[:1000]})
+            send_text = raw
+            # 规则：管理员发中文 -> 自动翻译成用户语言
+            if TRANSLATE_ENABLED and contains_cjk(raw) and target != "zh-CN":
+                tr = await translate_text(raw, "zh-CN", target)
+                if tr:
+                    send_text = tr
+
+            await context.bot.send_message(chat_id=to_user, text=send_text)
             st["last_user"] = to_user
             save_state(st)
+            log_event("out", to_user, {"type": "text", "text": send_text[:1000]})
             await update.message.reply_text("已发送。")
-        except Exception as e:
-            await update.message.reply_text(f"发送失败：{e}")
-        return
+            return
 
-    # 2) 多媒体：先 copy 媒体，然后（如果有 caption）再发翻译后的 caption 文本
-    try:
+        # 非文本：直接 copy（支持图片/文件/贴纸/语音/视频等）
         await context.bot.copy_message(
             chat_id=to_user,
             from_chat_id=update.effective_chat.id,
             message_id=update.message.message_id,
         )
-
-        typ = message_type_name(update.message)
-        preview = (update.message.caption or "").strip()
-
-        # caption 单独翻译追加（避免媒体 caption 复制后仍是中文）
-        if preview:
-            out = preview
-            if TRANSLATE_ENABLED:
-                src_short = detect_lang_local(preview)
-                src = to_mymemory_lang(src_short)
-                out = await translate_text(preview, src=src, dst=dst)
-            if out and out != preview:
-                await context.bot.send_message(chat_id=to_user, text=out)
-
-        log_event("out", to_user, {"type": typ, "text": (preview[:1000] if preview else "")})
-
         st["last_user"] = to_user
         save_state(st)
+
+        typ = message_type_name(update.message)
+        preview = (update.message.caption or "")
+        log_event("out", to_user, {"type": typ, "text": preview[:1000]})
+
         await update.message.reply_text("已发送。")
     except Exception as e:
         await update.message.reply_text(f"发送失败：{e}")
+
 
 # ================== WEBHOOK SERVER ==================
 async def run_webhook_server(tg_app: Application):
@@ -692,6 +755,7 @@ async def run_webhook_server(tg_app: Application):
     print(f"[ok] listening on 0.0.0.0:{PORT}, health: {HEALTH_PATH}")
     await asyncio.Event().wait()
 
+
 def main():
     if not TOKEN:
         raise SystemExit("Missing TG_BOT_TOKEN")
@@ -701,18 +765,24 @@ def main():
     tg_app = Application.builder().token(TOKEN).build()
 
     tg_app.add_handler(CommandHandler("start", cmd_start))
+    tg_app.add_handler(CommandHandler("reply", cmd_reply))
+    tg_app.add_handler(CommandHandler("r", cmd_r))
     tg_app.add_handler(CommandHandler("note", cmd_note))
-    tg_app.add_handler(CommandHandler("history", cmd_history))
+    tg_app.add_handler(CommandHandler("lang", cmd_lang))
+    tg_app.add_handler(CommandHandler("profile", cmd_profile))
 
     tg_app.add_handler(CallbackQueryHandler(on_callback))
 
+    # user private
     tg_app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.User(user_id=ADMIN_ID), handle_user_private))
+    # admin private
     tg_app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.User(user_id=ADMIN_ID), handle_admin_private))
 
     if PUBLIC_URL:
         asyncio.run(run_webhook_server(tg_app))
     else:
         tg_app.run_polling(drop_pending_updates=True)
+
 
 if __name__ == "__main__":
     main()
