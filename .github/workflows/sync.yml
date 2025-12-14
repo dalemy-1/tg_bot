@@ -3,7 +3,7 @@ name: Sync Products
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "*/5 * * * *"
 
 concurrency:
   group: sync-products
