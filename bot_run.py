@@ -653,8 +653,6 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
         return
     if not is_admin(update):
         return
-
-    # 必须 Reply，避免误发
     if not update.message.reply_to_message:
         return
 
@@ -668,51 +666,66 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("没识别到用户ID。请 Reply 用户转发消息，或用 /reply <uid> <text>。")
         return
 
-    # 如果管理员发的是纯文本：可翻译后发给用户
-    # 非文本（图片/文件/贴纸/语音）：直接 copy 原样发给用户（不翻译媒体内容）
+    # 用户目标语言：强制 user_lang > telegram language_code > last_detected_lang > en
+    meta = (st.get("user_meta") or {}).get(str(to_user), {})
+    forced = (st.get("user_lang") or {}).get(str(to_user), "auto")
+    target = normalize_lang(forced if forced != "auto" else (meta.get("language_code") or ""))
+    if target == "auto":
+        target = normalize_lang(meta.get("last_detected_lang", "") or "")
+    if target == "auto":
+        target = "en"
+
     try:
+        # 1) 文字消息：检测管理员原文语言 -> 翻译到用户目标语言
         if update.message.text and update.message.text.strip():
             raw = update.message.text.strip()
 
-            # 用户希望收到的语言：强制 user_lang > telegram language_code > last_detected
-            meta = (st.get("user_meta") or {}).get(str(to_user), {})
-            forced = (st.get("user_lang") or {}).get(str(to_user), "auto")
-            target = normalize_lang(forced if forced != "auto" else (meta.get("language_code") or "en"))
-            if target == "auto":
-                target = normalize_lang(meta.get("last_detected_lang", "en") or "en")
-            if target == "auto":
-                target = "en"
-
             send_text = raw
-            # 规则：管理员发中文 -> 自动翻译成用户语言
-            if TRANSLATE_ENABLED and contains_cjk(raw) and target != "zh-CN":
-                tr = await translate_text(raw, "zh-CN", target)
-                if tr:
-                    send_text = tr
+            if TRANSLATE_ENABLED:
+                src = detect_lang_best_effort(raw, fallback="zh-CN")  # 自动识别管理员消息语言
+                # 只要 src != target，就翻译
+                if normalize_lang(src) != normalize_lang(target):
+                    tr = await translate_text(raw, src, target)
+                    if tr and tr.strip():
+                        send_text = tr.strip()
+                    else:
+                        # 翻译失败：在管理员侧提示一下原因（用户侧仍发原文，避免消息丢失）
+                        await update.message.reply_text("翻译失败（可能限流/接口不稳定），已发送原文。")
 
             await context.bot.send_message(chat_id=to_user, text=send_text)
+
             st["last_user"] = to_user
             save_state(st)
             log_event("out", to_user, {"type": "text", "text": send_text[:1000]})
             await update.message.reply_text("已发送。")
             return
 
-        # 非文本：直接 copy（支持图片/文件/贴纸/语音/视频等）
+        # 2) 非文字（图片/文件/贴纸/语音等）：直接转发媒体
         await context.bot.copy_message(
             chat_id=to_user,
             from_chat_id=update.effective_chat.id,
             message_id=update.message.message_id,
         )
+
+        # 3) 如果有 caption，额外再发一条“翻译后的 caption”（可选但实用）
+        if update.message.caption and update.message.caption.strip() and TRANSLATE_ENABLED:
+            cap = update.message.caption.strip()
+            src = detect_lang_best_effort(cap, fallback="zh-CN")
+            if normalize_lang(src) != normalize_lang(target):
+                tr = await translate_text(cap, src, target)
+                if tr and tr.strip():
+                    await context.bot.send_message(chat_id=to_user, text=tr.strip())
+
         st["last_user"] = to_user
         save_state(st)
-
         typ = message_type_name(update.message)
         preview = (update.message.caption or "")
         log_event("out", to_user, {"type": typ, "text": preview[:1000]})
-
         await update.message.reply_text("已发送。")
+
     except Exception as e:
         await update.message.reply_text(f"发送失败：{e}")
+
 
 
 # ================== WEBHOOK SERVER ==================
@@ -786,3 +799,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
