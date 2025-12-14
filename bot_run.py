@@ -105,26 +105,31 @@ def main():
         raise SystemExit("Missing TG_BOT_TOKEN")
 
     app = Application.builder().token(TOKEN).build()
+
+    # 这里保持你原本的 add_handler(...) 逻辑
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("bind", bind))
     app.add_handler(CommandHandler("map", show_map))
-    app.add_handler(MessageHandler(filters.ALL, forward_private_to_admin))
+    # ... 其他 handler
 
-    # Render 上用 webhook（必须监听 PORT）
-    if WEBHOOK_BASE_URL:
-        webhook_url = f"{WEBHOOK_BASE_URL}/{WEBHOOK_PATH}"
-        print("Starting webhook on port", PORT, "url_path=/" + WEBHOOK_PATH)
+    public_url = (os.getenv("RENDER_EXTERNAL_URL") or os.getenv("PUBLIC_URL") or "").strip()
+    port = int(os.getenv("PORT", "10000"))
+
+    if public_url:
+        # Render / 线上：Webhook（会监听端口，适配 Web Service）
+        # url_path 用 token 做路径，防止被扫
         app.run_webhook(
             listen="0.0.0.0",
-            port=PORT,
-            url_path=WEBHOOK_PATH,
-            webhook_url=webhook_url,
+            port=port,
+            url_path=TOKEN,
+            webhook_url=f"{public_url}/{TOKEN}",
             drop_pending_updates=True,
         )
     else:
-        # 本地调试用轮询
-        print("Starting polling (local dev)")
+        # 本地：Polling
         app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
+
+
