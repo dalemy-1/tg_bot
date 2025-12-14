@@ -37,7 +37,7 @@ jobs:
           GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           TG_SEND_DELAY_SEC: "2.5"
-          BAD_IMAGE_POLICY: "skip"      # 或 fallback_text
+          BAD_IMAGE_POLICY: "fallback_text"      # 或 fallback_text
           PURGE_MISSING: "0"            # 你要删行下架才改成 1
         run: python sync_products.py
 
