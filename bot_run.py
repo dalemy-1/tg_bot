@@ -243,49 +243,79 @@ async def forward_private_to_admin(update: Update, context: ContextTypes.DEFAULT
     user = update.effective_user
     uid = user.id if user else 0
 
-    # 关键修复：管理员自己发给机器人的消息，不要当成“用户私聊”
+    # 管理员自己发给机器人，不当成用户消息
     if is_admin(uid):
         return
 
     if ADMIN_ID <= 0:
+        # 没设置管理员：仍然回复
         await update.message.reply_text(AUTO_REPLY_TEXT)
         return
 
     uname = f"@{user.username}" if user and user.username else "-"
     name = (user.full_name if user else "-").strip()
 
-    # 1) 先转发，拿到“转发消息”的 message_id（用于建立映射）
+    # 1) 先把用户消息（无论什么类型）转发给管理员
+    fwd_msg = None
     try:
-        fwd_msg = await context.bot.forward_message(
-            chat_id=ADMIN_ID,
-            from_chat_id=update.effective_chat.id,
-            message_id=update.message.message_id,
-        )
-        # 建立：管理员收到的“转发消息ID” -> 原用户ID
-        remember_forward(fwd_msg.message_id, uid)
+        fwd_msg = await update.message.forward(chat_id=ADMIN_ID)
     except Exception:
-        # forward 失败继续
-        pass
+        try:
+            # 兜底
+            fwd_msg = await context.bot.forward_message(
+                chat_id=ADMIN_ID,
+                from_chat_id=update.effective_chat.id,
+                message_id=update.message.message_id,
+            )
+        except Exception:
+            fwd_msg = None
 
-    # 2) 发卡片（永远提供 UserID）
+    if fwd_msg:
+        remember_forward(fwd_msg.message_id, uid)
+
+    # 2) 发卡片（告诉管理员怎么回）
+    msg_type = "text"
+    if update.message.photo:
+        msg_type = "photo"
+    elif update.message.sticker:
+        msg_type = "sticker"
+    elif update.message.voice:
+        msg_type = "voice"
+    elif update.message.video:
+        msg_type = "video"
+    elif update.message.document:
+        msg_type = "document"
+    elif update.message.animation:
+        msg_type = "animation"
+    elif update.message.audio:
+        msg_type = "audio"
+    elif update.message.video_note:
+        msg_type = "video_note"
+    elif update.message.contact:
+        msg_type = "contact"
+    elif update.message.location:
+        msg_type = "location"
+
     card = (
         "New DM\n"
+        f"Type: {msg_type}\n"
         f"Name: {name}\n"
         f"Username: {uname}\n"
         f"UserID: {uid}\n\n"
-        f"用法：/reply {uid} 你的回复内容\n"
-        f"快捷：/r 你的回复内容（回复最近一个用户）\n"
-        f"或：直接 Reply（回复）上面那条“转发自用户”的消息 -> 输入文字发送\n"
+        f"文字回复：/reply {uid} 你的回复内容\n"
+        f"快捷回复：/r 你的回复内容（回复最近用户）\n"
+        f"媒体/原样回复：直接 Reply 上面那条“转发自用户”的消息（可发文字/图片/文件/语音/贴纸等）\n"
     )
     await context.bot.send_message(chat_id=ADMIN_ID, text=card)
 
-    # 3) 更新 last_uid（只会被真正的用户消息更新，不会被管理员覆盖）
+    # 3) 更新 last_uid（只被真实用户更新）
     s = load_state()
     s["last_uid"] = uid
     save_state(s)
 
-    # 4) 给用户自动回复
+    # 4) 自动回复用户
     await update.message.reply_text(AUTO_REPLY_TEXT)
+
 
 
 # =========================
@@ -346,9 +376,9 @@ def main():
     tg_app.add_handler(CommandHandler("r", reply_last_cmd))
 
     # 先处理管理员 reply 自动回复
-    tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply_by_replying), group=0)
-    # 再处理用户私聊转发
-    tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_private_to_admin), group=1)
+    tg_app.add_handler(MessageHandler(~filters.COMMAND, admin_reply_by_replying), group=0)
+    tg_app.add_handler(MessageHandler(~filters.COMMAND, forward_private_to_admin), group=1)
+
 
     if PUBLIC_URL:
         asyncio.run(run_webhook_server(tg_app))
@@ -358,3 +388,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
