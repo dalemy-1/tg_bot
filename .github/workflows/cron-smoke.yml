@@ -1,4 +1,4 @@
-name: Schedule Test
+name: Cron Smoke
 on:
   schedule:
     - cron: "*/1 * * * *"
