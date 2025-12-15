@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional, Tuple
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-15-01"
+SYNC_PRODUCTS_VERSION = "2025-12-15-02"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -22,11 +22,9 @@ STATE_FILE = BASE_DIR / "posted_state.json"
 VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
 
 CAPTION_MAX = 900
-
 SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "2.0"))
 
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
-
 BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "fallback_text").strip().lower()
 
 PURGE_MISSING = (os.getenv("PURGE_MISSING", "0").strip() == "1")
@@ -35,7 +33,6 @@ PURGE_MISSING = (os.getenv("PURGE_MISSING", "0").strip() == "1")
 PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))
 PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
 
-# CSV/URL 拉取重试
 FETCH_RETRY = int(os.getenv("FETCH_RETRY", "2"))
 FETCH_TIMEOUT = int(os.getenv("FETCH_TIMEOUT", "30"))
 
@@ -130,16 +127,13 @@ def format_money_for_caption(v, market: str) -> Optional[str]:
     s = safe_str(v)
     if not s:
         return None
-
     d = parse_decimal_maybe(s)
     if d is not None and d == 0:
         return None
     if s in ("0", "0.0", "0.00"):
         return None
-
     if any(sym in s for sym in ("$", "£", "€", "¥", "￥")):
         return s
-
     sym = CURRENCY_SYMBOL.get((market or "").upper(), "")
     if not sym:
         return s
@@ -175,25 +169,82 @@ def _looks_like_html(text: str) -> bool:
     return head.startswith("<!doctype html") or head.startswith("<html") or "<body" in head[:200]
 
 
-def _validate_csv_header(fieldnames: Optional[List[str]], source: str):
-    """
-    强校验：至少要有 market + asin（大小写都支持）
-    目的：防止 URL 返回登录页/错误页/空内容导致误删
-    """
+def _validate_header(fieldnames: Optional[List[str]], source: str):
     if not fieldnames:
-        raise ValueError(f"{source}: CSV header missing/empty fieldnames.")
-
-    cols = {c.strip() for c in fieldnames if c}
-    cols_lower = {c.lower() for c in cols}
-
-    has_market = ("market" in cols_lower)
-    has_asin = ("asin" in cols_lower)
-
-    if not has_market or not has_asin:
+        raise ValueError(f"{source}: CSV/TSV header missing/empty fieldnames.")
+    cols_lower = {safe_str(c).lower() for c in fieldnames if safe_str(c)}
+    if "market" not in cols_lower or "asin" not in cols_lower:
         raise ValueError(
-            f"{source}: CSV header invalid. Need columns market & asin (case-insensitive). "
-            f"Got={fieldnames}"
+            f"{source}: header invalid. Need columns market & asin. Got={fieldnames}"
         )
+
+
+def _build_reader(text: str) -> csv.DictReader:
+    """
+    兼容：
+    - 标准 CSV（逗号）
+    - TSV（\\t）
+    - “空格对齐”的导出（用 split() 兜底，但这种不建议长期用）
+    """
+    if not text.strip():
+        raise ValueError("empty content")
+
+    if _looks_like_html(text):
+        raise ValueError("content looks like HTML, not CSV/TSV")
+
+    sample = text[:4096]
+
+    # 1) 优先 TSV
+    if "\t" in sample:
+        reader = csv.DictReader(io.StringIO(text), delimiter="\t")
+        if reader.fieldnames and len(reader.fieldnames) >= 2:
+            return reader
+
+    # 2) 尝试 sniff
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=[",", "\t", ";", "|"])
+        reader = csv.DictReader(io.StringIO(text), delimiter=dialect.delimiter)
+        if reader.fieldnames and len(reader.fieldnames) >= 2:
+            return reader
+    except Exception:
+        pass
+
+    # 3) 兜底：如果第一行看起来是用空格分隔的表头，则用“按空白切分”重建为 TSV 结构
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        raise ValueError("no non-empty lines")
+
+    header_tokens = lines[0].split()
+    if len(header_tokens) >= 2:
+        rebuilt = "\t".join(header_tokens) + "\n"
+        for ln in lines[1:]:
+            rebuilt += "\t".join(ln.split()) + "\n"
+        reader = csv.DictReader(io.StringIO(rebuilt), delimiter="\t")
+        return reader
+
+    # 4) 完全无法解析
+    raise ValueError(f"cannot detect delimiter; header={lines[0][:200]!r}")
+
+
+def _fetch_text_with_retry(url: str) -> str:
+    last_err = None
+    for attempt in range(FETCH_RETRY + 1):
+        try:
+            r = requests.get(url, timeout=FETCH_TIMEOUT)
+            r.raise_for_status()
+            text = _decode_bytes(r.content)
+
+            ctype = (r.headers.get("content-type") or "").lower()
+            if "text/html" in ctype or _looks_like_html(text):
+                raise ValueError("URL returned HTML (likely login/error page).")
+
+            return text
+        except Exception as e:
+            last_err = e
+            wait = 1 + attempt * 2
+            print(f"[warn] fetch failed ({attempt+1}/{FETCH_RETRY+1}): {e}. wait {wait}s")
+            time.sleep(wait)
+    raise RuntimeError(f"fetch failed after retries: {last_err}")
 
 
 # -------------------- Telegram --------------------
@@ -266,11 +317,12 @@ def load_products() -> List[Dict[str, str]]:
         link = _get(row, "link", "Link", "url", "URL")
         image_url = _get(row, "image_url", "image", "Image", "img")
 
+        # status 支持多种列名
         status = norm_status(_get(row, "status", "Status", "removed"))
 
-        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount")
-        commission = _get(row, "commission", "Commission", "comm")
-
+        # 兼容你当前导出列名：Discount、Commission、Commissic（截图里拼写）
+        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount", "Discount")
+        commission = _get(row, "commission", "Commission", "comm", "Commissic", "Commissio", "Commiss")
         return {
             "market": market,
             "asin": asin,
@@ -292,51 +344,27 @@ def load_products() -> List[Dict[str, str]]:
         csv_path = BASE_DIR / "products.csv"
         if not csv_path.exists():
             raise FileNotFoundError(f"products.csv not found: {csv_path}")
-        raw = csv_path.read_bytes()
-        text = _decode_bytes(raw)
-        if _looks_like_html(text):
-            raise ValueError("local products.csv looks like HTML, abort.")
-        reader = csv.DictReader(io.StringIO(text))
-        _validate_csv_header(reader.fieldnames, "local products.csv")
-        print(f"[debug] local csv fieldnames: {reader.fieldnames}")
+        text = _decode_bytes(csv_path.read_bytes())
+        reader = _build_reader(text)
+        print(f"[debug] local fieldnames: {reader.fieldnames}")
+        _validate_header(reader.fieldnames, "local products.csv")
         for row in reader:
             if row:
                 rows.append(_normalize_row(row))
-        print(f"[ok] loaded from local csv: {len(rows)} rows ({csv_path})")
-
-    def _fetch_text_with_retry(url: str) -> str:
-        last_err = None
-        for attempt in range(FETCH_RETRY + 1):
-            try:
-                r = requests.get(url, timeout=FETCH_TIMEOUT)
-                r.raise_for_status()
-                text = _decode_bytes(r.content)
-
-                # content-type / html 拦截（防止登录页/错误页）
-                ctype = (r.headers.get("content-type") or "").lower()
-                if "text/html" in ctype or _looks_like_html(text):
-                    raise ValueError("CSV URL returned HTML (likely login/error page).")
-
-                return text
-            except Exception as e:
-                last_err = e
-                wait = 1 + attempt * 2
-                print(f"[warn] fetch failed ({attempt+1}/{FETCH_RETRY+1}): {e}. wait {wait}s")
-                time.sleep(wait)
-        raise RuntimeError(f"fetch failed after retries: {last_err}")
+        print(f"[ok] loaded from local: {len(rows)} rows ({csv_path})")
 
     if sheet_url:
         try:
             text = _fetch_text_with_retry(sheet_url)
-            reader = csv.DictReader(io.StringIO(text))
-            _validate_csv_header(reader.fieldnames, "GOOGLE_SHEET_CSV_URL")
-            print(f"[debug] sheet csv fieldnames: {reader.fieldnames}")
+            reader = _build_reader(text)
+            print(f"[debug] remote fieldnames: {reader.fieldnames}")
+            _validate_header(reader.fieldnames, "CSV/TSV URL")
             for row in reader:
                 if row:
                     rows.append(_normalize_row(row))
-            print(f"[ok] loaded from CSV URL: {len(rows)} rows")
+            print(f"[ok] loaded from URL: {len(rows)} rows")
         except Exception as e:
-            print(f"[warn] failed to load CSV URL, err={e}")
+            print(f"[warn] failed to load URL, err={e}")
             if FALLBACK_TO_LOCAL_CSV:
                 print("[warn] fallback to local products.csv ...")
                 _load_from_local()
@@ -346,7 +374,7 @@ def load_products() -> List[Dict[str, str]]:
         _load_from_local()
 
     if not rows:
-        raise ValueError("No rows loaded from CSV source (empty).")
+        raise ValueError("No rows loaded from source (empty).")
 
     return rows
 
@@ -368,10 +396,7 @@ def build_caption(p: dict) -> str:
 
     lines: List[str] = []
 
-    if title:
-        head = f"{flag}{title}".strip() if flag else title
-    else:
-        head = f"{flag}(无标题)".strip() if flag else "(无标题)"
+    head = f"{flag}{title}".strip() if title else f"{flag}(无标题)".strip()
     lines.append(head)
 
     if keyword:
@@ -520,7 +545,7 @@ def main():
     skip_count = 0
     err_count = 0
 
-    # seen_keys：只要 CSV 里存在 market+asin，就加入（避免因 thread_id 缺失造成误删）
+    # seen_keys：只要 TSV/CSV 里有 market+asin 就加入（避免因 thread_id 缺失造成误删）
     seen_keys = set()
 
     for p in products:
@@ -539,7 +564,6 @@ def main():
             key = f"{market}:{asin}"
             seen_keys.add(key)
 
-            # 没有 thread_id 就不发/不改，但也不应该当成 missing
             thread_id = thread_map.get(market)
             if not thread_id:
                 skip_count += 1
