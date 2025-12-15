@@ -2,12 +2,10 @@ name: Sync Products
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "*/15 * * * *"   # 每15分钟
 
 concurrency:
   group: sync-products
-  cancel-in-progress: true   # 不取消正在运行的任务（允许并发）
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -54,11 +52,10 @@ jobs:
         if: ${{ always() }}
         run: |
           set -e
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 先把远端最新拉下来，再在最新基础上提交，降低冲突概率
+          # 先拉远端最新，避免冲突
           git pull --rebase --autostash
 
           git add posted_state.json
@@ -69,7 +66,6 @@ jobs:
 
           git commit -m "Update posted_state.json"
 
-          # 推送失败就重试（应对并发 run 同时 push）
           for i in 1 2 3; do
             if git push; then
               exit 0
