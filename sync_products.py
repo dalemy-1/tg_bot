@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional, Tuple
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-16-final"
+SYNC_PRODUCTS_VERSION = "2025-12-16-final+delete_not_found_fix"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -321,6 +321,10 @@ def is_bad_image_error(err: Exception) -> bool:
     return any(k in s for k in keys)
 
 
+def is_message_to_delete_not_found(err: Exception) -> bool:
+    return "message to delete not found" in str(err).lower()
+
+
 # -------------------- products load --------------------
 
 def load_products() -> List[Dict[str, str]]:
@@ -567,11 +571,17 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> Tuple[d
 
 
 def delete_message(chat_id: int, message_id: int) -> bool:
-    """返回 delete 是否成功（失败也算一次动作尝试，在上层计数）"""
+    """
+    返回 delete 是否成功。
+    重要：如果 Telegram 返回 “message to delete not found”，视为已删除成功（避免永远重复删）。
+    """
     try:
         tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(message_id)})
         return True
     except Exception as e:
+        if is_message_to_delete_not_found(e):
+            print(f"[info] message already gone, treat delete_ok=True. msg={message_id}")
+            return True
         print(f"[warn] delete failed but continue: msg={message_id} err={e}")
         return False
 
@@ -696,7 +706,7 @@ def main():
                 "ts": int(time.time()),
                 "delete_attempted": True,
                 "delete_ok": delete_ok,
-                # 注意：不清空 message_id，便于后续重试删除
+                # 注意：不清空 message_id，便于后续重试删除（但 delete_ok=True 时不会再试）
             }
             ok_count += 1
 
