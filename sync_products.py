@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional, Tuple
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-14-06"
+SYNC_PRODUCTS_VERSION = "2025-12-15-01"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -23,21 +23,21 @@ VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
 
 CAPTION_MAX = 900
 
-# 你要改发送间隔，就改这里的环境变量 TG_SEND_DELAY_SEC（workflow 里也能配）
 SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "2.0"))
 
-# Google Sheet 拉取失败是否回退本地 products.csv
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 
-# 图片坏了怎么处理：
-# - fallback_text：sendPhoto 失败就降级发文本（默认）
-# - skip：sendPhoto 失败直接跳过该产品（不发任何消息）
 BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "fallback_text").strip().lower()
 
-# 如果你“下架就删除整行”，想让脚本自动删除 Telegram 里对应消息：
-# PURGE_MISSING=1 => 把「表格中不存在」的 key 当成 removed 处理并尝试 delete
-# 默认 0（关闭，避免误删）
 PURGE_MISSING = (os.getenv("PURGE_MISSING", "0").strip() == "1")
+
+# PURGE 安全阈值（建议在 workflow 里配置）
+PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))
+PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
+
+# CSV/URL 拉取重试
+FETCH_RETRY = int(os.getenv("FETCH_RETRY", "2"))
+FETCH_TIMEOUT = int(os.getenv("FETCH_TIMEOUT", "30"))
 
 FLAG = {
     "US": "🇺🇸", "UK": "🇬🇧", "DE": "🇩🇪", "FR": "🇫🇷",
@@ -76,7 +76,6 @@ def _decode_bytes(b: bytes) -> str:
 
 
 def norm_text(v) -> str:
-    """稳定文本：去首尾、合并多空格，避免 hash 每次变化"""
     s = safe_str(v)
     if not s:
         return ""
@@ -112,22 +111,14 @@ def parse_decimal_maybe(v) -> Optional[Decimal]:
 
 
 def canonical_money_for_hash(v) -> str:
-    """
-    用于 hash：10 / 10.0 / 10.00 -> "10"
-    为空或 0 -> ""
-    解析失败 -> 归一化原文本
-    """
     s = safe_str(v)
     if not s:
         return ""
-
     d = parse_decimal_maybe(s)
     if d is None:
         return norm_text(s)
-
     if d == 0:
         return ""
-
     normalized = d.normalize()
     as_str = format(normalized, "f")
     if "." in as_str:
@@ -136,12 +127,6 @@ def canonical_money_for_hash(v) -> str:
 
 
 def format_money_for_caption(v, market: str) -> Optional[str]:
-    """
-    文案显示：
-    - 空/0 不显示
-    - 已带符号原样
-    - 纯数字：尾随符号 10$
-    """
     s = safe_str(v)
     if not s:
         return None
@@ -162,15 +147,10 @@ def format_money_for_caption(v, market: str) -> Optional[str]:
 
 
 def load_json_safe(p: Path, default):
-    """
-    防止 posted_state.json 为空/损坏导致脚本直接崩。
-    注意：如果 state 真坏了，会回到 default（可能导致重新发），但至少不会中断。
-    """
     if not p.exists():
         return default
     raw = p.read_text(encoding="utf-8", errors="replace").strip()
     if not raw:
-        # 空文件
         backup = p.with_suffix(".empty.bak")
         p.rename(backup)
         print(f"[warn] {p.name} was empty, backed up to {backup.name}, start fresh.")
@@ -185,12 +165,35 @@ def load_json_safe(p: Path, default):
 
 
 def save_json_atomic(p: Path, obj):
-    """
-    原子写入，避免写一半被中断导致 JSON 损坏
-    """
     tmp = p.with_suffix(".tmp")
     tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(tmp, p)
+
+
+def _looks_like_html(text: str) -> bool:
+    head = (text or "").lstrip().lower()[:400]
+    return head.startswith("<!doctype html") or head.startswith("<html") or "<body" in head[:200]
+
+
+def _validate_csv_header(fieldnames: Optional[List[str]], source: str):
+    """
+    强校验：至少要有 market + asin（大小写都支持）
+    目的：防止 URL 返回登录页/错误页/空内容导致误删
+    """
+    if not fieldnames:
+        raise ValueError(f"{source}: CSV header missing/empty fieldnames.")
+
+    cols = {c.strip() for c in fieldnames if c}
+    cols_lower = {c.lower() for c in cols}
+
+    has_market = ("market" in cols_lower)
+    has_asin = ("asin" in cols_lower)
+
+    if not has_market or not has_asin:
+        raise ValueError(
+            f"{source}: CSV header invalid. Need columns market & asin (case-insensitive). "
+            f"Got={fieldnames}"
+        )
 
 
 # -------------------- Telegram --------------------
@@ -263,7 +266,6 @@ def load_products() -> List[Dict[str, str]]:
         link = _get(row, "link", "Link", "url", "URL")
         image_url = _get(row, "image_url", "image", "Image", "img")
 
-        # status 支持多种列名
         status = norm_status(_get(row, "status", "Status", "removed"))
 
         discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount")
@@ -292,26 +294,49 @@ def load_products() -> List[Dict[str, str]]:
             raise FileNotFoundError(f"products.csv not found: {csv_path}")
         raw = csv_path.read_bytes()
         text = _decode_bytes(raw)
+        if _looks_like_html(text):
+            raise ValueError("local products.csv looks like HTML, abort.")
         reader = csv.DictReader(io.StringIO(text))
+        _validate_csv_header(reader.fieldnames, "local products.csv")
         print(f"[debug] local csv fieldnames: {reader.fieldnames}")
         for row in reader:
             if row:
                 rows.append(_normalize_row(row))
         print(f"[ok] loaded from local csv: {len(rows)} rows ({csv_path})")
 
+    def _fetch_text_with_retry(url: str) -> str:
+        last_err = None
+        for attempt in range(FETCH_RETRY + 1):
+            try:
+                r = requests.get(url, timeout=FETCH_TIMEOUT)
+                r.raise_for_status()
+                text = _decode_bytes(r.content)
+
+                # content-type / html 拦截（防止登录页/错误页）
+                ctype = (r.headers.get("content-type") or "").lower()
+                if "text/html" in ctype or _looks_like_html(text):
+                    raise ValueError("CSV URL returned HTML (likely login/error page).")
+
+                return text
+            except Exception as e:
+                last_err = e
+                wait = 1 + attempt * 2
+                print(f"[warn] fetch failed ({attempt+1}/{FETCH_RETRY+1}): {e}. wait {wait}s")
+                time.sleep(wait)
+        raise RuntimeError(f"fetch failed after retries: {last_err}")
+
     if sheet_url:
         try:
-            r = requests.get(sheet_url, timeout=30)
-            r.raise_for_status()
-            text = _decode_bytes(r.content)
+            text = _fetch_text_with_retry(sheet_url)
             reader = csv.DictReader(io.StringIO(text))
+            _validate_csv_header(reader.fieldnames, "GOOGLE_SHEET_CSV_URL")
             print(f"[debug] sheet csv fieldnames: {reader.fieldnames}")
             for row in reader:
                 if row:
                     rows.append(_normalize_row(row))
-            print(f"[ok] loaded from Google Sheets: {len(rows)} rows")
+            print(f"[ok] loaded from CSV URL: {len(rows)} rows")
         except Exception as e:
-            print(f"[warn] failed to load Google Sheets CSV, err={e}")
+            print(f"[warn] failed to load CSV URL, err={e}")
             if FALLBACK_TO_LOCAL_CSV:
                 print("[warn] fallback to local products.csv ...")
                 _load_from_local()
@@ -319,6 +344,9 @@ def load_products() -> List[Dict[str, str]]:
                 raise
     else:
         _load_from_local()
+
+    if not rows:
+        raise ValueError("No rows loaded from CSV source (empty).")
 
     return rows
 
@@ -340,7 +368,6 @@ def build_caption(p: dict) -> str:
 
     lines: List[str] = []
 
-    # 标题：只显示国旗 + 标题
     if title:
         head = f"{flag}{title}".strip() if flag else title
     else:
@@ -369,11 +396,6 @@ def build_caption(p: dict) -> str:
 # -------------------- send / edit --------------------
 
 def send_new(chat_id: int, thread_id: int, p: dict) -> Tuple[Optional[dict], Optional[str]]:
-    """
-    返回 (info, err_code)
-    - info: {"message_id", "kind", "image_url"} 或 None
-    - err_code: None / "BAD_IMAGE_SKIP"
-    """
     caption = build_caption(p)
     img = safe_str(p.get("image_url"))
 
@@ -393,7 +415,6 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> Tuple[Optional[dict], Opt
                 return None, "BAD_IMAGE_SKIP"
             print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
 
-    # fallback 文本
     res = tg_api("sendMessage", {
         "chat_id": chat_id,
         "message_thread_id": thread_id,
@@ -405,10 +426,6 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> Tuple[Optional[dict], Opt
 
 
 def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
-    """
-    - prev photo：优先尝试改 media，失败则只改 caption（保留旧图）
-    - prev text：只改 text（忽略 new_img）
-    """
     caption = build_caption(p)
 
     prev_kind = safe_str(prev.get("kind") or "text")
@@ -481,8 +498,8 @@ def main():
     global _should_exit
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
     print(f"[debug] BAD_IMAGE_POLICY={BAD_IMAGE_POLICY} PURGE_MISSING={PURGE_MISSING} TG_SEND_DELAY_SEC={SEND_DELAY_SEC}")
+    print(f"[debug] PURGE_MIN_ROWS={PURGE_MIN_ROWS} PURGE_MIN_ACTIVE_RATIO={PURGE_MIN_ACTIVE_RATIO} FETCH_RETRY={FETCH_RETRY} FETCH_TIMEOUT={FETCH_TIMEOUT}")
 
-    # 绑定信号：尽量减少中断导致 state 损坏
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
@@ -498,31 +515,12 @@ def main():
 
     state: Dict[str, Any] = load_json_safe(STATE_FILE, {})
     products = load_products()
-        state: Dict[str, Any] = load_json_safe(STATE_FILE, {})
-    products = load_products()
-
-    # --- purge 安全阈值：防止 CSV 异常导致误删 ---
-    prev_active = sum(1 for v in state.values() if isinstance(v, dict) and v.get("status") == "active")
-    curr_rows = len(products)
-
-    PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))               # 本次行数少于这个值，不允许 purge
-    PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))  # 本次行数 < 上次活跃数*比例，不允许 purge
-
-    purge_allowed = True
-    if PURGE_MISSING:
-        if curr_rows < PURGE_MIN_ROWS:
-            purge_allowed = False
-            print(f"[warn] PURGE blocked: rows too small ({curr_rows} < {PURGE_MIN_ROWS})")
-        elif prev_active > 0 and curr_rows < int(prev_active * PURGE_MIN_ACTIVE_RATIO):
-            purge_allowed = False
-            print(f"[warn] PURGE blocked: rows too small vs prev_active ({curr_rows} < {int(prev_active * PURGE_MIN_ACTIVE_RATIO)})")
-
 
     ok_count = 0
     skip_count = 0
     err_count = 0
 
-    # 记录本次表格里出现过的 key，用于 PURGE_MISSING
+    # seen_keys：只要 CSV 里存在 market+asin，就加入（避免因 thread_id 缺失造成误删）
     seen_keys = set()
 
     for p in products:
@@ -534,26 +532,22 @@ def main():
             market = safe_str(p.get("market")).upper()
             asin = safe_str(p.get("asin"))
 
-            if not asin:
+            if not asin or market not in VALID_MARKETS:
                 skip_count += 1
                 continue
 
-            if market not in VALID_MARKETS:
-                skip_count += 1
-                continue
+            key = f"{market}:{asin}"
+            seen_keys.add(key)
 
+            # 没有 thread_id 就不发/不改，但也不应该当成 missing
             thread_id = thread_map.get(market)
             if not thread_id:
                 skip_count += 1
                 continue
             thread_id = int(thread_id)
 
-            key = f"{market}:{asin}"
-            seen_keys.add(key)
-
             status = norm_status(p.get("status"))
 
-            # 稳定 hash：文本归一化 + 金额 canonical
             content_hash = sha1(
                 "|".join([
                     norm_text(p.get("title")),
@@ -570,11 +564,10 @@ def main():
 
             prev = state.get(key)
 
-            # -------- removed：删除（关键：不清空 message_id）--------
+            # -------- removed：删除 --------
             if status == "removed":
                 delete_ok = bool(prev.get("delete_ok")) if isinstance(prev, dict) else False
 
-                # 已经 removed 且 delete_ok 且 hash 未变：跳过（避免每 30 分钟重复 delete）
                 if prev and prev.get("status") == "removed" and prev.get("hash") == content_hash and delete_ok:
                     skip_count += 1
                     continue
@@ -597,7 +590,6 @@ def main():
                     "ts": int(time.time()),
                     "delete_attempted": attempted or bool((prev or {}).get("delete_attempted")),
                     "delete_ok": delete_ok,
-                    # 注意：不清空 message_id，方便后续重试删除
                 }
                 ok_count += 1
                 continue
@@ -666,18 +658,47 @@ def main():
             print(f"[error] product failed but continue. market={p.get('market')} asin={p.get('asin')} err={e}")
             continue
 
-    # 可选：如果你用“删除整行=下架”，启用 PURGE_MISSING=1
-        if PURGE_MISSING and purge_allowed and not _should_exit:
-        missing = [k for k, v in state.items() if isinstance(v, dict) and k not in seen_keys and v.get("status") == "active"]
+    # -------------------- PURGE MISSING (safe + retry) --------------------
+    purge_allowed = True
+    if PURGE_MISSING:
+        prev_active = sum(
+            1 for v in state.values()
+            if isinstance(v, dict) and v.get("status") == "active"
+        )
+        curr_seen = len(seen_keys)
+
+        if curr_seen < PURGE_MIN_ROWS:
+            purge_allowed = False
+            print(f"[warn] PURGE blocked: seen_keys too small ({curr_seen} < {PURGE_MIN_ROWS})")
+        elif prev_active > 0 and curr_seen < int(prev_active * PURGE_MIN_ACTIVE_RATIO):
+            purge_allowed = False
+            print(
+                f"[warn] PURGE blocked: seen_keys too small vs prev_active "
+                f"({curr_seen} < {int(prev_active * PURGE_MIN_ACTIVE_RATIO)})"
+            )
+
+    if PURGE_MISSING and purge_allowed and not _should_exit:
+        missing = [
+            k for k, v in state.items()
+            if isinstance(v, dict)
+            and k not in seen_keys
+            and (
+                v.get("status") == "active"
+                or (v.get("status") == "removed" and not v.get("delete_ok"))
+            )
+        ]
+
         if missing:
-            print(f"[warn] PURGE_MISSING enabled, will purge missing active keys: {len(missing)}")
+            print(f"[warn] PURGE_MISSING enabled, will purge missing keys: {len(missing)}")
+
         for key in missing:
             if _should_exit:
                 break
+
             prev = state.get(key) or {}
-            # 标记为 removed 并尝试 delete
             content_hash = prev.get("hash") or ""
             delete_ok = bool(prev.get("delete_ok"))
+
             if prev.get("message_id") and not delete_ok:
                 try:
                     tg_api("deleteMessage", {"chat_id": chat_id, "message_id": int(prev["message_id"])})
@@ -695,6 +716,8 @@ def main():
                 "delete_attempted": True,
                 "delete_ok": delete_ok,
             }
+    elif PURGE_MISSING and not purge_allowed:
+        print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip purge this run.")
 
     save_json_atomic(STATE_FILE, state)
     print(f"done. ok={ok_count} skip={skip_count} err={err_count}. state saved -> {STATE_FILE}")
@@ -702,4 +725,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
