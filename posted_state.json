@@ -415,9 +415,9 @@
     "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61kxAEHfpDL._AC_SX425_.jpg",
-    "ts": 1765841427,
+    "ts": 1765842323,
     "delete_attempted": true,
-    "delete_ok": false
+    "delete_ok": true
   },
   "DE:B0G2G7C6ZW": {
     "message_id": 2157,
@@ -625,9 +625,9 @@
     "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61AYDIJJ0SL._AC_SX679_.jpg",
-    "ts": 1765841427,
+    "ts": 1765842323,
     "delete_attempted": true,
-    "delete_ok": false
+    "delete_ok": true
   },
   "UK:B0G2B9G5TJ": {
     "message_id": 2178,
