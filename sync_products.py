@@ -278,8 +278,9 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
     raise RuntimeError(f"{method} failed after retries (429).")
 
 
-def is_bad_image_error(err: Exception) -> bool:
+def is_not_modified_error(err: Exception) -> bool:
     s = str(err).lower()
+    return ("message is not modified" in s) or ("specified new message content" in s)
     keys = [
         "wrong type of the web page content",
         "failed to get http url content",
@@ -819,3 +820,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
