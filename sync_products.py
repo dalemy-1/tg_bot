@@ -498,6 +498,25 @@ def main():
 
     state: Dict[str, Any] = load_json_safe(STATE_FILE, {})
     products = load_products()
+        state: Dict[str, Any] = load_json_safe(STATE_FILE, {})
+    products = load_products()
+
+    # --- purge 安全阈值：防止 CSV 异常导致误删 ---
+    prev_active = sum(1 for v in state.values() if isinstance(v, dict) and v.get("status") == "active")
+    curr_rows = len(products)
+
+    PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))               # 本次行数少于这个值，不允许 purge
+    PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))  # 本次行数 < 上次活跃数*比例，不允许 purge
+
+    purge_allowed = True
+    if PURGE_MISSING:
+        if curr_rows < PURGE_MIN_ROWS:
+            purge_allowed = False
+            print(f"[warn] PURGE blocked: rows too small ({curr_rows} < {PURGE_MIN_ROWS})")
+        elif prev_active > 0 and curr_rows < int(prev_active * PURGE_MIN_ACTIVE_RATIO):
+            purge_allowed = False
+            print(f"[warn] PURGE blocked: rows too small vs prev_active ({curr_rows} < {int(prev_active * PURGE_MIN_ACTIVE_RATIO)})")
+
 
     ok_count = 0
     skip_count = 0
@@ -648,7 +667,7 @@ def main():
             continue
 
     # 可选：如果你用“删除整行=下架”，启用 PURGE_MISSING=1
-    if PURGE_MISSING and not _should_exit:
+        if PURGE_MISSING and purge_allowed and not _should_exit:
         missing = [k for k, v in state.items() if isinstance(v, dict) and k not in seen_keys and v.get("status") == "active"]
         if missing:
             print(f"[warn] PURGE_MISSING enabled, will purge missing active keys: {len(missing)}")
@@ -683,3 +702,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
