@@ -39,6 +39,7 @@ jobs:
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
 
           TG_SEND_DELAY_SEC: "3.5"
+          MAX_ACTIONS_PER_RUN: "50"
 
           PURGE_MIN_ROWS: "120"
           PURGE_MIN_ACTIVE_RATIO: "0.6"
