@@ -50,16 +50,35 @@ jobs:
           PURGE_MISSING: "1"
         run: python sync_products.py
 
-      - name: Commit posted_state.json
+            - name: Commit posted_state.json
         if: ${{ always() }}
         run: |
+          set -e
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 先把远端最新拉下来，再在最新基础上提交，避免 rebase 冲突
+          git pull --rebase --autostash
+
           git add posted_state.json
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No changes in posted_state.json, skip commit."
             exit 0
           fi
+
           git commit -m "Update posted_state.json"
-          git pull --rebase --autostash
-          git push
+
+          # 推送失败就重试（应对极少数“刚好有人/另一个run先push”的情况）
+          for i in 1 2 3; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push failed, retry $i..."
+            git pull --rebase --autostash
+            sleep $((i*2))
+          done
+
+          echo "Push failed after retries."
+          exit 1
+
