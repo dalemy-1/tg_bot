@@ -2,6 +2,8 @@ name: Sync Products
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"   # 每15分钟
 
 
 concurrency:
