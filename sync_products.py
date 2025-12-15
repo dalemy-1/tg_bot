@@ -448,6 +448,11 @@ def send_new(chat_id: int, thread_id: int, p: dict) -> Tuple[Optional[dict], Opt
 
 
 def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
+    """
+    - prev photo：优先尝试改 media，失败则只改 caption（保留旧图）
+    - prev text：只改 text（忽略 new_img）
+    - 特殊：Telegram 400 message is not modified -> 视为成功（不报错）
+    """
     caption = build_caption(p)
 
     prev_kind = safe_str(prev.get("kind") or "text")
@@ -455,6 +460,7 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
     new_img = safe_str(p.get("image_url"))
 
     if prev_kind == "photo":
+        # 尝试换图（只有 new_img 不同才尝试）
         if new_img and new_img != prev_img:
             try:
                 tg_api("editMessageMedia", {
@@ -465,24 +471,42 @@ def edit_existing(chat_id: int, message_id: int, prev: dict, p: dict) -> dict:
                 time.sleep(SEND_DELAY_SEC)
                 return {"kind": "photo", "image_url": new_img}
             except Exception as e:
+                # 如果只是“内容相同”，直接当成功
+                if is_not_modified_error(e):
+                    return {"kind": "photo", "image_url": prev_img}
                 print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
 
-        tg_api("editMessageCaption", {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "caption": caption,
-        })
-        time.sleep(SEND_DELAY_SEC)
+        # 只改 caption（保留旧图）
+        try:
+            tg_api("editMessageCaption", {
+                "chat_id": chat_id,
+                "message_id": message_id,
+                "caption": caption,
+            })
+            time.sleep(SEND_DELAY_SEC)
+        except Exception as e:
+            if is_not_modified_error(e):
+                # 无变化，忽略
+                return {"kind": "photo", "image_url": prev_img}
+            raise
         return {"kind": "photo", "image_url": prev_img}
 
-    tg_api("editMessageText", {
-        "chat_id": chat_id,
-        "message_id": message_id,
-        "text": caption,
-        "disable_web_page_preview": True,
-    })
-    time.sleep(SEND_DELAY_SEC)
+    # prev text
+    try:
+        tg_api("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": caption,
+            "disable_web_page_preview": True,
+        })
+        time.sleep(SEND_DELAY_SEC)
+    except Exception as e:
+        if is_not_modified_error(e):
+            return {"kind": "text", "image_url": ""}
+        raise
+
     return {"kind": "text", "image_url": ""}
+
 
 
 # -------------------- mapping --------------------
@@ -820,4 +844,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
