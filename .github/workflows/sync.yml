@@ -49,10 +49,5 @@ jobs:
           git diff --cached --quiet || git commit -m "Update posted_state.json"
           git pull --rebase --autostash
           git push
-          - name: Download latest CSV
-  run: |
-    curl -L "http://154.48.226.95:5001/admin/Product/export_csv" -o products.csv
-    ls -lh products.csv
-    head -n 3 products.csv
-
+          
 # touch
