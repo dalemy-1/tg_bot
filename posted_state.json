@@ -195,7 +195,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71DKIoNg36L._AC_SL1500_.jpg",
-    "ts": 1765814012,
+    "ts": 1765814496,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -295,7 +295,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/718X3tpKCgL._AC_SL1500_.jpg",
-    "ts": 1765813982,
+    "ts": 1765814475,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -352,12 +352,12 @@
   "UK:B0B5SR78K1": {
     "message_id": 2150,
     "hash": "e7bcd71de0e95d6b15e064c1a209b8699c98ada9",
-    "status": "active",
+    "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61ahllP6cwL._AC_SY355_.jpg",
-    "ts": 1765669920,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765814565,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "US:B0FZ5KCCMH": {
     "message_id": 2151,
@@ -375,7 +375,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71mWxIBnf-L._AC_SX569_.jpg",
-    "ts": 1765814020,
+    "ts": 1765814500,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -522,12 +522,12 @@
   "US:B0D5CV3K4K": {
     "message_id": 2167,
     "hash": "56dcdc7d8d8a361ecda6f44de1da34ba7b995a63",
-    "status": "active",
+    "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/91mTkNnAh1L._AC_SY300_SX300_QL70_FMwebp_.jpg",
-    "ts": 1765810924,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765814566,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "US:B0FYLXDNV9": {
     "message_id": 2168,
@@ -875,7 +875,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61MlU2BEUIL._AC_SL1500_.jpg",
-    "ts": 1765814024,
+    "ts": 1765814504,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -905,7 +905,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71t85DVhCWL._SL1500_.jpg",
-    "ts": 1765814037,
+    "ts": 1765814516,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1035,7 +1035,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81O7mfqnklL._AC_SX679_.jpg",
-    "ts": 1765814032,
+    "ts": 1765814512,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1065,7 +1065,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81XG-hpKmNL._AC_SX679_PIbundle-20,TopRight,0,0_SH20_.jpg",
-    "ts": 1765814066,
+    "ts": 1765814541,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1255,7 +1255,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61ULMLMjcLL._AC_SX679_.jpg",
-    "ts": 1765814057,
+    "ts": 1765814537,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1275,7 +1275,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81CYoDEMO3L._AC_SX679_.jpg",
-    "ts": 1765814045,
+    "ts": 1765814524,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1415,7 +1415,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/51HhsyBTUlL._AC_SX679_.jpg",
-    "ts": 1765814053,
+    "ts": 1765814532,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1935,7 +1935,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/51+WYTlC3iL._AC_SX679_.jpg",
-    "ts": 1765814087,
+    "ts": 1765814553,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1975,7 +1975,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71AdiYqQD+L._AC_SX679_.jpg",
-    "ts": 1765814091,
+    "ts": 1765814557,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -2225,7 +2225,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/514YnLif7KL._AC_SX679_.jpg",
-    "ts": 1765814108,
+    "ts": 1765814565,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -2292,12 +2292,12 @@
   "US:B0FGHZCN4Q": {
     "message_id": 2097,
     "hash": "df0a506116d8c46d738970d47a660902d0e2f3eb",
-    "status": "active",
+    "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61O2ElaN+YL._SX679_.jpg",
-    "ts": 1765669714,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765814567,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "US:B0FN3XPCTC": {
     "message_id": 2098,
@@ -2552,12 +2552,12 @@
   "US:B0FJRRRT8Q": {
     "message_id": 2338,
     "hash": "c86940d4dcfa30ca6dd96127692592354560d2e2",
-    "status": "active",
+    "status": "removed",
     "kind": "text",
     "image_url": "",
-    "ts": 1765810895,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765814567,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "US:2569874589": {
     "message_id": 2339,
@@ -2755,7 +2755,7 @@
     "status": "active",
     "kind": "text",
     "image_url": "",
-    "ts": 1765813978,
+    "ts": 1765814471,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -2778,5 +2778,15 @@
     "ts": 1765812796,
     "delete_attempted": true,
     "delete_ok": true
+  },
+  "UK:B0F3CS1VTR": {
+    "message_id": 2650,
+    "hash": "e2da46307734e4a52dd3cdaa03c2d4b0ff8f9cb0",
+    "status": "active",
+    "kind": "photo",
+    "image_url": "https://m.media-amazon.com/images/I/61iUZe3t4zL._SX522_.jpg",
+    "ts": 1765814451,
+    "delete_attempted": false,
+    "delete_ok": false
   }
 }
