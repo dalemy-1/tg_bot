@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: sync-products
-  cancel-in-progress: false   # 关键：不要取消正在运行的任务
+  cancel-in-progress: false   # 不取消正在运行的任务（允许并发）
 
 permissions:
   contents: write
@@ -50,7 +50,7 @@ jobs:
           PURGE_MISSING: "1"
         run: python sync_products.py
 
-            - name: Commit posted_state.json
+      - name: Commit posted_state.json
         if: ${{ always() }}
         run: |
           set -e
@@ -58,7 +58,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 先把远端最新拉下来，再在最新基础上提交，避免 rebase 冲突
+          # 先把远端最新拉下来，再在最新基础上提交，降低冲突概率
           git pull --rebase --autostash
 
           git add posted_state.json
@@ -69,7 +69,7 @@ jobs:
 
           git commit -m "Update posted_state.json"
 
-          # 推送失败就重试（应对极少数“刚好有人/另一个run先push”的情况）
+          # 推送失败就重试（应对并发 run 同时 push）
           for i in 1 2 3; do
             if git push; then
               exit 0
@@ -81,4 +81,3 @@ jobs:
 
           echo "Push failed after retries."
           exit 1
-
