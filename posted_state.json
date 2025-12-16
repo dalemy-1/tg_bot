@@ -32,12 +32,12 @@
   "US:B0FMY2PGT5": {
     "message_id": 2677,
     "hash": "717f3f901a0b547d05ecc1707efdb050c257c0f8",
-    "status": "active",
+    "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61nVcTHAi7L._SL1500_.jpg",
-    "ts": 1765842465,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765870227,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "US:B0F1F9777B": {
     "message_id": 2678,
@@ -65,7 +65,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
-    "ts": 1765868487,
+    "ts": 1765870283,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -182,12 +182,12 @@
   "US:B0FJM8NQ4C": {
     "message_id": 2692,
     "hash": "4d6823e111ef6e0d11ac98c7de5b0ed04cda71ff",
-    "status": "active",
+    "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71R+UqSeagL._AC_SL1500_.jpg",
-    "ts": 1765842528,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765870228,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "DE:B0FRFWXHT1": {
     "message_id": 2693,
@@ -295,19 +295,19 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61MlU2BEUIL._AC_SL1500_.jpg",
-    "ts": 1765868523,
+    "ts": 1765870320,
     "delete_attempted": false,
     "delete_ok": false
   },
   "US:1707852068": {
     "message_id": 2704,
     "hash": "3dea8b6dca06dec80e2729e2509729e1d115c56e",
-    "status": "active",
+    "status": "removed",
     "kind": "text",
     "image_url": "",
-    "ts": 1765842579,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765870229,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "US:B0D5CV3K4K": {
     "message_id": 2705,
@@ -475,7 +475,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://i5.walmartimages.com/seo/PC-Camera-Webcam-with-4-Microphones-1080P-for-Laptop-Video-Call-Conference-Stream-Computer-Webcam-Vizolink_7be1f1b3-5def-44fb-804b-397c6b690d3b.ee4f0faaafa573f8984048c63a53552b.jpeg?odnHeight=573&odnWidth=573&odnBg=FFFFFF",
-    "ts": 1765868459,
+    "ts": 1765870255,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -485,7 +485,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/718X3tpKCgL._AC_SL1500_.jpg",
-    "ts": 1765868467,
+    "ts": 1765870263,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -525,7 +525,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81XG-hpKmNL._AC_SX679_PIbundle-20,TopRight,0,0_SH20_.jpg",
-    "ts": 1765868570,
+    "ts": 1765870369,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -595,7 +595,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71mWxIBnf-L._AC_SX569_.jpg",
-    "ts": 1765868519,
+    "ts": 1765870316,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -615,7 +615,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81JtaAETIXL._AC_SY355_.jpg",
-    "ts": 1765868598,
+    "ts": 1765870398,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -685,7 +685,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81O7mfqnklL._AC_SX679_.jpg",
-    "ts": 1765868539,
+    "ts": 1765870336,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -795,7 +795,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81CYoDEMO3L._AC_SX679_.jpg",
-    "ts": 1765868550,
+    "ts": 1765870349,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -805,7 +805,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71DKIoNg36L._AC_SL1500_.jpg",
-    "ts": 1765868503,
+    "ts": 1765870300,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -865,7 +865,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/712i0x5Va9L._AC_SX425_.jpg",
-    "ts": 1765868507,
+    "ts": 1765870304,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -875,7 +875,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81Kcx9O6rYL._AC_SY355_.jpg",
-    "ts": 1765868602,
+    "ts": 1765870402,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -935,7 +935,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71E-zJ2LiXL._AC_SX679_.jpg",
-    "ts": 1765868586,
+    "ts": 1765870385,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -965,7 +965,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/81AZa9hKelL._AC_SY355_.jpg",
-    "ts": 1765868527,
+    "ts": 1765870324,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1005,7 +1005,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/7109wzLiK1L._AC_SX679_.jpg",
-    "ts": 1765868531,
+    "ts": 1765870328,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1062,12 +1062,12 @@
   "CA:B0D5D48J3B": {
     "message_id": 2780,
     "hash": "b926113e6307e409d40389b230aa02db5fb6efa8",
-    "status": "active",
+    "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71ezKvFTBKL._AC_SY355_.jpg",
-    "ts": 1765843287,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765870230,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "DE:B0G194N5B5": {
     "message_id": 2781,
@@ -1165,7 +1165,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71t85DVhCWL._SL1500_.jpg",
-    "ts": 1765868543,
+    "ts": 1765870340,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1375,7 +1375,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61ULMLMjcLL._AC_SX679_.jpg",
-    "ts": 1765868566,
+    "ts": 1765870361,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1485,7 +1485,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/51HhsyBTUlL._AC_SX679_.jpg",
-    "ts": 1765868558,
+    "ts": 1765870357,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1665,7 +1665,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71q1KV-C95L._AC_SX679_.jpg",
-    "ts": 1765868574,
+    "ts": 1765870373,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1945,7 +1945,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/51+WYTlC3iL._AC_SX679_.jpg",
-    "ts": 1765868590,
+    "ts": 1765870389,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -1985,7 +1985,7 @@
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/71AdiYqQD+L._AC_SX679_.jpg",
-    "ts": 1765868594,
+    "ts": 1765870393,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -2161,11 +2161,11 @@
   },
   "UK:B0FNQK2PZK": {
     "message_id": 2901,
-    "hash": "4f6dfd6c6d904b87a99cd291c49359a2b16bc950",
+    "hash": "c98034885f2d832f32a4c2d71d5750a042c54d71",
     "status": "active",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/514YnLif7KL._AC_SX679_.jpg",
-    "ts": 1765868606,
+    "ts": 1765870406,
     "delete_attempted": false,
     "delete_ok": false
   },
@@ -2342,12 +2342,12 @@
   "UK:B0F13DJM8T": {
     "message_id": 2919,
     "hash": "e82a6680a1cbd3de437848daa127ad5a36c86cb3",
-    "status": "active",
+    "status": "removed",
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/61rBjjAq0VL._AC_SX425_.jpg",
-    "ts": 1765846983,
-    "delete_attempted": false,
-    "delete_ok": false
+    "ts": 1765870230,
+    "delete_attempted": true,
+    "delete_ok": true
   },
   "UK:B0DZBMB3WX": {
     "message_id": 2920,
@@ -2576,6 +2576,16 @@
     "kind": "photo",
     "image_url": "https://m.media-amazon.com/images/I/51vMyOX5GrL._AC_SX425_.jpg",
     "ts": 1765866827,
+    "delete_attempted": false,
+    "delete_ok": false
+  },
+  "US:B0FX9RW37B": {
+    "message_id": 2945,
+    "hash": "557a26e0e0d89e65c6435f62418be88bee0c0f50",
+    "status": "active",
+    "kind": "photo",
+    "image_url": "https://m.media-amazon.com/images/I/71BCDJ4-miL._AC_SL1500_.jpg",
+    "ts": 1765870410,
     "delete_attempted": false,
     "delete_ok": false
   }
