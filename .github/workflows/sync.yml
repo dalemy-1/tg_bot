@@ -1,79 +1,76 @@
-name: Sync Products
+name: sync
 
 on:
   workflow_dispatch:
-
-concurrency:
-  group: sync-products
-  cancel-in-progress: false
+  schedule:
+    # 每小时跑一次（如需改频率，改这里）
+    - cron: "0 * * * *"
 
 permissions:
   contents: write
+
+concurrency:
+  group: sync-products-latest
+  cancel-in-progress: true
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
+    env:
+      # 必填：Telegram 机器人 Token（在 GitHub -> Settings -> Secrets and variables -> Actions -> Secrets 里建）
+      TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+
+      # 可选：如果你用 Google Sheet CSV URL，就把它放到 Secrets 里（不填则读仓库的 products.csv）
+      GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
+
+      # 发送间隔（可按需改）
+      TG_SEND_DELAY_SEC: "2.0"
+
+      # ✅ 关键：每次运行允许的动作数（发/改/删 都算 action）
+      MAX_ACTIONS_PER_RUN: "100"
+
+      # 其它保持默认即可
+      BAD_IMAGE_POLICY: "fallback_text"
+      FALLBACK_TO_LOCAL_CSV: "1"
+      PURGE_MISSING: "0"
+      FETCH_RETRY: "2"
+      FETCH_TIMEOUT: "30"
+      RESET_STATE: "0"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          persist-credentials: true
           fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
 
-      - name: Install deps
-        run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
 
       - name: Run sync
-        env:
-          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-
-          TG_SEND_DELAY_SEC: "3.5"
-          MAX_ACTIONS_PER_RUN: "50"
-
-          PURGE_MIN_ROWS: "120"
-          PURGE_MIN_ACTIVE_RATIO: "0.6"
-          FETCH_RETRY: "2"
-          FETCH_TIMEOUT: "30"
-
-          BAD_IMAGE_POLICY: "fallback_text"
-          PURGE_MISSING: "1"
-        run: python sync_products.py
+        run: |
+          python sync_products.py
 
       - name: Commit posted_state.json
-        if: ${{ always() }}
         run: |
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 先拉远端最新，避免冲突
-          git pull --rebase --autostash
-
           git add posted_state.json
+
           if git diff --cached --quiet; then
-            echo "No changes in posted_state.json, skip commit."
+            echo "No state changes."
             exit 0
           fi
 
           git commit -m "Update posted_state.json"
-
-          for i in 1 2 3; do
-            if git push; then
-              exit 0
-            fi
-            echo "Push failed, retry $i..."
-            git pull --rebase --autostash
-            sleep $((i*2))
-          done
-
-          echo "Push failed after retries."
-          exit 1
+          git push
