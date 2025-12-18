@@ -400,6 +400,7 @@ def build_caption(p: dict) -> str:
     commission = format_money_for_caption(p.get("commission"), market)
 
     lines: List[str] = []
+
     head = f"{flag}{title}".strip() if title else f"{flag}(无标题)".strip()
     lines.append(head)
 
@@ -409,12 +410,17 @@ def build_caption(p: dict) -> str:
         lines.append(f"Store: {store}")
     if remark:
         lines.append(f"Remark: {remark}")
+
     if discount_price:
         lines.append(f"Discount Price: {discount_price}")
     if commission:
         lines.append(f"Commission: {commission}")
+
     if link:
         lines.append(f"link:{link}")
+
+    # ✅ 新增：固定加一行联系邮箱
+    lines.append("Contact Email: info@omino.top")
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
@@ -882,3 +888,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
