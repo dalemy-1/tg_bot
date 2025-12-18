@@ -29,7 +29,7 @@ jobs:
       TG_SEND_DELAY_SEC: "2.0"
 
       # ✅ 关键：每次运行允许的动作数（发/改/删 都算 action）
-      MAX_ACTIONS_PER_RUN: "100"
+      MAX_ACTIONS_PER_RUN: "250"
 
       # 其它保持默认即可
       BAD_IMAGE_POLICY: "fallback_text"
