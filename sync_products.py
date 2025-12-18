@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional, Tuple
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-19-channels-final"
+SYNC_PRODUCTS_VERSION = "2025-12-19-channels-final-v2"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -39,6 +39,7 @@ PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
 FETCH_RETRY = int(os.getenv("FETCH_RETRY", "2"))
 FETCH_TIMEOUT = int(os.getenv("FETCH_TIMEOUT", "30"))
 
+# 这是“每次 run 的动作上限”（发/删/改都算 action），不是单纯“发多少条”
 MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
 
 # RESET_STATE=1 会把旧 state 备份并清空，从零开始发
@@ -419,7 +420,7 @@ def build_caption(p: dict) -> str:
     if link:
         lines.append(f"link:{link}")
 
-    # ✅ 新增：固定加一行联系邮箱
+    # 固定加一行联系邮箱
     lines.append("Contact Email: info@omino.top")
 
     cap = "\n".join(lines)
@@ -546,7 +547,6 @@ def delete_message(target_chat_id, message_id: int) -> bool:
         tg_api("deleteMessage", {"chat_id": target_chat_id, "message_id": int(message_id)})
         return True
     except Exception as e:
-        # message not found：视为已删除，避免永远重试
         if is_message_not_found(e):
             return True
         print(f"[warn] delete failed but continue: chat={target_chat_id} msg={message_id} err={e}")
@@ -609,11 +609,9 @@ def main():
     if not TG_TOKEN:
         raise SystemExit("Missing TG_BOT_TOKEN env var.")
 
-    # 优先使用 channel_map.json（方案B：每国一个频道）
     channel_map = load_channel_map()
     use_channels = bool(channel_map)
 
-    # 论坛话题模式（兼容旧方案）
     forum_chat_id = None
     thread_map = None
     if not use_channels:
@@ -626,7 +624,6 @@ def main():
     else:
         print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
 
-    # state reset
     if RESET_STATE and STATE_FILE.exists():
         bak = STATE_FILE.with_suffix(f".reset_{int(time.time())}.bak")
         STATE_FILE.replace(bak)
@@ -636,7 +633,6 @@ def main():
     products = load_products()
 
     ok_count = 0
-    skip_count = 0
     err_count = 0
 
     actions_done = 0
@@ -646,18 +642,12 @@ def main():
         return actions_done >= MAX_ACTIONS_PER_RUN
 
     def target_for_market(market: str) -> Tuple[str, Optional[int]]:
-        """
-        返回 (chat_id, thread_id)
-        - channels: (channel chat, None)
-        - forum topics: (forum chat, thread_id)
-        """
         if use_channels:
             cid = channel_map.get(market)
             if not cid:
                 raise RuntimeError(f"channel_map missing market={market}")
             return cid, None
 
-        # forum topics
         if forum_chat_id is None or thread_map is None:
             raise RuntimeError("forum mode not initialized")
         tid = thread_map.get(market)
@@ -673,7 +663,7 @@ def main():
         if asin and market in VALID_MARKETS:
             seen_keys.add(f"{market}:{asin}")
 
-    # -------------------- Stage 1: deletions (explicit removed + purge missing) --------------------
+    # -------------------- Stage 1: deletions --------------------
 
     for p in products:
         if _should_exit or stopped_due_to_limit:
@@ -700,13 +690,10 @@ def main():
                     stopped_due_to_limit = True
                     print(f"[warn] action limit reached, stop before delete: {key}")
                     break
-                # 关键：删除要用“该消息原本所在 chat”
                 msg_chat = prev.get("chat_id")
                 if not msg_chat:
-                    # 兼容旧格式：论坛群组只有一个 chat_id
                     msg_chat = forum_chat_id if not use_channels else None
                 if not msg_chat:
-                    # 如果没有 chat_id，无法删除，只能标记 removed
                     delete_ok = False
                 else:
                     delete_ok = delete_message(msg_chat, prev["message_id"])
@@ -718,53 +705,6 @@ def main():
         except Exception as e:
             err_count += 1
             print(f"[error] explicit removed failed but continue. market={p.get('market')} asin={p.get('asin')} err={e}")
-
-    if (not stopped_due_to_limit) and (not _should_exit) and PURGE_MISSING:
-        purge_allowed = True
-        prev_active = sum(1 for v in state.values() if isinstance(v, dict) and v.get("status") == "active")
-        curr_seen = len(seen_keys)
-
-        if curr_seen < PURGE_MIN_ROWS:
-            purge_allowed = False
-            print(f"[warn] PURGE blocked: seen_keys too small ({curr_seen} < {PURGE_MIN_ROWS})")
-        elif prev_active > 0 and curr_seen < int(prev_active * PURGE_MIN_ACTIVE_RATIO):
-            purge_allowed = False
-            print(f"[warn] PURGE blocked: seen_keys too small vs prev_active ({curr_seen} < {int(prev_active * PURGE_MIN_ACTIVE_RATIO)})")
-
-        if purge_allowed:
-            missing = [
-                k for k, v in state.items()
-                if isinstance(v, dict)
-                and k not in seen_keys
-                and (v.get("status") == "active" or (v.get("status") == "removed" and not v.get("delete_ok")))
-            ]
-            if missing:
-                print(f"[warn] PURGE_MISSING enabled, will purge missing keys: {len(missing)}")
-
-            for key in missing:
-                if _should_exit or stopped_due_to_limit:
-                    break
-                if at_limit():
-                    stopped_due_to_limit = True
-                    print(f"[warn] action limit reached, stop during purge.")
-                    break
-
-                prev = state.get(key) if isinstance(state.get(key), dict) else {}
-                delete_ok = bool(prev.get("delete_ok"))
-                content_hash = prev.get("hash") or ""
-
-                if prev.get("message_id") and not delete_ok:
-                    msg_chat = prev.get("chat_id") or (forum_chat_id if not use_channels else None)
-                    if msg_chat:
-                        delete_ok = delete_message(msg_chat, prev["message_id"])
-                        actions_done += 1
-                    else:
-                        delete_ok = False
-
-                state[key] = {**prev, "status": "removed", "hash": content_hash, "ts": int(time.time()),
-                              "delete_attempted": True, "delete_ok": delete_ok}
-        else:
-            print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip purge this run.")
 
     # -------------------- Stage 2: active edit then post/repost --------------------
 
@@ -788,6 +728,15 @@ def main():
                 if not prev or not prev.get("message_id") or prev.get("status") != "active":
                     continue
 
+                target_chat, thread_id = target_for_market(market)
+
+                # ✅ 关键修复：如果 state 记录的 chat_id != 当前目标频道，则不要 edit，直接标记为需要重发
+                prev_chat = safe_str(prev.get("chat_id"))
+                if prev_chat and safe_str(prev_chat) != safe_str(target_chat):
+                    state[key] = {**prev, "chat_id": target_chat, "message_id": None, "ts": int(time.time())}
+                    print(f"[warn] channel changed (edit skip)->will repost: {key} from {prev_chat} -> {target_chat}")
+                    continue
+
                 content_hash = compute_content_hash(p, "active")
                 if prev.get("hash") == content_hash:
                     continue
@@ -797,16 +746,11 @@ def main():
                     print(f"[warn] action limit reached, stop before edit: {key}")
                     break
 
-                # 用 prev.chat_id 编辑（频道模式必须）
-                msg_chat = prev.get("chat_id")
-                if not msg_chat:
-                    msg_chat, _ = target_for_market(market)
-
+                msg_chat = prev.get("chat_id") or target_chat
                 msg_id = int(prev["message_id"])
                 new_meta, did_action, missing = edit_existing(msg_chat, msg_id, prev, p)
 
                 if missing:
-                    # 关键：旧消息不在了 -> 清掉 message_id，后续发布阶段会重发
                     state[key] = {**prev, "hash": content_hash, "ts": int(time.time()), "message_id": None}
                     print("missing(edit)->will repost:", key, "old_msg", msg_id)
                     continue
@@ -843,7 +787,22 @@ def main():
                 target_chat, thread_id = target_for_market(market)
                 content_hash = compute_content_hash(p, "active")
 
-                if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
+                # ✅ 关键修复：目标频道变化时，强制重发到新频道（避免漏发/错跳过）
+                if prev and prev.get("status") == "active":
+                    prev_chat = safe_str(prev.get("chat_id"))
+                    if prev_chat and safe_str(prev_chat) != safe_str(target_chat):
+                        state[key] = {**prev, "chat_id": target_chat, "message_id": None, "ts": int(time.time())}
+                        prev = state[key]
+                        print(f"[warn] target channel changed -> will repost: {key} {prev_chat} -> {target_chat}")
+
+                # ✅ 关键修复：只有 “同频道 + 同hash + 有message_id” 才跳过
+                if (
+                    prev
+                    and prev.get("status") == "active"
+                    and prev.get("hash") == content_hash
+                    and prev.get("message_id")
+                    and safe_str(prev.get("chat_id")) == safe_str(target_chat)
+                ):
                     continue
 
                 # removed -> active repost
@@ -888,6 +847,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
