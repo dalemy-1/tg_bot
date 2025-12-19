@@ -12,7 +12,7 @@ from typing import Dict, Any, List, Optional, Tuple
 import requests
 
 # ==================== version ====================
-SYNC_PRODUCTS_VERSION = "2025-12-19-dup-asin-final"
+SYNC_PRODUCTS_VERSION = "2025-12-19-dup-asin-final-v2"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -28,8 +28,8 @@ SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "2.0"))
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "fallback_text").strip().lower()
 
-# ✅ 以“列表”为准：如果某个 market:asin 组完全从表里消失，会删除该组所有消息（受安全阈值保护）
-PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() == "1")  # 建议你开 1，符合“列表删了就删消息”
+# 以“列表”为准：某个 market:asin 组完全从表里消失，会删除该组所有消息（受安全阈值保护）
+PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() == "1")
 PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))
 PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
 
@@ -40,6 +40,9 @@ MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
 
 # RESET_STATE=1 会把旧 state 备份并清空，从零开始发（会导致全部重发）
 RESET_STATE = (os.getenv("RESET_STATE", "0").strip() == "1")
+
+# ✅ 只迁移 state，不发 Telegram（用于把旧 posted_state.json 升级为 groups 结构，避免重发）
+MIGRATE_ONLY = (os.getenv("MIGRATE_ONLY", "0").strip() == "1")
 
 FLAG = {
     "US": "🇺🇸", "UK": "🇬🇧", "DE": "🇩🇪", "FR": "🇫🇷",
@@ -142,20 +145,26 @@ def load_json_safe(p: Path, default):
     raw = p.read_text(encoding="utf-8", errors="replace").strip()
     if not raw:
         backup = p.with_suffix(".empty.bak")
-        p.rename(backup)
+        try:
+            p.rename(backup)
+        except Exception:
+            pass
         print(f"[warn] {p.name} was empty, backed up to {backup.name}, start fresh.")
         return default
     try:
         return json.loads(raw)
     except Exception as e:
         backup = p.with_suffix(f".bad_{int(time.time())}.bak")
-        p.rename(backup)
+        try:
+            p.rename(backup)
+        except Exception:
+            pass
         print(f"[warn] {p.name} JSON invalid, backed up to {backup.name}, start fresh. err={e}")
         return default
 
 def save_json_atomic(p: Path, obj):
     tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.replace(tmp, p)
 
 def _looks_like_html(text: str) -> bool:
@@ -296,7 +305,7 @@ def load_products() -> List[Dict[str, str]]:
         store = _get(row, "store", "Store")
         remark = _get(row, "remark", "Remark")
         link = _get(row, "link", "Link", "url", "URL")
-        image_url = _get(row, "image_url", "image", "Image", "img", "image_urlDiscount", "image_urldiscount")
+        image_url = _get(row, "image_url", "image", "Image", "img", "Img", "imageUrl", "ImageUrl")
 
         status = norm_status(_get(row, "status", "Status", "removed"))
 
@@ -432,13 +441,6 @@ def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
     return {"message_id": res["message_id"], "kind": "text", "image_url": ""}, None
 
 def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple[dict, bool, bool]:
-    """
-    返回 (new_meta, did_action, message_missing)
-    规则：
-    - 不做“text->photo”类型转换（避免 delete+repost），保持原 kind 稳定
-    - photo 消息优先 editMedia(仅当有新图且不同)，否则 editCaption
-    - text 消息 editText
-    """
     caption = build_caption(p)
 
     prev_kind = safe_str(prev.get("kind") or "text")
@@ -447,7 +449,6 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
 
     try:
         if prev_kind == "photo":
-            # photo：只在 new_img 存在且改变时尝试 editMessageMedia
             if new_img and new_img != prev_img:
                 try:
                     tg_api("editMessageMedia", {
@@ -464,7 +465,6 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                         return {"kind": "photo", "image_url": prev_img}, False, False
                     print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
 
-            # photo：改 caption
             try:
                 tg_api("editMessageCaption", {
                     "chat_id": target_chat_id,
@@ -480,7 +480,6 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                     return {"kind": "photo", "image_url": prev_img}, False, False
                 raise
 
-        # text：保持 text（不做 text->photo 转换）
         try:
             tg_api("editMessageText", {
                 "chat_id": target_chat_id,
@@ -538,10 +537,13 @@ def migrate_state_to_groups(raw_state: Any) -> Dict[str, Any]:
       }
     }
 
-    兼容旧格式（flat key: "US:B0XXX" -> dict）
+    兼容旧格式 flat：
+    {
+      "US:B0XXX": { ... },
+      ...
+    }
     """
-    if isinstance(raw_state, dict) and "groups" in raw_state and isinstance(raw_state.get("groups"), dict):
-        # ensure meta
+    if isinstance(raw_state, dict) and isinstance(raw_state.get("groups"), dict):
         if "_meta" not in raw_state or not isinstance(raw_state.get("_meta"), dict):
             raw_state["_meta"] = {}
         return raw_state
@@ -549,7 +551,6 @@ def migrate_state_to_groups(raw_state: Any) -> Dict[str, Any]:
     groups: Dict[str, List[dict]] = {}
 
     if isinstance(raw_state, dict):
-        # old flat format
         for k, v in raw_state.items():
             if not isinstance(k, str):
                 continue
@@ -578,19 +579,22 @@ def main():
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
     print(f"[debug] BAD_IMAGE_POLICY={BAD_IMAGE_POLICY} PURGE_MISSING={PURGE_MISSING} TG_SEND_DELAY_SEC={SEND_DELAY_SEC}")
     print(f"[debug] PURGE_MIN_ROWS={PURGE_MIN_ROWS} PURGE_MIN_ACTIVE_RATIO={PURGE_MIN_ACTIVE_RATIO} FETCH_RETRY={FETCH_RETRY} FETCH_TIMEOUT={FETCH_TIMEOUT}")
-    print(f"[debug] MAX_ACTIONS_PER_RUN={MAX_ACTIONS_PER_RUN} RESET_STATE={RESET_STATE}")
+    print(f"[debug] MAX_ACTIONS_PER_RUN={MAX_ACTIONS_PER_RUN} RESET_STATE={RESET_STATE} MIGRATE_ONLY={MIGRATE_ONLY}")
 
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-    if not TG_TOKEN:
+    if not TG_TOKEN and not MIGRATE_ONLY:
         raise SystemExit("Missing TG_BOT_TOKEN env var.")
 
     channel_map = load_channel_map()
-    if not channel_map:
+    if not channel_map and not MIGRATE_ONLY:
         raise SystemExit("Missing channel_map.json. (channels mode required)")
 
-    print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
+    if channel_map:
+        print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
+    else:
+        print("[ok] mode=migrate-only (no Telegram calls)")
 
     # reset
     if RESET_STATE and STATE_FILE.exists():
@@ -600,6 +604,7 @@ def main():
 
     raw_state = load_json_safe(STATE_FILE, {})
     state = migrate_state_to_groups(raw_state)
+    state.setdefault("_meta", {})
     state["_meta"]["version"] = SYNC_PRODUCTS_VERSION
     state["_meta"]["ts"] = int(time.time())
 
@@ -607,6 +612,12 @@ def main():
     if not isinstance(groups, dict):
         groups = {}
         state["groups"] = groups
+
+    # ✅ 只迁移并保存，不发送（用于先把 flat posted_state.json 升级为 groups）
+    if MIGRATE_ONLY:
+        save_json_atomic(STATE_FILE, state)
+        print(f"[ok] MIGRATE_ONLY=1 -> migrated state saved -> {STATE_FILE}")
+        return
 
     products = load_products()
 
@@ -623,9 +634,7 @@ def main():
         return cid
 
     # ---------- build desired by group ----------
-    # desired[group_key] = {"market":.., "asin":.., "active": [product,...], "removed_count": n}
     desired: Dict[str, Dict[str, Any]] = {}
-
     seen_group_keys = set()
 
     for p in products:
@@ -695,21 +704,16 @@ def main():
                         meta["delete_ok"] = bool(ok)
                     meta["status"] = "removed"
                     meta["ts"] = int(time.time())
-                    # purge 后不保留旧 active 列表（避免下次又被拿来匹配）
-                    # 但保留 removed 记录也可以，这里直接清空更干净：
-                    # new_lst.append(meta)
                 groups[gk] = new_lst
         else:
             print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip purge this run.")
 
-    # ---------- per group: make actual match ----------
-    # 核心：允许同 asin 多条；优先 hash 同 -> 不动；其次复用旧消息 -> edit；最后多余 -> delete；不够 -> post
+    # ---------- per group ----------
     for gk, info in desired.items():
         if _should_exit or stopped_due_to_limit:
             break
 
         market = info["market"]
-        asin = info["asin"]
         target_chat = target_chat_for_market(market)
 
         desired_active: List[dict] = info["active"]
@@ -718,10 +722,8 @@ def main():
         existing_list = groups.get(gk)
         if not isinstance(existing_list, list):
             existing_list = []
-        # keep only dict
         existing_list = [m for m in existing_list if isinstance(m, dict)]
 
-        # consider existing active messages as candidates
         existing_candidates: List[dict] = []
         for m in existing_list:
             if m.get("status") == "active" and m.get("message_id") and m.get("chat_id"):
@@ -730,49 +732,42 @@ def main():
         # 1) exact hash match -> keep
         unused_existing = existing_candidates[:]
         used_existing_ids = set()
-        matched_pairs: List[Tuple[dict, dict, str]] = []  # (existing_meta, product, hash)
+        matched_pairs: List[Tuple[dict, dict, str]] = []
 
-        # map hash -> list metas
         by_hash: Dict[str, List[dict]] = {}
         for m in unused_existing:
             h = safe_str(m.get("hash"))
             by_hash.setdefault(h, []).append(m)
 
-        # exact matches
         unmatched_products: List[Tuple[dict, str]] = []
         for p, h in zip(desired_active, desired_hashes):
             if h in by_hash and by_hash[h]:
                 m = by_hash[h].pop()
                 used_existing_ids.add(id(m))
-                matched_pairs.append((m, p, h))  # no action
+                matched_pairs.append((m, p, h))
             else:
                 unmatched_products.append((p, h))
 
-        # remaining existing not used
         remaining_existing = [m for m in unused_existing if id(m) not in used_existing_ids]
 
-        # 2) reuse remaining existing for unmatched products -> edit (no delete+repost)
+        # 2) reuse remaining existing for unmatched -> edit
         edit_pairs: List[Tuple[dict, dict, str]] = []
         while unmatched_products and remaining_existing:
             p, h = unmatched_products.pop(0)
             m = remaining_existing.pop(0)
             edit_pairs.append((m, p, h))
 
-        # 3) extra existing after assignment -> delete (because list减少/删除)
+        # 3) extra existing -> delete
         extra_existing = remaining_existing[:]
 
-        # 4) extra products after reuse -> post
-        new_posts = unmatched_products[:]  # list of (p,h)
+        # 4) extra products -> post
+        new_posts = unmatched_products[:]
 
-        # ---- apply edits ----
-        # note: exact matched_pairs just refresh ts/hash in state list to keep up to date
-        # For matched_pairs, we do not spend actions.
         now_ts = int(time.time())
         for m, p, h in matched_pairs:
             m["hash"] = h
             m["ts"] = now_ts
             m["status"] = "active"
-            # 不强制改 chat_id，但建议保持 target_chat
             m["chat_id"] = m.get("chat_id") or target_chat
 
         for m, p, h in edit_pairs:
@@ -788,15 +783,12 @@ def main():
 
             new_meta, did_action, missing = edit_existing(msg_chat, msg_id, m, p)
             if missing:
-                # 原消息没了：尽量复用这条 meta 直接 repost（这会增加一次 send）
-                # 但仍然不 delete+repost（因为 message 已经不在）
                 if at_limit():
                     stopped_due_to_limit = True
                     print(f"[warn] action limit reached, stop before repost(missing): {gk}")
                     break
                 info2, err_code = send_new(target_chat, p)
                 if err_code == "BAD_IMAGE_SKIP":
-                    # skip: 标记为 removed，避免一直尝试
                     m["status"] = "removed"
                     m["ts"] = int(time.time())
                     print(f"[skip] repost missing but bad image skip: {gk}")
@@ -831,9 +823,6 @@ def main():
                 "ts": int(time.time()),
             })
 
-        # ---- apply deletions for extra_existing OR explicit removed rows ----
-        # 这里实现“列表删了就删消息”：如果 desired_active 数量 < existing_active 数量，就会进入 extra_existing 删除。
-        # 如果表里该组出现 removed 行：等价于 desired_active 减少（或者你将某行 status=removed），同样会触发减少。
         for m in extra_existing:
             if _should_exit or stopped_due_to_limit:
                 break
@@ -849,10 +838,9 @@ def main():
                 m["delete_ok"] = bool(ok)
             m["status"] = "removed"
             m["ts"] = int(time.time())
-            m["message_id"] = None  # 关键：避免以后又被拿来 edit
+            m["message_id"] = None  # 防止未来被误 edit
             print(f"deleted(extra): {gk}")
 
-        # ---- apply new posts ----
         for p, h in new_posts:
             if _should_exit or stopped_due_to_limit:
                 break
@@ -866,7 +854,6 @@ def main():
                 continue
             actions_done += 1
 
-            # 新增一条 meta 到该 group
             existing_list.append({
                 "chat_id": target_chat,
                 "message_id": info2["message_id"],
@@ -880,7 +867,6 @@ def main():
             })
             print(f"posted: {gk} msg {info2['message_id']}")
 
-        # persist group list (we may have appended new)
         groups[gk] = existing_list
 
     save_json_atomic(STATE_FILE, state)
