@@ -2,9 +2,6 @@ name: sync
 
 on:
   workflow_dispatch:
-  schedule:
-    # 每小时跑一次（如需改频率，改这里）
-    - cron: "0 * * * *"
 
 permissions:
   contents: write
