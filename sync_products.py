@@ -39,11 +39,13 @@ PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
 FETCH_RETRY = int(os.getenv("FETCH_RETRY", "2"))
 FETCH_TIMEOUT = int(os.getenv("FETCH_TIMEOUT", "30"))
 
-# 这是“每次 run 的动作上限”（发/删/改都算 action），不是单纯“发多少条”
 MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
 
 # RESET_STATE=1 会把旧 state 备份并清空，从零开始发
 RESET_STATE = (os.getenv("RESET_STATE", "0").strip() == "1")
+
+# ✅ 可配置联系邮箱（默认 info@omino.top）
+CONTACT_EMAIL = (os.getenv("CONTACT_EMAIL") or "info@omino.top").strip()
 
 FLAG = {
     "US": "🇺🇸", "UK": "🇬🇧", "DE": "🇩🇪", "FR": "🇫🇷",
@@ -420,14 +422,16 @@ def build_caption(p: dict) -> str:
     if link:
         lines.append(f"link:{link}")
 
-    # 固定加一行联系邮箱
-    lines.append("Contact Email: info@omino.top")
+    # ✅ 固定加联系邮箱（可通过环境变量 CONTACT_EMAIL 覆盖）
+    if CONTACT_EMAIL:
+        lines.append(f"Contact Email: {CONTACT_EMAIL}")
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
 
 
 def compute_content_hash(p: dict, status: str) -> str:
+    # ✅ 关键：把 CONTACT_EMAIL 也纳入 hash，保证“新增邮箱”能触发 edit，而不是靠重发
     return sha1(
         "|".join([
             norm_text(p.get("title")),
@@ -438,6 +442,7 @@ def compute_content_hash(p: dict, status: str) -> str:
             norm_text(p.get("image_url")),
             canonical_money_for_hash(p.get("discount_price")),
             canonical_money_for_hash(p.get("commission")),
+            norm_text(CONTACT_EMAIL),
             status,
         ])
     )
@@ -601,7 +606,7 @@ def main():
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
     print(f"[debug] BAD_IMAGE_POLICY={BAD_IMAGE_POLICY} PURGE_MISSING={PURGE_MISSING} TG_SEND_DELAY_SEC={SEND_DELAY_SEC}")
     print(f"[debug] PURGE_MIN_ROWS={PURGE_MIN_ROWS} PURGE_MIN_ACTIVE_RATIO={PURGE_MIN_ACTIVE_RATIO} FETCH_RETRY={FETCH_RETRY} FETCH_TIMEOUT={FETCH_TIMEOUT}")
-    print(f"[debug] MAX_ACTIONS_PER_RUN={MAX_ACTIONS_PER_RUN} RESET_STATE={RESET_STATE}")
+    print(f"[debug] MAX_ACTIONS_PER_RUN={MAX_ACTIONS_PER_RUN} RESET_STATE={RESET_STATE} CONTACT_EMAIL={CONTACT_EMAIL!r}")
 
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
@@ -634,7 +639,6 @@ def main():
 
     ok_count = 0
     err_count = 0
-
     actions_done = 0
     stopped_due_to_limit = False
 
@@ -655,7 +659,6 @@ def main():
             raise RuntimeError(f"thread_map missing market={market}")
         return int(forum_chat_id), int(tid)
 
-    # seen_keys
     seen_keys = set()
     for p in products:
         market = safe_str(p.get("market")).upper()
@@ -664,7 +667,6 @@ def main():
             seen_keys.add(f"{market}:{asin}")
 
     # -------------------- Stage 1: deletions --------------------
-
     for p in products:
         if _should_exit or stopped_due_to_limit:
             break
@@ -693,9 +695,7 @@ def main():
                 msg_chat = prev.get("chat_id")
                 if not msg_chat:
                     msg_chat = forum_chat_id if not use_channels else None
-                if not msg_chat:
-                    delete_ok = False
-                else:
+                if msg_chat:
                     delete_ok = delete_message(msg_chat, prev["message_id"])
                     actions_done += 1
 
@@ -707,10 +707,7 @@ def main():
             print(f"[error] explicit removed failed but continue. market={p.get('market')} asin={p.get('asin')} err={e}")
 
     # -------------------- Stage 2: active edit then post/repost --------------------
-
-    if stopped_due_to_limit:
-        print(f"[warn] stopped due to action limit in deletion stage. Skip active stage.")
-    else:
+    if not stopped_due_to_limit:
         # 2A edit
         for p in products:
             if _should_exit or stopped_due_to_limit:
@@ -728,15 +725,6 @@ def main():
                 if not prev or not prev.get("message_id") or prev.get("status") != "active":
                     continue
 
-                target_chat, thread_id = target_for_market(market)
-
-                # ✅ 关键修复：如果 state 记录的 chat_id != 当前目标频道，则不要 edit，直接标记为需要重发
-                prev_chat = safe_str(prev.get("chat_id"))
-                if prev_chat and safe_str(prev_chat) != safe_str(target_chat):
-                    state[key] = {**prev, "chat_id": target_chat, "message_id": None, "ts": int(time.time())}
-                    print(f"[warn] channel changed (edit skip)->will repost: {key} from {prev_chat} -> {target_chat}")
-                    continue
-
                 content_hash = compute_content_hash(p, "active")
                 if prev.get("hash") == content_hash:
                     continue
@@ -746,7 +734,10 @@ def main():
                     print(f"[warn] action limit reached, stop before edit: {key}")
                     break
 
-                msg_chat = prev.get("chat_id") or target_chat
+                msg_chat = prev.get("chat_id")
+                if not msg_chat:
+                    msg_chat, _ = target_for_market(market)
+
                 msg_id = int(prev["message_id"])
                 new_meta, did_action, missing = edit_existing(msg_chat, msg_id, prev, p)
 
@@ -787,25 +778,9 @@ def main():
                 target_chat, thread_id = target_for_market(market)
                 content_hash = compute_content_hash(p, "active")
 
-                # ✅ 关键修复：目标频道变化时，强制重发到新频道（避免漏发/错跳过）
-                if prev and prev.get("status") == "active":
-                    prev_chat = safe_str(prev.get("chat_id"))
-                    if prev_chat and safe_str(prev_chat) != safe_str(target_chat):
-                        state[key] = {**prev, "chat_id": target_chat, "message_id": None, "ts": int(time.time())}
-                        prev = state[key]
-                        print(f"[warn] target channel changed -> will repost: {key} {prev_chat} -> {target_chat}")
-
-                # ✅ 关键修复：只有 “同频道 + 同hash + 有message_id” 才跳过
-                if (
-                    prev
-                    and prev.get("status") == "active"
-                    and prev.get("hash") == content_hash
-                    and prev.get("message_id")
-                    and safe_str(prev.get("chat_id")) == safe_str(target_chat)
-                ):
+                if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
                     continue
 
-                # removed -> active repost
                 if prev and prev.get("status") == "removed":
                     if at_limit():
                         stopped_due_to_limit = True
@@ -821,7 +796,6 @@ def main():
                     print("reposted:", key, "msg", info["message_id"])
                     continue
 
-                # first post (or message_id cleared)
                 if (not prev) or (not prev.get("message_id")):
                     if at_limit():
                         stopped_due_to_limit = True
