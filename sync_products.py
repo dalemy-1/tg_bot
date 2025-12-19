@@ -11,16 +11,13 @@ from typing import Dict, Any, List, Optional, Tuple
 
 import requests
 
-SYNC_PRODUCTS_VERSION = "2025-12-19-channels-final-slot-v1"
+SYNC_PRODUCTS_VERSION = "2025-12-19-dup-asin-final"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
 
-# 旧的“话题映射”（论坛群组用），仍保留兼容
-MAP_FILE = BASE_DIR / "thread_map.json"
-
-# 新的“频道映射”（方案B：每国一个频道）
-CHANNEL_MAP_FILE = BASE_DIR / "channel_map.json"
+MAP_FILE = BASE_DIR / "thread_map.json"          # 兼容旧论坛话题
+CHANNEL_MAP_FILE = BASE_DIR / "channel_map.json" # 频道模式：每国一个频道
 
 STATE_FILE = BASE_DIR / "posted_state.json"
 
@@ -32,17 +29,16 @@ SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "2.0"))
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "fallback_text").strip().lower()
 
-# 仅用于“列表缺失则删”的安全阈值（可不启用）
-PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() != "0")  # ✅ 默认启用：以列表为准
-PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))
-PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
+# ✅ 关键：你要“列表删除就删消息”，就把它设为 1
+PURGE_MISSING = (os.getenv("PURGE_MISSING", "0").strip() == "1")
+# 安全阈值：你列表行数较少时可调低，避免被挡住
+PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "1"))
+PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.1"))
 
 FETCH_RETRY = int(os.getenv("FETCH_RETRY", "2"))
 FETCH_TIMEOUT = int(os.getenv("FETCH_TIMEOUT", "30"))
 
 MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
-
-# RESET_STATE=1 会把旧 state 备份并清空，从零开始发
 RESET_STATE = (os.getenv("RESET_STATE", "0").strip() == "1")
 
 FLAG = {
@@ -86,23 +82,6 @@ def norm_text(v) -> str:
     if not s:
         return ""
     return " ".join(s.split())
-
-
-def normalize_url(u: str) -> str:
-    """
-    防止 sheet 里出现 "https://a https://b" 或 "https://xx\n" 之类脏值导致 hash 抖动。
-    规则：提取第一个 http(s):// 开头的 token。
-    """
-    s = safe_str(u)
-    if not s:
-        return ""
-    s = " ".join(s.replace("\n", " ").replace("\r", " ").split())
-    parts = s.split()
-    for p in parts:
-        if p.startswith("http://") or p.startswith("https://"):
-            return p
-    # 没有明显 URL，则原样压缩空白返回
-    return s
 
 
 def norm_status(v) -> str:
@@ -341,11 +320,10 @@ def load_products() -> List[Dict[str, str]]:
         link = _get(row, "link", "Link", "url", "URL")
         image_url = _get(row, "image_url", "image", "Image", "img", "image_urlDiscount", "image_urldiscount")
 
-        # 你的表头可能是 Discount / Discount Price / DiscountPrice；Commission 同理
-        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount", "Discount", "Discoun", "DiscountP", "DiscountPrice ")
-        commission = _get(row, "commission", "Commission", "comm", "Commissic", "Commissio", "Commiss", "Commision")
-
         status = norm_status(_get(row, "status", "Status", "removed"))
+
+        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount", "Discount", "Discoun", "DiscountP")
+        commission = _get(row, "commission", "Commission", "comm", "Commissic", "Commissio", "Commiss", "Commision")
 
         return {
             "market": market,
@@ -354,8 +332,8 @@ def load_products() -> List[Dict[str, str]]:
             "keyword": keyword,
             "store": store,
             "remark": remark,
-            "link": normalize_url(link),
-            "image_url": normalize_url(image_url),
+            "link": link,
+            "image_url": image_url,
             "status": status,
             "discount_price": discount_price,
             "commission": commission,
@@ -400,34 +378,22 @@ def load_products() -> List[Dict[str, str]]:
     if not rows:
         raise ValueError("No rows loaded from source (empty).")
 
-    return rows
-
-
-def assign_slots(products: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    """
-    ✅ 关键：支持重复 asin
-    同一 market+asin 出现 N 次 -> 生成 asin, asin_1, asin_2...
-    slot key 用 market:slot_asin 存到 state 里，确保每个重复项独立跟踪 message_id / hash。
-    """
-    counter: Dict[Tuple[str, str], int] = {}
-    out: List[Dict[str, str]] = []
-    for p in products:
+    # ✅ 核心：为重复 asin 生成稳定 key：asin / asin_1 / asin_2 ...
+    dup_counter: Dict[str, int] = {}
+    for p in rows:
         market = safe_str(p.get("market")).upper()
         asin = safe_str(p.get("asin"))
-        if not asin or market not in VALID_MARKETS:
-            continue
-        k = (market, asin)
-        idx = counter.get(k, 0)
-        counter[k] = idx + 1
+        base = f"{market}:{asin}"
+        idx = dup_counter.get(base, 0)
+        dup_counter[base] = idx + 1
 
-        slot_asin = asin if idx == 0 else f"{asin}_{idx}"
-        p2 = dict(p)
-        p2["_slot_asin"] = slot_asin
-        p2["_slot_key"] = f"{market}:{slot_asin}"
-        p2["_base_asin"] = asin
-        p2["_dup_index"] = idx
-        out.append(p2)
-    return out
+        # 第 1 次：asin；第 2 次：asin_1；第 3 次：asin_2 ...
+        asin_key = asin if idx == 0 else f"{asin}_{idx}"
+        p["_key"] = f"{market}:{asin_key}"
+        p["_base_asin"] = asin
+        p["_dup_index"] = str(idx)
+
+    return rows
 
 
 # -------------------- caption/hash --------------------
@@ -436,7 +402,6 @@ def build_caption(p: dict) -> str:
     market = safe_str(p.get("market")).upper()
     flag = FLAG.get(market, "")
 
-    # 展示时仍使用“原始 asin”可选（你也可以不显示 asin）
     title = safe_str(p.get("title"))
     keyword = safe_str(p.get("keyword"))
     store = safe_str(p.get("store"))
@@ -466,7 +431,6 @@ def build_caption(p: dict) -> str:
     if link:
         lines.append(f"link:{link}")
 
-    # 固定联系邮箱
     lines.append("Contact Email: info@omino.top")
 
     cap = "\n".join(lines)
@@ -474,15 +438,14 @@ def build_caption(p: dict) -> str:
 
 
 def compute_content_hash(p: dict, status: str) -> str:
-    # hash 只看内容字段，不看 slot_key，确保“同内容”不乱 edit
     return sha1(
         "|".join([
             norm_text(p.get("title")),
             norm_text(p.get("keyword")),
             norm_text(p.get("store")),
             norm_text(p.get("remark")),
-            norm_text(normalize_url(p.get("link"))),
-            norm_text(normalize_url(p.get("image_url"))),
+            norm_text(p.get("link")),
+            norm_text(p.get("image_url")),
             canonical_money_for_hash(p.get("discount_price")),
             canonical_money_for_hash(p.get("commission")),
             status,
@@ -511,9 +474,9 @@ def send_new(target_chat_id, thread_id: Optional[int], p: dict) -> Tuple[Optiona
             return {"message_id": res["message_id"], "kind": "photo", "image_url": img}, None
         except Exception as e:
             if BAD_IMAGE_POLICY == "skip" and is_bad_image_error(e):
-                print(f"[skip] bad image -> skip product. market={p.get('market')} asin={p.get('asin')} err={e}")
+                print(f"[skip] bad image -> skip product. key={p.get('_key')} err={e}")
                 return None, "BAD_IMAGE_SKIP"
-            print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
+            print(f"[warn] sendPhoto failed -> fallback to text. key={p.get('_key')} img={img} err={e}")
 
     payload = _payload_base()
     payload.update({"text": caption, "disable_web_page_preview": True})
@@ -523,11 +486,6 @@ def send_new(target_chat_id, thread_id: Optional[int], p: dict) -> Tuple[Optiona
 
 
 def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple[dict, bool, bool]:
-    """
-    返回 (new_meta, did_action, message_missing)
-    - did_action=False: Telegram 提示 not modified（不计动作）
-    - message_missing=True: 旧消息不存在/不在该 chat（上层应清掉 message_id 触发重发）
-    """
     caption = build_caption(p)
 
     prev_kind = safe_str(prev.get("kind") or "text")
@@ -600,7 +558,7 @@ def delete_message(target_chat_id, message_id: int) -> bool:
         return False
 
 
-# -------------------- targets (channels or forum topics) --------------------
+# -------------------- targets --------------------
 
 def load_channel_map() -> Dict[str, str]:
     if not CHANNEL_MAP_FILE.exists():
@@ -656,11 +614,9 @@ def main():
     if not TG_TOKEN:
         raise SystemExit("Missing TG_BOT_TOKEN env var.")
 
-    # 优先使用 channel_map.json（方案B：每国一个频道）
     channel_map = load_channel_map()
     use_channels = bool(channel_map)
 
-    # 论坛话题模式（兼容旧方案）
     forum_chat_id = None
     thread_map = None
     if not use_channels:
@@ -673,19 +629,17 @@ def main():
     else:
         print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
 
-    # state reset
     if RESET_STATE and STATE_FILE.exists():
         bak = STATE_FILE.with_suffix(f".reset_{int(time.time())}.bak")
         STATE_FILE.replace(bak)
         print(f"[warn] RESET_STATE=1 -> backed up old state to {bak.name}")
 
     state: Dict[str, Any] = load_json_safe(STATE_FILE, {})
-
-    raw_products = load_products()
-    products = assign_slots(raw_products)  # ✅ slot 化，支持重复 asin
+    products = load_products()
 
     ok_count = 0
     err_count = 0
+
     actions_done = 0
     stopped_due_to_limit = False
 
@@ -693,11 +647,6 @@ def main():
         return actions_done >= MAX_ACTIONS_PER_RUN
 
     def target_for_market(market: str) -> Tuple[str, Optional[int]]:
-        """
-        返回 (chat_id, thread_id)
-        - channels: (channel chat, None)
-        - forum topics: (forum chat, thread_id)
-        """
         if use_channels:
             cid = channel_map.get(market)
             if not cid:
@@ -711,19 +660,63 @@ def main():
             raise RuntimeError(f"thread_map missing market={market}")
         return int(forum_chat_id), int(tid)
 
-    # 本次列表应该存在的 key（只按 active）
+    # 当前列表“应该存在”的 keys（含重复 asin 的 asin_1/asin_2）
     seen_keys = set()
     for p in products:
-        if norm_status(p.get("status")) != "active":
+        market = safe_str(p.get("market")).upper()
+        if market not in VALID_MARKETS:
             continue
-        seen_keys.add(p["_slot_key"])
+        key = safe_str(p.get("_key"))
+        if key:
+            seen_keys.add(key)
 
-    # -------------------- Stage 0: safety for purge --------------------
-    # 目的：避免 URL 临时拉空/行数异常导致大规模删消息
-    purge_allowed = True
-    if PURGE_MISSING:
-        curr_seen = len(seen_keys)
+    # -------------------- Stage 1: explicit removed --------------------
+    for p in products:
+        if _should_exit or stopped_due_to_limit:
+            break
+        try:
+            market = safe_str(p.get("market")).upper()
+            if market not in VALID_MARKETS:
+                continue
+
+            if norm_status(p.get("status")) != "removed":
+                continue
+
+            key = safe_str(p.get("_key"))
+            if not key:
+                continue
+
+            prev = state.get(key) if isinstance(state.get(key), dict) else None
+            content_hash = compute_content_hash(p, "removed")
+
+            if prev and prev.get("status") == "removed" and prev.get("hash") == content_hash and prev.get("delete_ok"):
+                continue
+
+            delete_ok = bool(prev.get("delete_ok")) if prev else False
+
+            if prev and prev.get("message_id") and not delete_ok:
+                if at_limit():
+                    stopped_due_to_limit = True
+                    print(f"[warn] action limit reached, stop before delete: {key}")
+                    break
+                msg_chat = prev.get("chat_id") or (forum_chat_id if not use_channels else None)
+                if msg_chat:
+                    delete_ok = delete_message(msg_chat, prev["message_id"])
+                    actions_done += 1
+
+            state[key] = {**(prev or {}), "status": "removed", "hash": content_hash, "ts": int(time.time()),
+                          "delete_attempted": True, "delete_ok": delete_ok}
+            ok_count += 1
+
+        except Exception as e:
+            err_count += 1
+            print(f"[error] explicit removed failed but continue. key={p.get('_key')} err={e}")
+
+    # -------------------- Stage 1B: PURGE_MISSING（列表删除就删消息） --------------------
+    if (not stopped_due_to_limit) and (not _should_exit) and PURGE_MISSING:
+        purge_allowed = True
         prev_active = sum(1 for v in state.values() if isinstance(v, dict) and v.get("status") == "active")
+        curr_seen = len(seen_keys)
 
         if curr_seen < PURGE_MIN_ROWS:
             purge_allowed = False
@@ -732,59 +725,56 @@ def main():
             purge_allowed = False
             print(f"[warn] PURGE blocked: seen_keys too small vs prev_active ({curr_seen} < {int(prev_active * PURGE_MIN_ACTIVE_RATIO)})")
 
-    # -------------------- Stage 1: delete missing slots (list is source of truth) --------------------
-    if PURGE_MISSING and purge_allowed:
-        to_delete = []
-        for k, v in state.items():
-            if not isinstance(v, dict):
-                continue
-            if v.get("status") != "active":
-                continue
-            if k not in seen_keys:
-                to_delete.append(k)
+        if purge_allowed:
+            missing = [
+                k for k, v in state.items()
+                if isinstance(v, dict)
+                and k not in seen_keys
+                and (v.get("status") == "active" or (v.get("status") == "removed" and not v.get("delete_ok")))
+            ]
+            if missing:
+                print(f"[warn] PURGE_MISSING enabled, will purge missing keys: {len(missing)}")
 
-        if to_delete:
-            print(f"[warn] list missing -> will delete extra slots: {len(to_delete)}")
+            for key in missing:
+                if _should_exit or stopped_due_to_limit:
+                    break
+                if at_limit():
+                    stopped_due_to_limit = True
+                    print("[warn] action limit reached, stop during purge.")
+                    break
 
-        for key in to_delete:
-            if _should_exit or stopped_due_to_limit:
-                break
-            if at_limit():
-                stopped_due_to_limit = True
-                print(f"[warn] action limit reached, stop before delete-missing.")
-                break
-            prev = state.get(key) if isinstance(state.get(key), dict) else {}
-            msg_id = prev.get("message_id")
-            msg_chat = prev.get("chat_id") or (forum_chat_id if not use_channels else None)
+                prev = state.get(key) if isinstance(state.get(key), dict) else {}
+                delete_ok = bool(prev.get("delete_ok"))
+                content_hash = prev.get("hash") or ""
 
-            delete_ok = True
-            if msg_chat and msg_id:
-                delete_ok = delete_message(msg_chat, msg_id)
-                actions_done += 1
+                if prev.get("message_id") and not delete_ok:
+                    msg_chat = prev.get("chat_id") or (forum_chat_id if not use_channels else None)
+                    if msg_chat:
+                        delete_ok = delete_message(msg_chat, prev["message_id"])
+                        actions_done += 1
 
-            # 删除后直接从 state 移除，避免下次还认为存在
-            if delete_ok:
-                state.pop(key, None)
-                ok_count += 1
-                print("deleted(missing):", key, "msg", msg_id)
-            else:
-                # 删除失败：保留记录但标 removed，避免狂删重试
-                state[key] = {**prev, "status": "removed", "ts": int(time.time())}
-                print("delete_failed(mark_removed):", key, "msg", msg_id)
+                state[key] = {**prev, "status": "removed", "hash": content_hash, "ts": int(time.time()),
+                              "delete_attempted": True, "delete_ok": delete_ok}
+        else:
+            print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip purge this run.")
 
-    elif PURGE_MISSING and not purge_allowed:
-        print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip delete-missing this run.")
-
-    # -------------------- Stage 2: edit existing when content changed --------------------
+    # -------------------- Stage 2: active edit then post/repost --------------------
     if not stopped_due_to_limit:
+        # 2A edit
         for p in products:
             if _should_exit or stopped_due_to_limit:
                 break
             try:
+                market = safe_str(p.get("market")).upper()
+                if market not in VALID_MARKETS:
+                    continue
                 if norm_status(p.get("status")) != "active":
                     continue
 
-                key = p["_slot_key"]
+                key = safe_str(p.get("_key"))
+                if not key:
+                    continue
+
                 prev = state.get(key) if isinstance(state.get(key), dict) else None
                 if not prev or not prev.get("message_id") or prev.get("status") != "active":
                     continue
@@ -798,7 +788,6 @@ def main():
                     print(f"[warn] action limit reached, stop before edit: {key}")
                     break
 
-                market = safe_str(p.get("market")).upper()
                 msg_chat = prev.get("chat_id")
                 if not msg_chat:
                     msg_chat, _ = target_for_market(market)
@@ -807,7 +796,6 @@ def main():
                 new_meta, did_action, missing = edit_existing(msg_chat, msg_id, prev, p)
 
                 if missing:
-                    # 旧消息不在了 -> 清掉 message_id，后续发布阶段会重发
                     state[key] = {**prev, "hash": content_hash, "ts": int(time.time()), "message_id": None}
                     print("missing(edit)->will repost:", key, "old_msg", msg_id)
                     continue
@@ -818,66 +806,70 @@ def main():
                 else:
                     print("nochange(edit):", key, "msg", msg_id)
 
-                state[key] = {
-                    **prev,
-                    "hash": content_hash,
-                    "status": "active",
-                    "kind": new_meta["kind"],
-                    "image_url": new_meta["image_url"],
-                    "ts": int(time.time()),
-                    "chat_id": msg_chat,
-                }
+                state[key] = {**prev, "hash": content_hash, "status": "active",
+                              "kind": new_meta["kind"], "image_url": new_meta["image_url"], "ts": int(time.time())}
                 ok_count += 1
 
             except Exception as e:
                 err_count += 1
-                print(f"[error] edit failed but continue. key={p.get('_slot_key')} err={e}")
+                print(f"[error] edit failed but continue. key={p.get('_key')} err={e}")
 
-    # -------------------- Stage 3: post new slots (and repost if message_id cleared) --------------------
-    if not stopped_due_to_limit:
+        # 2B post / repost
         for p in products:
             if _should_exit or stopped_due_to_limit:
                 break
             try:
+                market = safe_str(p.get("market")).upper()
+                if market not in VALID_MARKETS:
+                    continue
                 if norm_status(p.get("status")) != "active":
                     continue
 
-                key = p["_slot_key"]
+                key = safe_str(p.get("_key"))
+                if not key:
+                    continue
+
                 prev = state.get(key) if isinstance(state.get(key), dict) else None
 
-                market = safe_str(p.get("market")).upper()
                 target_chat, thread_id = target_for_market(market)
                 content_hash = compute_content_hash(p, "active")
 
                 if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
                     continue
 
-                if (not prev) or (not prev.get("message_id")) or (prev.get("status") != "active"):
+                if prev and prev.get("status") == "removed":
+                    if at_limit():
+                        stopped_due_to_limit = True
+                        print(f"[warn] action limit reached, stop before repost: {key}")
+                        break
+                    info, err_code = send_new(target_chat, thread_id, p)
+                    if err_code == "BAD_IMAGE_SKIP":
+                        continue
+                    actions_done += 1
+                    state[key] = {"chat_id": target_chat, "message_id": info["message_id"], "hash": content_hash,
+                                  "status": "active", "kind": info["kind"], "image_url": info["image_url"],
+                                  "ts": int(time.time()), "delete_attempted": False, "delete_ok": False}
+                    print("reposted:", key, "msg", info["message_id"])
+                    continue
+
+                if (not prev) or (not prev.get("message_id")):
                     if at_limit():
                         stopped_due_to_limit = True
                         print(f"[warn] action limit reached, stop before post: {key}")
                         break
-
                     info, err_code = send_new(target_chat, thread_id, p)
                     if err_code == "BAD_IMAGE_SKIP":
                         continue
-
                     actions_done += 1
-                    state[key] = {
-                        "chat_id": target_chat,
-                        "message_id": info["message_id"],
-                        "hash": content_hash,
-                        "status": "active",
-                        "kind": info["kind"],
-                        "image_url": info["image_url"],
-                        "ts": int(time.time()),
-                    }
+                    state[key] = {"chat_id": target_chat, "message_id": info["message_id"], "hash": content_hash,
+                                  "status": "active", "kind": info["kind"], "image_url": info["image_url"],
+                                  "ts": int(time.time()), "delete_attempted": False, "delete_ok": False}
                     print("posted:", key, "msg", info["message_id"])
-                    ok_count += 1
+                    continue
 
             except Exception as e:
                 err_count += 1
-                print(f"[error] post failed but continue. key={p.get('_slot_key')} err={e}")
+                print(f"[error] post/repost failed but continue. key={p.get('_key')} err={e}")
 
     save_json_atomic(STATE_FILE, state)
     print(f"done. ok={ok_count} err={err_count} actions={actions_done}/{MAX_ACTIONS_PER_RUN}. state saved -> {STATE_FILE}")
