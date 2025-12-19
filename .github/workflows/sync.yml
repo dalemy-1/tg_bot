@@ -2,6 +2,11 @@ name: sync
 
 on:
   workflow_dispatch:
+    inputs:
+      migrate_only:
+        description: "Only migrate posted_state.json to groups format (no Telegram actions)"
+        required: false
+        default: "0"
 
 permissions:
   contents: write
@@ -15,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
-        env:
+    env:
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
       GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
 
@@ -29,13 +34,14 @@ jobs:
       FETCH_TIMEOUT: "30"
       RESET_STATE: "0"
 
-      MIGRATE_ONLY: "1"   # ✅ 只迁移 posted_state.json，不发 Telegram
-
+      # 你脚本里读取的是 MIGRATE_ONLY
+      MIGRATE_ONLY: ${{ github.event.inputs.migrate_only }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Setup Python
@@ -48,14 +54,6 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      # ✅ 先把 runner 的 main 更新到远端最新，减少后面 push 冲突概率
-      - name: Pull latest main
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase --autostash origin main
-          git pull --rebase origin main
-
       - name: Run sync
         run: |
           python sync_products.py
@@ -63,6 +61,8 @@ jobs:
       - name: Commit & push posted_state.json (with retry)
         run: |
           set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add posted_state.json
 
@@ -73,16 +73,14 @@ jobs:
 
           git commit -m "Update posted_state.json"
 
-          # ✅ push 失败（non-fast-forward）就 rebase 后重试；rebase 失败直接报错退出（不吞错）
           for i in 1 2 3 4 5; do
             echo "Push attempt $i..."
-            if git push; then
+            git pull --rebase origin main || true
+            if git push origin HEAD:main; then
               echo "Push success."
               exit 0
             fi
-
-            echo "Push failed, try rebase then retry..."
-            git pull --rebase --autostash origin main
+            echo "Push failed, retry in 3s..."
             sleep 3
           done
 
