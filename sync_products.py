@@ -12,7 +12,7 @@ from typing import Dict, Any, List, Optional, Tuple
 import requests
 
 # ==================== version ====================
-SYNC_PRODUCTS_VERSION = "2025-12-19-dup-asin-final-v2"
+SYNC_PRODUCTS_VERSION = "2025-12-19-dup-asin-final"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -28,8 +28,8 @@ SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "2.0"))
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "fallback_text").strip().lower()
 
-# 以“列表”为准：某个 market:asin 组完全从表里消失，会删除该组所有消息（受安全阈值保护）
-PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() == "1")
+# ✅ 以“列表”为准：如果某个 market:asin 组完全从表里消失，会删除该组所有消息（受安全阈值保护）
+PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() == "1")  # 建议你开 1，符合“列表删了就删消息”
 PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))
 PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
 
@@ -41,7 +41,7 @@ MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
 # RESET_STATE=1 会把旧 state 备份并清空，从零开始发（会导致全部重发）
 RESET_STATE = (os.getenv("RESET_STATE", "0").strip() == "1")
 
-# ✅ 只迁移 state，不发 Telegram（用于把旧 posted_state.json 升级为 groups 结构，避免重发）
+# ✅ MIGRATE_ONLY=1：只把 posted_state.json 从旧格式迁移到 groups 新结构，不做任何 Telegram 动作（不发/不改/不删）
 MIGRATE_ONLY = (os.getenv("MIGRATE_ONLY", "0").strip() == "1")
 
 FLAG = {
@@ -145,26 +145,20 @@ def load_json_safe(p: Path, default):
     raw = p.read_text(encoding="utf-8", errors="replace").strip()
     if not raw:
         backup = p.with_suffix(".empty.bak")
-        try:
-            p.rename(backup)
-        except Exception:
-            pass
+        p.rename(backup)
         print(f"[warn] {p.name} was empty, backed up to {backup.name}, start fresh.")
         return default
     try:
         return json.loads(raw)
     except Exception as e:
         backup = p.with_suffix(f".bad_{int(time.time())}.bak")
-        try:
-            p.rename(backup)
-        except Exception:
-            pass
+        p.rename(backup)
         print(f"[warn] {p.name} JSON invalid, backed up to {backup.name}, start fresh. err={e}")
         return default
 
 def save_json_atomic(p: Path, obj):
     tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(tmp, p)
 
 def _looks_like_html(text: str) -> bool:
@@ -305,12 +299,16 @@ def load_products() -> List[Dict[str, str]]:
         store = _get(row, "store", "Store")
         remark = _get(row, "remark", "Remark")
         link = _get(row, "link", "Link", "url", "URL")
-        image_url = _get(row, "image_url", "image", "Image", "img", "Img", "imageUrl", "ImageUrl")
+
+        # 注意：这里包含了你表头里可能拼错的字段名，尽量兼容
+        image_url = _get(row, "image_url", "image", "Image", "img",
+                         "image_urlDiscount", "image_urldiscount")
 
         status = norm_status(_get(row, "status", "Status", "removed"))
-
-        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount", "Discount", "Discoun", "DiscountP")
-        commission = _get(row, "commission", "Commission", "comm", "Commissic", "Commissio", "Commiss", "Commision")
+        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice",
+                              "discount", "Discount", "Discoun", "DiscountP")
+        commission = _get(row, "commission", "Commission", "comm",
+                          "Commissic", "Commissio", "Commiss", "Commision")
 
         return {
             "market": market,
@@ -441,6 +439,13 @@ def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
     return {"message_id": res["message_id"], "kind": "text", "image_url": ""}, None
 
 def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple[dict, bool, bool]:
+    """
+    返回 (new_meta, did_action, message_missing)
+    规则：
+    - 不做“text->photo”类型转换（避免 delete+repost），保持原 kind 稳定
+    - photo 消息优先 editMedia(仅当有新图且不同)，否则 editCaption
+    - text 消息 editText
+    """
     caption = build_caption(p)
 
     prev_kind = safe_str(prev.get("kind") or "text")
@@ -537,13 +542,9 @@ def migrate_state_to_groups(raw_state: Any) -> Dict[str, Any]:
       }
     }
 
-    兼容旧格式 flat：
-    {
-      "US:B0XXX": { ... },
-      ...
-    }
+    兼容旧格式（flat key: "US:B0XXX" -> dict）
     """
-    if isinstance(raw_state, dict) and isinstance(raw_state.get("groups"), dict):
+    if isinstance(raw_state, dict) and "groups" in raw_state and isinstance(raw_state.get("groups"), dict):
         if "_meta" not in raw_state or not isinstance(raw_state.get("_meta"), dict):
             raw_state["_meta"] = {}
         return raw_state
@@ -557,6 +558,9 @@ def migrate_state_to_groups(raw_state: Any) -> Dict[str, Any]:
             if ":" not in k:
                 continue
             if isinstance(v, dict):
+                # 旧 meta 字段保持原样；确保 status 默认 active（旧数据一般就是 active）
+                if "status" not in v:
+                    v["status"] = "active"
                 groups.setdefault(k, []).append(v)
 
     return {
@@ -577,47 +581,55 @@ def main():
     global _should_exit
 
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
+    print(f"[debug] MIGRATE_ONLY={MIGRATE_ONLY} RESET_STATE={RESET_STATE}")
     print(f"[debug] BAD_IMAGE_POLICY={BAD_IMAGE_POLICY} PURGE_MISSING={PURGE_MISSING} TG_SEND_DELAY_SEC={SEND_DELAY_SEC}")
     print(f"[debug] PURGE_MIN_ROWS={PURGE_MIN_ROWS} PURGE_MIN_ACTIVE_RATIO={PURGE_MIN_ACTIVE_RATIO} FETCH_RETRY={FETCH_RETRY} FETCH_TIMEOUT={FETCH_TIMEOUT}")
-    print(f"[debug] MAX_ACTIONS_PER_RUN={MAX_ACTIONS_PER_RUN} RESET_STATE={RESET_STATE} MIGRATE_ONLY={MIGRATE_ONLY}")
+    print(f"[debug] MAX_ACTIONS_PER_RUN={MAX_ACTIONS_PER_RUN}")
 
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-    if not TG_TOKEN and not MIGRATE_ONLY:
-        raise SystemExit("Missing TG_BOT_TOKEN env var.")
+    # ====== 先做 state 迁移（不依赖 TG / channel_map）======
+    if RESET_STATE and MIGRATE_ONLY:
+        print("[warn] MIGRATE_ONLY=1 时不建议 RESET_STATE=1；将忽略 RESET_STATE（避免清空导致全部重发）。")
 
-    channel_map = load_channel_map()
-    if not channel_map and not MIGRATE_ONLY:
-        raise SystemExit("Missing channel_map.json. (channels mode required)")
-
-    if channel_map:
-        print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
-    else:
-        print("[ok] mode=migrate-only (no Telegram calls)")
-
-    # reset
-    if RESET_STATE and STATE_FILE.exists():
+    if RESET_STATE and (not MIGRATE_ONLY) and STATE_FILE.exists():
         bak = STATE_FILE.with_suffix(f".reset_{int(time.time())}.bak")
         STATE_FILE.replace(bak)
         print(f"[warn] RESET_STATE=1 -> backed up old state to {bak.name}")
 
     raw_state = load_json_safe(STATE_FILE, {})
     state = migrate_state_to_groups(raw_state)
-    state.setdefault("_meta", {})
+
+    # meta
+    if "_meta" not in state or not isinstance(state.get("_meta"), dict):
+        state["_meta"] = {}
     state["_meta"]["version"] = SYNC_PRODUCTS_VERSION
     state["_meta"]["ts"] = int(time.time())
+
+    if "groups" not in state or not isinstance(state.get("groups"), dict):
+        state["groups"] = {}
+
+    # ✅ 只迁移 state，不做任何 Telegram 动作
+    if MIGRATE_ONLY:
+        save_json_atomic(STATE_FILE, state)
+        print(f"[ok] MIGRATE_ONLY=1 -> migrated posted_state.json only, skip Telegram actions. saved -> {STATE_FILE}")
+        return
+
+    # ====== 下面开始正常同步（会发/改/删 TG）======
+    if not TG_TOKEN:
+        raise SystemExit("Missing TG_BOT_TOKEN env var.")
+
+    channel_map = load_channel_map()
+    if not channel_map:
+        raise SystemExit("Missing channel_map.json. (channels mode required)")
+
+    print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
 
     groups: Dict[str, List[dict]] = state.get("groups", {})
     if not isinstance(groups, dict):
         groups = {}
         state["groups"] = groups
-
-    # ✅ 只迁移并保存，不发送（用于先把 flat posted_state.json 升级为 groups）
-    if MIGRATE_ONLY:
-        save_json_atomic(STATE_FILE, state)
-        print(f"[ok] MIGRATE_ONLY=1 -> migrated state saved -> {STATE_FILE}")
-        return
 
     products = load_products()
 
@@ -687,7 +699,6 @@ def main():
                     break
 
                 lst = groups.get(gk) if isinstance(groups.get(gk), list) else []
-                # delete all messages in that group
                 new_lst: List[dict] = []
                 for meta in lst:
                     if not isinstance(meta, dict):
@@ -729,7 +740,6 @@ def main():
             if m.get("status") == "active" and m.get("message_id") and m.get("chat_id"):
                 existing_candidates.append(m)
 
-        # 1) exact hash match -> keep
         unused_existing = existing_candidates[:]
         used_existing_ids = set()
         matched_pairs: List[Tuple[dict, dict, str]] = []
@@ -750,17 +760,13 @@ def main():
 
         remaining_existing = [m for m in unused_existing if id(m) not in used_existing_ids]
 
-        # 2) reuse remaining existing for unmatched -> edit
         edit_pairs: List[Tuple[dict, dict, str]] = []
         while unmatched_products and remaining_existing:
             p, h = unmatched_products.pop(0)
             m = remaining_existing.pop(0)
             edit_pairs.append((m, p, h))
 
-        # 3) extra existing -> delete
         extra_existing = remaining_existing[:]
-
-        # 4) extra products -> post
         new_posts = unmatched_products[:]
 
         now_ts = int(time.time())
@@ -838,7 +844,7 @@ def main():
                 m["delete_ok"] = bool(ok)
             m["status"] = "removed"
             m["ts"] = int(time.time())
-            m["message_id"] = None  # 防止未来被误 edit
+            m["message_id"] = None  # 关键：避免以后又被拿来 edit
             print(f"deleted(extra): {gk}")
 
         for p, h in new_posts:
