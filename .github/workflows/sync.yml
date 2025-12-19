@@ -37,7 +37,7 @@ jobs:
       PURGE_MISSING: "0"
       FETCH_RETRY: "2"
       FETCH_TIMEOUT: "30"
-      RESET_STATE: "0"
+      RESET_STATE: "1"
 
     steps:
       - name: Checkout
