@@ -8,7 +8,7 @@ permissions:
 
 concurrency:
   group: sync-products-latest
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   sync:
@@ -16,19 +16,12 @@ jobs:
     timeout-minutes: 60
 
     env:
-      # 必填：Telegram 机器人 Token（在 GitHub -> Settings -> Secrets and variables -> Actions -> Secrets 里建）
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-
-      # 可选：如果你用 Google Sheet CSV URL，就把它放到 Secrets 里（不填则读仓库的 products.csv）
       GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
 
-      # 发送间隔（可按需改）
       TG_SEND_DELAY_SEC: "2.0"
-
-      # ✅ 关键：每次运行允许的动作数（发/改/删 都算 action）
       MAX_ACTIONS_PER_RUN: "250"
 
-      # 其它保持默认即可
       BAD_IMAGE_POLICY: "fallback_text"
       FALLBACK_TO_LOCAL_CSV: "1"
       PURGE_MISSING: "0"
@@ -52,15 +45,20 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      # ✅ 先把 runner 的 main 更新到远端最新，减少后面 push 冲突概率
+      - name: Pull latest main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin main
+
       - name: Run sync
         run: |
           python sync_products.py
 
-      - name: Commit posted_state.json
+      - name: Commit & push posted_state.json (with retry)
         run: |
           set -e
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add posted_state.json
 
@@ -71,18 +69,16 @@ jobs:
 
           git commit -m "Update posted_state.json"
 
-          git pull --rebase origin main
-          git push
-
-          # ✅ 关键：远端 main 可能被其他任务先 push 了，先 rebase 再 push，并重试
+          # ✅ push 失败（non-fast-forward）就 rebase 后重试；rebase 失败直接报错退出（不吞错）
           for i in 1 2 3 4 5; do
             echo "Push attempt $i..."
-            git pull --rebase origin main || true
             if git push; then
               echo "Push success."
               exit 0
             fi
-            echo "Push failed, retry in 3s..."
+
+            echo "Push failed, try rebase then retry..."
+            git pull --rebase --autostash origin main
             sleep 3
           done
 
