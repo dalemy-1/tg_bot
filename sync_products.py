@@ -11,14 +11,13 @@ from typing import Dict, Any, List, Optional, Tuple
 
 import requests
 
+# ==================== version ====================
 SYNC_PRODUCTS_VERSION = "2025-12-19-dup-asin-final"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
 
-MAP_FILE = BASE_DIR / "thread_map.json"          # 兼容旧论坛话题
-CHANNEL_MAP_FILE = BASE_DIR / "channel_map.json" # 频道模式：每国一个频道
-
+CHANNEL_MAP_FILE = BASE_DIR / "channel_map.json"
 STATE_FILE = BASE_DIR / "posted_state.json"
 
 VALID_MARKETS = {"US", "UK", "DE", "FR", "IT", "ES", "CA", "JP"}
@@ -29,16 +28,17 @@ SEND_DELAY_SEC = float(os.getenv("TG_SEND_DELAY_SEC", "2.0"))
 FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "fallback_text").strip().lower()
 
-# ✅ 关键：你要“列表删除就删消息”，就把它设为 1
-PURGE_MISSING = (os.getenv("PURGE_MISSING", "0").strip() == "1")
-# 安全阈值：你列表行数较少时可调低，避免被挡住
-PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "1"))
-PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.1"))
+# ✅ 以“列表”为准：如果某个 market:asin 组完全从表里消失，会删除该组所有消息（受安全阈值保护）
+PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() == "1")  # 建议你开 1，符合“列表删了就删消息”
+PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))
+PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
 
 FETCH_RETRY = int(os.getenv("FETCH_RETRY", "2"))
 FETCH_TIMEOUT = int(os.getenv("FETCH_TIMEOUT", "30"))
 
 MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
+
+# RESET_STATE=1 会把旧 state 备份并清空，从零开始发（会导致全部重发）
 RESET_STATE = (os.getenv("RESET_STATE", "0").strip() == "1")
 
 FLAG = {
@@ -57,16 +57,13 @@ CURRENCY_SYMBOL = {
     "JP": "¥",
 }
 
-
-# -------------------- utils --------------------
+# ==================== utils ====================
 
 def safe_str(x) -> str:
     return ("" if x is None else str(x)).strip()
 
-
 def sha1(s: str) -> str:
     return hashlib.sha1(s.encode("utf-8")).hexdigest()
-
 
 def _decode_bytes(b: bytes) -> str:
     for enc in ("utf-8-sig", "utf-8", "gb18030"):
@@ -76,20 +73,17 @@ def _decode_bytes(b: bytes) -> str:
             continue
     return b.decode("utf-8", errors="replace")
 
-
 def norm_text(v) -> str:
     s = safe_str(v)
     if not s:
         return ""
     return " ".join(s.split())
 
-
 def norm_status(v) -> str:
     s = safe_str(v).lower()
     if s in ("removed", "inactive", "down", "off", "0", "false", "停售", "下架"):
         return "removed"
     return "active"
-
 
 def parse_decimal_maybe(v) -> Optional[Decimal]:
     s = safe_str(v)
@@ -111,7 +105,6 @@ def parse_decimal_maybe(v) -> Optional[Decimal]:
     except (InvalidOperation, ValueError):
         return None
 
-
 def canonical_money_for_hash(v) -> str:
     s = safe_str(v)
     if not s:
@@ -127,26 +120,21 @@ def canonical_money_for_hash(v) -> str:
         as_str = as_str.rstrip("0").rstrip(".")
     return as_str
 
-
 def format_money_for_caption(v, market: str) -> Optional[str]:
     s = safe_str(v)
     if not s:
         return None
-
     d = parse_decimal_maybe(s)
     if d is not None and d == 0:
         return None
     if s in ("0", "0.0", "0.00"):
         return None
-
     if any(sym in s for sym in ("$", "£", "€", "¥", "￥")):
         return s
-
     sym = CURRENCY_SYMBOL.get((market or "").upper(), "")
     if not sym:
         return s
     return f"{s}{sym}"
-
 
 def load_json_safe(p: Path, default):
     if not p.exists():
@@ -165,17 +153,14 @@ def load_json_safe(p: Path, default):
         print(f"[warn] {p.name} JSON invalid, backed up to {backup.name}, start fresh. err={e}")
         return default
 
-
 def save_json_atomic(p: Path, obj):
     tmp = p.with_suffix(".tmp")
     tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(tmp, p)
 
-
 def _looks_like_html(text: str) -> bool:
     head = (text or "").lstrip().lower()[:500]
     return head.startswith("<!doctype html") or head.startswith("<html") or "<body" in head[:250]
-
 
 def _validate_header(fieldnames: Optional[List[str]], source: str):
     if not fieldnames:
@@ -183,7 +168,6 @@ def _validate_header(fieldnames: Optional[List[str]], source: str):
     cols_lower = {safe_str(c).lower() for c in fieldnames if safe_str(c)}
     if "market" not in cols_lower or "asin" not in cols_lower:
         raise ValueError(f"{source}: header invalid. Need columns market & asin. Got={fieldnames}")
-
 
 def _build_reader(text: str) -> csv.DictReader:
     if not text.strip():
@@ -219,7 +203,6 @@ def _build_reader(text: str) -> csv.DictReader:
 
     raise ValueError(f"cannot detect delimiter; header={lines[0][:200]!r}")
 
-
 def _fetch_text_with_retry(url: str) -> str:
     last_err = None
     for attempt in range(FETCH_RETRY + 1):
@@ -240,8 +223,7 @@ def _fetch_text_with_retry(url: str) -> str:
             time.sleep(wait)
     raise RuntimeError(f"fetch failed after retries: {last_err}")
 
-
-# -------------------- Telegram --------------------
+# ==================== Telegram ====================
 
 def tg_api(method: str, payload: dict, max_retry: int = 6):
     if not TG_TOKEN:
@@ -274,16 +256,13 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
 
     raise RuntimeError(f"{method} failed after retries (429).")
 
-
 def is_not_modified_error(err: Exception) -> bool:
     s = str(err).lower()
     return ("message is not modified" in s) or ("specified new message content" in s)
 
-
 def is_message_not_found(err: Exception) -> bool:
     s = str(err).lower()
     return ("message to edit not found" in s) or ("message to delete not found" in s)
-
 
 def is_bad_image_error(err: Exception) -> bool:
     s = str(err).lower()
@@ -297,8 +276,7 @@ def is_bad_image_error(err: Exception) -> bool:
     ]
     return any(k in s for k in keys)
 
-
-# -------------------- products load --------------------
+# ==================== products load ====================
 
 def load_products() -> List[Dict[str, str]]:
     def _norm_market(s: str) -> str:
@@ -378,25 +356,9 @@ def load_products() -> List[Dict[str, str]]:
     if not rows:
         raise ValueError("No rows loaded from source (empty).")
 
-    # ✅ 核心：为重复 asin 生成稳定 key：asin / asin_1 / asin_2 ...
-    dup_counter: Dict[str, int] = {}
-    for p in rows:
-        market = safe_str(p.get("market")).upper()
-        asin = safe_str(p.get("asin"))
-        base = f"{market}:{asin}"
-        idx = dup_counter.get(base, 0)
-        dup_counter[base] = idx + 1
-
-        # 第 1 次：asin；第 2 次：asin_1；第 3 次：asin_2 ...
-        asin_key = asin if idx == 0 else f"{asin}_{idx}"
-        p["_key"] = f"{market}:{asin_key}"
-        p["_base_asin"] = asin
-        p["_dup_index"] = str(idx)
-
     return rows
 
-
-# -------------------- caption/hash --------------------
+# ==================== caption/hash ====================
 
 def build_caption(p: dict) -> str:
     market = safe_str(p.get("market")).upper()
@@ -412,7 +374,6 @@ def build_caption(p: dict) -> str:
     commission = format_money_for_caption(p.get("commission"), market)
 
     lines: List[str] = []
-
     head = f"{flag}{title}".strip() if title else f"{flag}(无标题)".strip()
     lines.append(head)
 
@@ -422,12 +383,10 @@ def build_caption(p: dict) -> str:
         lines.append(f"Store: {store}")
     if remark:
         lines.append(f"Remark: {remark}")
-
     if discount_price:
         lines.append(f"Discount Price: {discount_price}")
     if commission:
         lines.append(f"Commission: {commission}")
-
     if link:
         lines.append(f"link:{link}")
 
@@ -435,7 +394,6 @@ def build_caption(p: dict) -> str:
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
-
 
 def compute_content_hash(p: dict, status: str) -> str:
     return sha1(
@@ -452,40 +410,35 @@ def compute_content_hash(p: dict, status: str) -> str:
         ])
     )
 
+# ==================== send/edit/delete ====================
 
-# -------------------- send/edit/delete --------------------
-
-def send_new(target_chat_id, thread_id: Optional[int], p: dict) -> Tuple[Optional[dict], Optional[str]]:
+def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
     caption = build_caption(p)
     img = safe_str(p.get("image_url"))
 
-    def _payload_base():
-        payload = {"chat_id": target_chat_id}
-        if thread_id is not None:
-            payload["message_thread_id"] = int(thread_id)
-        return payload
-
     if img:
         try:
-            payload = _payload_base()
-            payload.update({"photo": img, "caption": caption})
-            res = tg_api("sendPhoto", payload)
+            res = tg_api("sendPhoto", {"chat_id": target_chat_id, "photo": img, "caption": caption})
             time.sleep(SEND_DELAY_SEC)
             return {"message_id": res["message_id"], "kind": "photo", "image_url": img}, None
         except Exception as e:
             if BAD_IMAGE_POLICY == "skip" and is_bad_image_error(e):
-                print(f"[skip] bad image -> skip product. key={p.get('_key')} err={e}")
+                print(f"[skip] bad image -> skip product. market={p.get('market')} asin={p.get('asin')} err={e}")
                 return None, "BAD_IMAGE_SKIP"
-            print(f"[warn] sendPhoto failed -> fallback to text. key={p.get('_key')} img={img} err={e}")
+            print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
 
-    payload = _payload_base()
-    payload.update({"text": caption, "disable_web_page_preview": True})
-    res = tg_api("sendMessage", payload)
+    res = tg_api("sendMessage", {"chat_id": target_chat_id, "text": caption, "disable_web_page_preview": True})
     time.sleep(SEND_DELAY_SEC)
     return {"message_id": res["message_id"], "kind": "text", "image_url": ""}, None
 
-
 def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple[dict, bool, bool]:
+    """
+    返回 (new_meta, did_action, message_missing)
+    规则：
+    - 不做“text->photo”类型转换（避免 delete+repost），保持原 kind 稳定
+    - photo 消息优先 editMedia(仅当有新图且不同)，否则 editCaption
+    - text 消息 editText
+    """
     caption = build_caption(p)
 
     prev_kind = safe_str(prev.get("kind") or "text")
@@ -494,6 +447,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
 
     try:
         if prev_kind == "photo":
+            # photo：只在 new_img 存在且改变时尝试 editMessageMedia
             if new_img and new_img != prev_img:
                 try:
                     tg_api("editMessageMedia", {
@@ -510,6 +464,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                         return {"kind": "photo", "image_url": prev_img}, False, False
                     print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
 
+            # photo：改 caption
             try:
                 tg_api("editMessageCaption", {
                     "chat_id": target_chat_id,
@@ -525,7 +480,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                     return {"kind": "photo", "image_url": prev_img}, False, False
                 raise
 
-        # text
+        # text：保持 text（不做 text->photo 转换）
         try:
             tg_api("editMessageText", {
                 "chat_id": target_chat_id,
@@ -546,7 +501,6 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
             return {"kind": prev_kind, "image_url": prev_img}, False, True
         raise
 
-
 def delete_message(target_chat_id, message_id: int) -> bool:
     try:
         tg_api("deleteMessage", {"chat_id": target_chat_id, "message_id": int(message_id)})
@@ -557,8 +511,7 @@ def delete_message(target_chat_id, message_id: int) -> bool:
         print(f"[warn] delete failed but continue: chat={target_chat_id} msg={message_id} err={e}")
         return False
 
-
-# -------------------- targets --------------------
+# ==================== channel map ====================
 
 def load_channel_map() -> Dict[str, str]:
     if not CHANNEL_MAP_FILE.exists():
@@ -572,26 +525,45 @@ def load_channel_map() -> Dict[str, str]:
                 out[mk] = safe_str(v)
     return out
 
+# ==================== state format (groups) ====================
 
-def pick_forum_chat_id(thread_map_all: dict) -> str:
-    env_chat = safe_str(os.getenv("TG_CHAT_ID"))
-    if env_chat:
-        if env_chat in thread_map_all:
-            return env_chat
-        raise RuntimeError(f"TG_CHAT_ID={env_chat} not found in thread_map.json keys={list(thread_map_all.keys())}")
+def migrate_state_to_groups(raw_state: Any) -> Dict[str, Any]:
+    """
+    新格式：
+    {
+      "_meta": {...},
+      "groups": {
+         "US:B0XXX": [ meta, meta, ... ],
+         ...
+      }
+    }
 
-    keys = list(thread_map_all.keys())
-    if len(keys) == 1:
-        return keys[0]
+    兼容旧格式（flat key: "US:B0XXX" -> dict）
+    """
+    if isinstance(raw_state, dict) and "groups" in raw_state and isinstance(raw_state.get("groups"), dict):
+        # ensure meta
+        if "_meta" not in raw_state or not isinstance(raw_state.get("_meta"), dict):
+            raw_state["_meta"] = {}
+        return raw_state
 
-    raise RuntimeError(
-        "Multiple chat_id found in thread_map.json. "
-        "Set env TG_CHAT_ID to choose one. "
-        f"Available: {keys}"
-    )
+    groups: Dict[str, List[dict]] = {}
 
+    if isinstance(raw_state, dict):
+        # old flat format
+        for k, v in raw_state.items():
+            if not isinstance(k, str):
+                continue
+            if ":" not in k:
+                continue
+            if isinstance(v, dict):
+                groups.setdefault(k, []).append(v)
 
-# -------------------- main --------------------
+    return {
+        "_meta": {"migrated_at": int(time.time()), "from": "flat"},
+        "groups": groups
+    }
+
+# ==================== main ====================
 
 _should_exit = False
 
@@ -600,9 +572,9 @@ def _handle_signal(signum, frame):
     _should_exit = True
     print(f"[warn] received signal={signum}, will exit after saving state...")
 
-
 def main():
     global _should_exit
+
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
     print(f"[debug] BAD_IMAGE_POLICY={BAD_IMAGE_POLICY} PURGE_MISSING={PURGE_MISSING} TG_SEND_DELAY_SEC={SEND_DELAY_SEC}")
     print(f"[debug] PURGE_MIN_ROWS={PURGE_MIN_ROWS} PURGE_MIN_ACTIVE_RATIO={PURGE_MIN_ACTIVE_RATIO} FETCH_RETRY={FETCH_RETRY} FETCH_TIMEOUT={FETCH_TIMEOUT}")
@@ -615,30 +587,28 @@ def main():
         raise SystemExit("Missing TG_BOT_TOKEN env var.")
 
     channel_map = load_channel_map()
-    use_channels = bool(channel_map)
+    if not channel_map:
+        raise SystemExit("Missing channel_map.json. (channels mode required)")
 
-    forum_chat_id = None
-    thread_map = None
-    if not use_channels:
-        if not MAP_FILE.exists():
-            raise SystemExit("Missing channel_map.json AND missing thread_map.json. Provide one of them.")
-        thread_map_all = load_json_safe(MAP_FILE, {})
-        forum_chat_id = pick_forum_chat_id(thread_map_all)
-        thread_map = thread_map_all.get(forum_chat_id, {})
-        print(f"[ok] mode=forum_topics chat_id={forum_chat_id}")
-    else:
-        print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
+    print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
 
+    # reset
     if RESET_STATE and STATE_FILE.exists():
         bak = STATE_FILE.with_suffix(f".reset_{int(time.time())}.bak")
         STATE_FILE.replace(bak)
         print(f"[warn] RESET_STATE=1 -> backed up old state to {bak.name}")
 
-    state: Dict[str, Any] = load_json_safe(STATE_FILE, {})
-    products = load_products()
+    raw_state = load_json_safe(STATE_FILE, {})
+    state = migrate_state_to_groups(raw_state)
+    state["_meta"]["version"] = SYNC_PRODUCTS_VERSION
+    state["_meta"]["ts"] = int(time.time())
 
-    ok_count = 0
-    err_count = 0
+    groups: Dict[str, List[dict]] = state.get("groups", {})
+    if not isinstance(groups, dict):
+        groups = {}
+        state["groups"] = groups
+
+    products = load_products()
 
     actions_done = 0
     stopped_due_to_limit = False
@@ -646,96 +616,60 @@ def main():
     def at_limit() -> bool:
         return actions_done >= MAX_ACTIONS_PER_RUN
 
-    def target_for_market(market: str) -> Tuple[str, Optional[int]]:
-        if use_channels:
-            cid = channel_map.get(market)
-            if not cid:
-                raise RuntimeError(f"channel_map missing market={market}")
-            return cid, None
+    def target_chat_for_market(market: str) -> str:
+        cid = channel_map.get(market)
+        if not cid:
+            raise RuntimeError(f"channel_map missing market={market}")
+        return cid
 
-        if forum_chat_id is None or thread_map is None:
-            raise RuntimeError("forum mode not initialized")
-        tid = thread_map.get(market)
-        if not tid:
-            raise RuntimeError(f"thread_map missing market={market}")
-        return int(forum_chat_id), int(tid)
+    # ---------- build desired by group ----------
+    # desired[group_key] = {"market":.., "asin":.., "active": [product,...], "removed_count": n}
+    desired: Dict[str, Dict[str, Any]] = {}
 
-    # 当前列表“应该存在”的 keys（含重复 asin 的 asin_1/asin_2）
-    seen_keys = set()
+    seen_group_keys = set()
+
     for p in products:
         market = safe_str(p.get("market")).upper()
-        if market not in VALID_MARKETS:
+        asin = safe_str(p.get("asin"))
+        if not asin or market not in VALID_MARKETS:
             continue
-        key = safe_str(p.get("_key"))
-        if key:
-            seen_keys.add(key)
+        gk = f"{market}:{asin}"
+        seen_group_keys.add(gk)
 
-    # -------------------- Stage 1: explicit removed --------------------
-    for p in products:
-        if _should_exit or stopped_due_to_limit:
-            break
-        try:
-            market = safe_str(p.get("market")).upper()
-            if market not in VALID_MARKETS:
+        if gk not in desired:
+            desired[gk] = {"market": market, "asin": asin, "active": [], "removed_count": 0}
+
+        if norm_status(p.get("status")) == "active":
+            desired[gk]["active"].append(p)
+        else:
+            desired[gk]["removed_count"] += 1
+
+    # ---------- PURGE missing groups ----------
+    if PURGE_MISSING and (not _should_exit) and (not stopped_due_to_limit):
+        prev_active_msgs = 0
+        for gk, lst in groups.items():
+            if not isinstance(lst, list):
                 continue
+            for m in lst:
+                if isinstance(m, dict) and m.get("status") == "active" and m.get("message_id"):
+                    prev_active_msgs += 1
 
-            if norm_status(p.get("status")) != "removed":
-                continue
+        curr_seen = len(seen_group_keys)
 
-            key = safe_str(p.get("_key"))
-            if not key:
-                continue
-
-            prev = state.get(key) if isinstance(state.get(key), dict) else None
-            content_hash = compute_content_hash(p, "removed")
-
-            if prev and prev.get("status") == "removed" and prev.get("hash") == content_hash and prev.get("delete_ok"):
-                continue
-
-            delete_ok = bool(prev.get("delete_ok")) if prev else False
-
-            if prev and prev.get("message_id") and not delete_ok:
-                if at_limit():
-                    stopped_due_to_limit = True
-                    print(f"[warn] action limit reached, stop before delete: {key}")
-                    break
-                msg_chat = prev.get("chat_id") or (forum_chat_id if not use_channels else None)
-                if msg_chat:
-                    delete_ok = delete_message(msg_chat, prev["message_id"])
-                    actions_done += 1
-
-            state[key] = {**(prev or {}), "status": "removed", "hash": content_hash, "ts": int(time.time()),
-                          "delete_attempted": True, "delete_ok": delete_ok}
-            ok_count += 1
-
-        except Exception as e:
-            err_count += 1
-            print(f"[error] explicit removed failed but continue. key={p.get('_key')} err={e}")
-
-    # -------------------- Stage 1B: PURGE_MISSING（列表删除就删消息） --------------------
-    if (not stopped_due_to_limit) and (not _should_exit) and PURGE_MISSING:
         purge_allowed = True
-        prev_active = sum(1 for v in state.values() if isinstance(v, dict) and v.get("status") == "active")
-        curr_seen = len(seen_keys)
-
         if curr_seen < PURGE_MIN_ROWS:
             purge_allowed = False
-            print(f"[warn] PURGE blocked: seen_keys too small ({curr_seen} < {PURGE_MIN_ROWS})")
-        elif prev_active > 0 and curr_seen < int(prev_active * PURGE_MIN_ACTIVE_RATIO):
+            print(f"[warn] PURGE blocked: seen groups too small ({curr_seen} < {PURGE_MIN_ROWS})")
+        elif prev_active_msgs > 0 and curr_seen < int(prev_active_msgs * PURGE_MIN_ACTIVE_RATIO):
             purge_allowed = False
-            print(f"[warn] PURGE blocked: seen_keys too small vs prev_active ({curr_seen} < {int(prev_active * PURGE_MIN_ACTIVE_RATIO)})")
+            print(f"[warn] PURGE blocked: seen groups too small vs prev_active_msgs ({curr_seen} < {int(prev_active_msgs * PURGE_MIN_ACTIVE_RATIO)})")
 
         if purge_allowed:
-            missing = [
-                k for k, v in state.items()
-                if isinstance(v, dict)
-                and k not in seen_keys
-                and (v.get("status") == "active" or (v.get("status") == "removed" and not v.get("delete_ok")))
-            ]
-            if missing:
-                print(f"[warn] PURGE_MISSING enabled, will purge missing keys: {len(missing)}")
+            missing_groups = [gk for gk in list(groups.keys()) if gk not in seen_group_keys]
+            if missing_groups:
+                print(f"[warn] PURGE_MISSING enabled, will purge groups missing in list: {len(missing_groups)}")
 
-            for key in missing:
+            for gk in missing_groups:
                 if _should_exit or stopped_due_to_limit:
                     break
                 if at_limit():
@@ -743,137 +677,214 @@ def main():
                     print("[warn] action limit reached, stop during purge.")
                     break
 
-                prev = state.get(key) if isinstance(state.get(key), dict) else {}
-                delete_ok = bool(prev.get("delete_ok"))
-                content_hash = prev.get("hash") or ""
-
-                if prev.get("message_id") and not delete_ok:
-                    msg_chat = prev.get("chat_id") or (forum_chat_id if not use_channels else None)
-                    if msg_chat:
-                        delete_ok = delete_message(msg_chat, prev["message_id"])
+                lst = groups.get(gk) if isinstance(groups.get(gk), list) else []
+                # delete all messages in that group
+                new_lst: List[dict] = []
+                for meta in lst:
+                    if not isinstance(meta, dict):
+                        continue
+                    msg_id = meta.get("message_id")
+                    chat_id = meta.get("chat_id")
+                    if msg_id and chat_id:
+                        if at_limit():
+                            stopped_due_to_limit = True
+                            print("[warn] action limit reached, stop during purge deletions.")
+                            break
+                        ok = delete_message(chat_id, msg_id)
                         actions_done += 1
-
-                state[key] = {**prev, "status": "removed", "hash": content_hash, "ts": int(time.time()),
-                              "delete_attempted": True, "delete_ok": delete_ok}
+                        meta["delete_ok"] = bool(ok)
+                    meta["status"] = "removed"
+                    meta["ts"] = int(time.time())
+                    # purge 后不保留旧 active 列表（避免下次又被拿来匹配）
+                    # 但保留 removed 记录也可以，这里直接清空更干净：
+                    # new_lst.append(meta)
+                groups[gk] = new_lst
         else:
             print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip purge this run.")
 
-    # -------------------- Stage 2: active edit then post/repost --------------------
-    if not stopped_due_to_limit:
-        # 2A edit
-        for p in products:
+    # ---------- per group: make actual match ----------
+    # 核心：允许同 asin 多条；优先 hash 同 -> 不动；其次复用旧消息 -> edit；最后多余 -> delete；不够 -> post
+    for gk, info in desired.items():
+        if _should_exit or stopped_due_to_limit:
+            break
+
+        market = info["market"]
+        asin = info["asin"]
+        target_chat = target_chat_for_market(market)
+
+        desired_active: List[dict] = info["active"]
+        desired_hashes = [compute_content_hash(p, "active") for p in desired_active]
+
+        existing_list = groups.get(gk)
+        if not isinstance(existing_list, list):
+            existing_list = []
+        # keep only dict
+        existing_list = [m for m in existing_list if isinstance(m, dict)]
+
+        # consider existing active messages as candidates
+        existing_candidates: List[dict] = []
+        for m in existing_list:
+            if m.get("status") == "active" and m.get("message_id") and m.get("chat_id"):
+                existing_candidates.append(m)
+
+        # 1) exact hash match -> keep
+        unused_existing = existing_candidates[:]
+        used_existing_ids = set()
+        matched_pairs: List[Tuple[dict, dict, str]] = []  # (existing_meta, product, hash)
+
+        # map hash -> list metas
+        by_hash: Dict[str, List[dict]] = {}
+        for m in unused_existing:
+            h = safe_str(m.get("hash"))
+            by_hash.setdefault(h, []).append(m)
+
+        # exact matches
+        unmatched_products: List[Tuple[dict, str]] = []
+        for p, h in zip(desired_active, desired_hashes):
+            if h in by_hash and by_hash[h]:
+                m = by_hash[h].pop()
+                used_existing_ids.add(id(m))
+                matched_pairs.append((m, p, h))  # no action
+            else:
+                unmatched_products.append((p, h))
+
+        # remaining existing not used
+        remaining_existing = [m for m in unused_existing if id(m) not in used_existing_ids]
+
+        # 2) reuse remaining existing for unmatched products -> edit (no delete+repost)
+        edit_pairs: List[Tuple[dict, dict, str]] = []
+        while unmatched_products and remaining_existing:
+            p, h = unmatched_products.pop(0)
+            m = remaining_existing.pop(0)
+            edit_pairs.append((m, p, h))
+
+        # 3) extra existing after assignment -> delete (because list减少/删除)
+        extra_existing = remaining_existing[:]
+
+        # 4) extra products after reuse -> post
+        new_posts = unmatched_products[:]  # list of (p,h)
+
+        # ---- apply edits ----
+        # note: exact matched_pairs just refresh ts/hash in state list to keep up to date
+        # For matched_pairs, we do not spend actions.
+        now_ts = int(time.time())
+        for m, p, h in matched_pairs:
+            m["hash"] = h
+            m["ts"] = now_ts
+            m["status"] = "active"
+            # 不强制改 chat_id，但建议保持 target_chat
+            m["chat_id"] = m.get("chat_id") or target_chat
+
+        for m, p, h in edit_pairs:
             if _should_exit or stopped_due_to_limit:
                 break
-            try:
-                market = safe_str(p.get("market")).upper()
-                if market not in VALID_MARKETS:
-                    continue
-                if norm_status(p.get("status")) != "active":
-                    continue
+            if at_limit():
+                stopped_due_to_limit = True
+                print(f"[warn] action limit reached, stop before edit: {gk}")
+                break
 
-                key = safe_str(p.get("_key"))
-                if not key:
-                    continue
+            msg_chat = m.get("chat_id") or target_chat
+            msg_id = int(m["message_id"])
 
-                prev = state.get(key) if isinstance(state.get(key), dict) else None
-                if not prev or not prev.get("message_id") or prev.get("status") != "active":
-                    continue
-
-                content_hash = compute_content_hash(p, "active")
-                if prev.get("hash") == content_hash:
-                    continue
-
+            new_meta, did_action, missing = edit_existing(msg_chat, msg_id, m, p)
+            if missing:
+                # 原消息没了：尽量复用这条 meta 直接 repost（这会增加一次 send）
+                # 但仍然不 delete+repost（因为 message 已经不在）
                 if at_limit():
                     stopped_due_to_limit = True
-                    print(f"[warn] action limit reached, stop before edit: {key}")
+                    print(f"[warn] action limit reached, stop before repost(missing): {gk}")
                     break
-
-                msg_chat = prev.get("chat_id")
-                if not msg_chat:
-                    msg_chat, _ = target_for_market(market)
-
-                msg_id = int(prev["message_id"])
-                new_meta, did_action, missing = edit_existing(msg_chat, msg_id, prev, p)
-
-                if missing:
-                    state[key] = {**prev, "hash": content_hash, "ts": int(time.time()), "message_id": None}
-                    print("missing(edit)->will repost:", key, "old_msg", msg_id)
+                info2, err_code = send_new(target_chat, p)
+                if err_code == "BAD_IMAGE_SKIP":
+                    # skip: 标记为 removed，避免一直尝试
+                    m["status"] = "removed"
+                    m["ts"] = int(time.time())
+                    print(f"[skip] repost missing but bad image skip: {gk}")
                     continue
+                actions_done += 1
+                m.update({
+                    "chat_id": target_chat,
+                    "message_id": info2["message_id"],
+                    "kind": info2["kind"],
+                    "image_url": info2["image_url"],
+                    "hash": h,
+                    "status": "active",
+                    "ts": int(time.time()),
+                    "delete_attempted": False,
+                    "delete_ok": False,
+                })
+                print(f"reposted(missing->send): {gk} msg {info2['message_id']}")
+                continue
 
-                if did_action:
-                    actions_done += 1
-                    print("edited:", key, "msg", msg_id)
-                else:
-                    print("nochange(edit):", key, "msg", msg_id)
+            if did_action:
+                actions_done += 1
+                print(f"edited: {gk} msg {msg_id}")
+            else:
+                print(f"nochange(edit): {gk} msg {msg_id}")
 
-                state[key] = {**prev, "hash": content_hash, "status": "active",
-                              "kind": new_meta["kind"], "image_url": new_meta["image_url"], "ts": int(time.time())}
-                ok_count += 1
+            m.update({
+                "chat_id": msg_chat,
+                "kind": new_meta["kind"],
+                "image_url": new_meta["image_url"],
+                "hash": h,
+                "status": "active",
+                "ts": int(time.time()),
+            })
 
-            except Exception as e:
-                err_count += 1
-                print(f"[error] edit failed but continue. key={p.get('_key')} err={e}")
-
-        # 2B post / repost
-        for p in products:
+        # ---- apply deletions for extra_existing OR explicit removed rows ----
+        # 这里实现“列表删了就删消息”：如果 desired_active 数量 < existing_active 数量，就会进入 extra_existing 删除。
+        # 如果表里该组出现 removed 行：等价于 desired_active 减少（或者你将某行 status=removed），同样会触发减少。
+        for m in extra_existing:
             if _should_exit or stopped_due_to_limit:
                 break
-            try:
-                market = safe_str(p.get("market")).upper()
-                if market not in VALID_MARKETS:
-                    continue
-                if norm_status(p.get("status")) != "active":
-                    continue
+            if at_limit():
+                stopped_due_to_limit = True
+                print(f"[warn] action limit reached, stop before delete: {gk}")
+                break
+            msg_id = m.get("message_id")
+            chat_id = m.get("chat_id") or target_chat
+            if msg_id and chat_id:
+                ok = delete_message(chat_id, msg_id)
+                actions_done += 1
+                m["delete_ok"] = bool(ok)
+            m["status"] = "removed"
+            m["ts"] = int(time.time())
+            m["message_id"] = None  # 关键：避免以后又被拿来 edit
+            print(f"deleted(extra): {gk}")
 
-                key = safe_str(p.get("_key"))
-                if not key:
-                    continue
+        # ---- apply new posts ----
+        for p, h in new_posts:
+            if _should_exit or stopped_due_to_limit:
+                break
+            if at_limit():
+                stopped_due_to_limit = True
+                print(f"[warn] action limit reached, stop before post: {gk}")
+                break
 
-                prev = state.get(key) if isinstance(state.get(key), dict) else None
+            info2, err_code = send_new(target_chat, p)
+            if err_code == "BAD_IMAGE_SKIP":
+                continue
+            actions_done += 1
 
-                target_chat, thread_id = target_for_market(market)
-                content_hash = compute_content_hash(p, "active")
+            # 新增一条 meta 到该 group
+            existing_list.append({
+                "chat_id": target_chat,
+                "message_id": info2["message_id"],
+                "hash": h,
+                "status": "active",
+                "kind": info2["kind"],
+                "image_url": info2["image_url"],
+                "ts": int(time.time()),
+                "delete_attempted": False,
+                "delete_ok": False
+            })
+            print(f"posted: {gk} msg {info2['message_id']}")
 
-                if prev and prev.get("status") == "active" and prev.get("hash") == content_hash and prev.get("message_id"):
-                    continue
-
-                if prev and prev.get("status") == "removed":
-                    if at_limit():
-                        stopped_due_to_limit = True
-                        print(f"[warn] action limit reached, stop before repost: {key}")
-                        break
-                    info, err_code = send_new(target_chat, thread_id, p)
-                    if err_code == "BAD_IMAGE_SKIP":
-                        continue
-                    actions_done += 1
-                    state[key] = {"chat_id": target_chat, "message_id": info["message_id"], "hash": content_hash,
-                                  "status": "active", "kind": info["kind"], "image_url": info["image_url"],
-                                  "ts": int(time.time()), "delete_attempted": False, "delete_ok": False}
-                    print("reposted:", key, "msg", info["message_id"])
-                    continue
-
-                if (not prev) or (not prev.get("message_id")):
-                    if at_limit():
-                        stopped_due_to_limit = True
-                        print(f"[warn] action limit reached, stop before post: {key}")
-                        break
-                    info, err_code = send_new(target_chat, thread_id, p)
-                    if err_code == "BAD_IMAGE_SKIP":
-                        continue
-                    actions_done += 1
-                    state[key] = {"chat_id": target_chat, "message_id": info["message_id"], "hash": content_hash,
-                                  "status": "active", "kind": info["kind"], "image_url": info["image_url"],
-                                  "ts": int(time.time()), "delete_attempted": False, "delete_ok": False}
-                    print("posted:", key, "msg", info["message_id"])
-                    continue
-
-            except Exception as e:
-                err_count += 1
-                print(f"[error] post/repost failed but continue. key={p.get('_key')} err={e}")
+        # persist group list (we may have appended new)
+        groups[gk] = existing_list
 
     save_json_atomic(STATE_FILE, state)
-    print(f"done. ok={ok_count} err={err_count} actions={actions_done}/{MAX_ACTIONS_PER_RUN}. state saved -> {STATE_FILE}")
-
+    print(f"done. actions={actions_done}/{MAX_ACTIONS_PER_RUN}. state saved -> {STATE_FILE}")
 
 if __name__ == "__main__":
     main()
