@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: sync-products-latest
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   sync:
