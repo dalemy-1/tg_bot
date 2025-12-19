@@ -30,7 +30,7 @@ jobs:
       RESET_STATE: "0"
 
       # 只在“迁移 state”的那一次设为 1；平时务必是 0
-      MIGRATE_ONLY: "1"
+      MIGRATE_ONLY: "0"
 
     steps:
       - name: Checkout
