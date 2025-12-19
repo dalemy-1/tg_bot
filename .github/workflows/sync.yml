@@ -2,18 +2,13 @@ name: sync
 
 on:
   workflow_dispatch:
-    inputs:
-      migrate_only:
-        description: "Only migrate posted_state.json to groups format (no Telegram actions)"
-        required: false
-        default: "0"
 
 permissions:
   contents: write
 
 concurrency:
   group: sync-products-latest
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -29,19 +24,18 @@ jobs:
 
       BAD_IMAGE_POLICY: "fallback_text"
       FALLBACK_TO_LOCAL_CSV: "1"
-      PURGE_MISSING: "0"
+      PURGE_MISSING: "1"
       FETCH_RETRY: "2"
       FETCH_TIMEOUT: "30"
       RESET_STATE: "0"
 
-      # 你脚本里读取的是 MIGRATE_ONLY
-      MIGRATE_ONLY: ${{ github.event.inputs.migrate_only }}
+      # 只在“迁移 state”的那一次设为 1；平时务必是 0
+      MIGRATE_ONLY: "0"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Setup Python
@@ -76,7 +70,7 @@ jobs:
           for i in 1 2 3 4 5; do
             echo "Push attempt $i..."
             git pull --rebase origin main || true
-            if git push origin HEAD:main; then
+            if git push; then
               echo "Push success."
               exit 0
             fi
