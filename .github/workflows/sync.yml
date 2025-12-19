@@ -74,6 +74,9 @@ jobs:
 
           git commit -m "Update posted_state.json"
 
+          git pull --rebase origin main
+          git push
+
           # ✅ 关键：远端 main 可能被其他任务先 push 了，先 rebase 再 push，并重试
           for i in 1 2 3 4 5; do
             echo "Push attempt $i..."
