@@ -29,7 +29,7 @@ FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "fallback_text").strip().lower()
 
 # ✅ 以“列表”为准：如果某个 market:asin 组完全从表里消失，会删除该组所有消息（受安全阈值保护）
-PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() == "1")  # 建议你开 1，符合“列表删了就删消息”
+PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() == "1")
 PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))
 PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
 
@@ -41,7 +41,7 @@ MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
 # RESET_STATE=1 会把旧 state 备份并清空，从零开始发（会导致全部重发）
 RESET_STATE = (os.getenv("RESET_STATE", "0").strip() == "1")
 
-# ✅ MIGRATE_ONLY=1：只把 posted_state.json 从旧格式迁移到 groups 新结构，不做任何 Telegram 动作（不发/不改/不删）
+# ✅ 只迁移 state，不做 Telegram 动作（用于把旧 flat posted_state.json 升级成 groups）
 MIGRATE_ONLY = (os.getenv("MIGRATE_ONLY", "0").strip() == "1")
 
 FLAG = {
@@ -87,6 +87,21 @@ def norm_status(v) -> str:
     if s in ("removed", "inactive", "down", "off", "0", "false", "停售", "下架"):
         return "removed"
     return "active"
+
+def norm_asin(v) -> str:
+    # ✅ 关键：ASIN 统一大写、去空格，避免 key 对不上导致“重头发”
+    s = safe_str(v).upper().replace(" ", "")
+    return s
+
+def normalize_group_key(k: str) -> Optional[str]:
+    if not isinstance(k, str) or ":" not in k:
+        return None
+    mk, asin = k.split(":", 1)
+    mk = safe_str(mk).upper()
+    asin = norm_asin(asin)
+    if mk not in VALID_MARKETS or not asin:
+        return None
+    return f"{mk}:{asin}"
 
 def parse_decimal_maybe(v) -> Optional[Decimal]:
     s = safe_str(v)
@@ -293,22 +308,20 @@ def load_products() -> List[Dict[str, str]]:
 
     def _normalize_row(row: dict) -> Dict[str, str]:
         market = _norm_market(_get(row, "market", "Market"))
-        asin = _get(row, "asin", "ASIN")
+        asin = norm_asin(_get(row, "asin", "ASIN"))
+
         title = _get(row, "title", "Title")
         keyword = _get(row, "keyword", "Keyword")
         store = _get(row, "store", "Store")
         remark = _get(row, "remark", "Remark")
         link = _get(row, "link", "Link", "url", "URL")
 
-        # 注意：这里包含了你表头里可能拼错的字段名，尽量兼容
-        image_url = _get(row, "image_url", "image", "Image", "img",
-                         "image_urlDiscount", "image_urldiscount")
+        image_url = _get(row, "image_url", "image", "Image", "img", "imageUrl", "imageURL")
 
-        status = norm_status(_get(row, "status", "Status", "removed"))
-        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice",
-                              "discount", "Discount", "Discoun", "DiscountP")
-        commission = _get(row, "commission", "Commission", "comm",
-                          "Commissic", "Commissio", "Commiss", "Commision")
+        status = norm_status(_get(row, "status", "Status"))
+
+        discount_price = _get(row, "discount_price", "Discount Price", "DiscountPrice", "discount", "Discount", "Discoun")
+        commission = _get(row, "commission", "Commission", "comm", "Commissic", "Commissio", "Commiss", "Commision")
 
         return {
             "market": market,
@@ -403,8 +416,11 @@ def build_caption(p: dict) -> str:
     return cap[:CAPTION_MAX]
 
 def compute_content_hash(p: dict, status: str) -> str:
+    # ✅ hash 只跟内容有关；不包含 message_id / ts / 顺序
     return sha1(
         "|".join([
+            norm_text(p.get("market")),  # 加上 market，更稳
+            norm_text(p.get("asin")),
             norm_text(p.get("title")),
             norm_text(p.get("keyword")),
             norm_text(p.get("store")),
@@ -547,21 +563,30 @@ def migrate_state_to_groups(raw_state: Any) -> Dict[str, Any]:
     if isinstance(raw_state, dict) and "groups" in raw_state and isinstance(raw_state.get("groups"), dict):
         if "_meta" not in raw_state or not isinstance(raw_state.get("_meta"), dict):
             raw_state["_meta"] = {}
+        # ✅ 顺手把 groups key 规范化一次
+        fixed: Dict[str, List[dict]] = {}
+        for k, lst in raw_state["groups"].items():
+            nk = normalize_group_key(k)
+            if not nk:
+                continue
+            if isinstance(lst, list):
+                fixed[nk] = [m for m in lst if isinstance(m, dict)]
+            elif isinstance(lst, dict):
+                fixed[nk] = [lst]
+        raw_state["groups"] = fixed
         return raw_state
 
     groups: Dict[str, List[dict]] = {}
 
     if isinstance(raw_state, dict):
         for k, v in raw_state.items():
-            if not isinstance(k, str):
-                continue
-            if ":" not in k:
+            nk = normalize_group_key(k)
+            if not nk:
                 continue
             if isinstance(v, dict):
-                # 旧 meta 字段保持原样；确保 status 默认 active（旧数据一般就是 active）
-                if "status" not in v:
-                    v["status"] = "active"
-                groups.setdefault(k, []).append(v)
+                groups.setdefault(nk, []).append(v)
+            elif isinstance(v, list):
+                groups.setdefault(nk, []).extend([m for m in v if isinstance(m, dict)])
 
     return {
         "_meta": {"migrated_at": int(time.time()), "from": "flat"},
@@ -589,47 +614,38 @@ def main():
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-    # ====== 先做 state 迁移（不依赖 TG / channel_map）======
-    if RESET_STATE and MIGRATE_ONLY:
-        print("[warn] MIGRATE_ONLY=1 时不建议 RESET_STATE=1；将忽略 RESET_STATE（避免清空导致全部重发）。")
+    # MIGRATE_ONLY 时不要求 TG_TOKEN（只迁移文件）
+    if not MIGRATE_ONLY and not TG_TOKEN:
+        raise SystemExit("Missing TG_BOT_TOKEN env var.")
 
-    if RESET_STATE and (not MIGRATE_ONLY) and STATE_FILE.exists():
+    channel_map = load_channel_map()
+    if not channel_map and not MIGRATE_ONLY:
+        raise SystemExit("Missing channel_map.json. (channels mode required)")
+
+    if channel_map:
+        print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
+
+    # reset
+    if RESET_STATE and STATE_FILE.exists():
         bak = STATE_FILE.with_suffix(f".reset_{int(time.time())}.bak")
         STATE_FILE.replace(bak)
         print(f"[warn] RESET_STATE=1 -> backed up old state to {bak.name}")
 
     raw_state = load_json_safe(STATE_FILE, {})
     state = migrate_state_to_groups(raw_state)
-
-    # meta
-    if "_meta" not in state or not isinstance(state.get("_meta"), dict):
-        state["_meta"] = {}
     state["_meta"]["version"] = SYNC_PRODUCTS_VERSION
     state["_meta"]["ts"] = int(time.time())
-
-    if "groups" not in state or not isinstance(state.get("groups"), dict):
-        state["groups"] = {}
-
-    # ✅ 只迁移 state，不做任何 Telegram 动作
-    if MIGRATE_ONLY:
-        save_json_atomic(STATE_FILE, state)
-        print(f"[ok] MIGRATE_ONLY=1 -> migrated posted_state.json only, skip Telegram actions. saved -> {STATE_FILE}")
-        return
-
-    # ====== 下面开始正常同步（会发/改/删 TG）======
-    if not TG_TOKEN:
-        raise SystemExit("Missing TG_BOT_TOKEN env var.")
-
-    channel_map = load_channel_map()
-    if not channel_map:
-        raise SystemExit("Missing channel_map.json. (channels mode required)")
-
-    print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
 
     groups: Dict[str, List[dict]] = state.get("groups", {})
     if not isinstance(groups, dict):
         groups = {}
         state["groups"] = groups
+
+    # ✅ 只迁移不发消息：用于把旧 posted_state.json 升级成 groups，避免“重头发”
+    if MIGRATE_ONLY:
+        save_json_atomic(STATE_FILE, state)
+        print(f"[ok] MIGRATE_ONLY=1 -> migrated posted_state.json only, skip Telegram actions. saved -> {STATE_FILE}")
+        return
 
     products = load_products()
 
@@ -651,9 +667,12 @@ def main():
 
     for p in products:
         market = safe_str(p.get("market")).upper()
-        asin = safe_str(p.get("asin"))
+        asin = norm_asin(p.get("asin"))
         if not asin or market not in VALID_MARKETS:
             continue
+        p["market"] = market
+        p["asin"] = asin
+
         gk = f"{market}:{asin}"
         seen_group_keys.add(gk)
 
@@ -719,7 +738,7 @@ def main():
         else:
             print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip purge this run.")
 
-    # ---------- per group ----------
+    # ---------- per group: match/edit/post/delete ----------
     for gk, info in desired.items():
         if _should_exit or stopped_due_to_limit:
             break
@@ -740,12 +759,12 @@ def main():
             if m.get("status") == "active" and m.get("message_id") and m.get("chat_id"):
                 existing_candidates.append(m)
 
-        unused_existing = existing_candidates[:]
+        # 1) exact hash match -> keep
         used_existing_ids = set()
         matched_pairs: List[Tuple[dict, dict, str]] = []
 
         by_hash: Dict[str, List[dict]] = {}
-        for m in unused_existing:
+        for m in existing_candidates:
             h = safe_str(m.get("hash"))
             by_hash.setdefault(h, []).append(m)
 
@@ -758,15 +777,19 @@ def main():
             else:
                 unmatched_products.append((p, h))
 
-        remaining_existing = [m for m in unused_existing if id(m) not in used_existing_ids]
+        remaining_existing = [m for m in existing_candidates if id(m) not in used_existing_ids]
 
+        # 2) reuse remaining existing for unmatched products -> edit
         edit_pairs: List[Tuple[dict, dict, str]] = []
         while unmatched_products and remaining_existing:
             p, h = unmatched_products.pop(0)
             m = remaining_existing.pop(0)
             edit_pairs.append((m, p, h))
 
+        # 3) extra existing -> delete (list减少/删除)
         extra_existing = remaining_existing[:]
+
+        # 4) extra products -> post
         new_posts = unmatched_products[:]
 
         now_ts = int(time.time())
@@ -844,7 +867,7 @@ def main():
                 m["delete_ok"] = bool(ok)
             m["status"] = "removed"
             m["ts"] = int(time.time())
-            m["message_id"] = None  # 关键：避免以后又被拿来 edit
+            m["message_id"] = None  # ✅ 防止以后又被当作可 edit 的候选
             print(f"deleted(extra): {gk}")
 
         for p, h in new_posts:
