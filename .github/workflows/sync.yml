@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
-    env:
+        env:
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
       GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
 
@@ -28,6 +28,9 @@ jobs:
       FETCH_RETRY: "2"
       FETCH_TIMEOUT: "30"
       RESET_STATE: "0"
+
+      MIGRATE_ONLY: "1"   # ✅ 只迁移 posted_state.json，不发 Telegram
+
 
     steps:
       - name: Checkout
