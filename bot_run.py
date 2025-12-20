@@ -57,56 +57,92 @@ DEFAULT_STATUS = "用户来信"
 # 最近对话列表（管理员看到的“收件箱”按钮条数）
 INBOX_LIMIT = int(os.getenv("INBOX_LIMIT", "15") or "15")
 
-print("[boot] TG_BOT_TOKEN prefix:", (TOKEN or "")[:10], "len:", len(TOKEN or ""), "tail:", (TOKEN or "")[-4:])
-print("[boot] PUBLIC_URL:", (PUBLIC_URL or "")[:120])
-print("[boot] ADMIN_ID:", ADMIN_ID)
-print("[boot] INBOX_LIMIT:", INBOX_LIMIT)
+def _user_label(meta: Dict[str, Any], uid: int) -> str:
+    name = (meta.get("name") or "Unknown").strip()
+    username = (meta.get("username") or "").strip()
+    return f"{name} @{username}" if username else name
 
-
-# ================== STATE ==================
-def _now_ts() -> int:
-    return int(time.time())
-
-
-def load_state() -> Dict[str, Any]:
-    """兼容旧 state 文件：缺什么补什么，避免你升级代码后字段丢失导致功能失效。"""
-    base: Dict[str, Any] = {
-        "ticket_seq": 0,
-        "tickets": {},
-        "msg_index": {},
-        "last_user": 0,
-
-        # ✅ 关键：当前会话对象（不 Reply 也能发送）
-        "active_user": 0,
-
-        # WeCom Reply 映射：admin_message_id -> wecom userid
-        "wecom_index": {},
-
-        # 最近联系人（用于收件箱按钮）
-        "recent_users": [],  # List[int]
-        "admin_inbox_msg_id": 0,
-
-        "last_auto_reply": {},
-
-        "user_meta": {},      # user_id(str) -> {...}
-        "user_status": {},    # user_id(str) -> status
-    }
-
-    if STATE_FILE.exists():
+def touch_recent_user(state: Dict[str, Any], uid: int) -> None:
+    uid = int(uid)
+    recent = state.setdefault("recent_users", [])
+    # 去重置顶
+    new_recent = []
+    for x in recent:
         try:
-            data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
-            if isinstance(data, dict):
-                for k, v in base.items():
-                    if k not in data:
-                        data[k] = v
-                # 类型兜底
-                if not isinstance(data.get("recent_users"), list):
-                    data["recent_users"] = []
-                return data
+            xi = int(x)
+            if xi != uid:
+                new_recent.append(xi)
+        except Exception:
+            continue
+    new_recent.insert(0, uid)
+    state["recent_users"] = new_recent[:max(INBOX_LIMIT, 50)]
+
+def build_inbox_keyboard(state: Dict[str, Any]) -> InlineKeyboardMarkup:
+    recent = []
+    for x in (state.get("recent_users") or []):
+        try:
+            recent.append(int(x))
         except Exception:
             pass
+    recent = recent[:INBOX_LIMIT]
+
+    rows = []
+    user_meta = state.get("user_meta") or {}
+    active_uid = int(state.get("active_user", 0) or 0)
+
+    row = []
+    for uid in recent:
+        meta = user_meta.get(str(uid), {}) if isinstance(user_meta, dict) else {}
+        label = _user_label(meta, uid)
+        if uid == active_uid:
+            label = "✅ " + label
+        row.append(InlineKeyboardButton(label[:40], callback_data=f"setactive|{uid}|-"))
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+
+    rows.append([InlineKeyboardButton("清空当前会话", callback_data="clearactive|0|-")])
+    return InlineKeyboardMarkup(rows)
+
+async def ensure_admin_inbox(state: Dict[str, Any], bot) -> None:
+    msg_id = int(state.get("admin_inbox_msg_id", 0) or 0)
+    active_uid = int(state.get("active_user", 0) or 0)
+
+    head = "📥 <b>收件箱 / 最近对话</b>\n"
+    if active_uid > 0:
+        meta = (state.get("user_meta") or {}).get(str(active_uid), {})
+        head += f"当前会话：<code>{active_uid}</code> {_safe(_user_label(meta, active_uid))}\n"
+        head += "现在你可以不 Reply 直接发消息。\n"
+    else:
+        head += "当前会话：<code>未选择</code>\n请点击下面任意用户切换。\n"
+
+    try:
+        if msg_id > 0:
+            await bot.edit_message_text(
+                chat_id=ADMIN_ID,
+                message_id=msg_id,
+                text=head,
+                parse_mode=ParseMode.HTML,
+                reply_markup=build_inbox_keyboard(state),
+                disable_web_page_preview=True,
+            )
+        else:
+            m = await bot.send_message(
+                chat_id=ADMIN_ID,
+                text=head,
+                parse_mode=ParseMode.HTML,
+                reply_markup=build_inbox_keyboard(state),
+                disable_web_page_preview=True,
+            )
+            state["admin_inbox_msg_id"] = m.message_id
+            save_state(state)
+    except Exception:
+        pass
 
     return base
+
 
 
 def save_state(state: Dict[str, Any]) -> None:
@@ -260,7 +296,6 @@ def contact_admin_keyboard() -> InlineKeyboardMarkup:
 
 
 def status_keyboard(uid: int) -> InlineKeyboardMarkup:
-    # 增加“设为当前会话”按钮：不需要命令
     row1 = [
         InlineKeyboardButton("已下单", callback_data=f"status|{uid}|已下单"),
         InlineKeyboardButton("退货退款", callback_data=f"status|{uid}|退货退款"),
@@ -273,11 +308,13 @@ def status_keyboard(uid: int) -> InlineKeyboardMarkup:
         InlineKeyboardButton("清空状态", callback_data=f"clear|{uid}|-"),
         InlineKeyboardButton("Profile", callback_data=f"profile|{uid}|-"),
     ]
+    # ✅ 新增这一行：一键设为当前会话
     row4 = [
         InlineKeyboardButton("设为当前会话", callback_data=f"setactive|{uid}|-"),
         InlineKeyboardButton("打开用户", url=f"tg://user?id={uid}"),
     ]
     return InlineKeyboardMarkup([row1, row2, row3, row4])
+
 
 
 def _user_label(meta: Dict[str, Any], uid: int) -> str:
@@ -492,19 +529,22 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     st = load_state()
 
     # setactive|uid|-
-    if action == "setactive" and len(parts) >= 2:
+        if action == "setactive" and len(parts) >= 2:
         uid = int(parts[1])
         st["active_user"] = uid
         st["last_user"] = uid
         touch_recent_user(st, uid)
         save_state(st)
-        await ensure_admin_inbox(st, context)
+        await ensure_admin_inbox(st, context.bot)
         await refresh_header(st, context, uid)
-        try:
-            await q.message.reply_text(f"已切换当前会话：{uid}\n现在你可以不 Reply 直接发消息。")
-        except Exception:
-            pass
         return
+
+    if action == "clearactive":
+        st["active_user"] = 0
+        save_state(st)
+        await ensure_admin_inbox(st, context.bot)
+        return
+
 
     if action == "clearactive":
         st["active_user"] = 0
@@ -563,6 +603,14 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
     user = update.effective_user
     uid = int(getattr(user, "id", 0) or 0)
     if uid <= 0:
+
+    st["active_user"] = uid
+    st["last_user"] = uid
+    touch_recent_user(st, uid)
+    save_state(st)
+
+    await ensure_admin_inbox(st, context.bot)
+
         return
 
     st = load_state()
@@ -725,11 +773,13 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
                 if tr and tr.strip():
                     await context.bot.send_message(chat_id=to_user, text=tr.strip())
 
-        st["active_user"] = to_user
-        st["last_user"] = to_user
-        touch_recent_user(st, to_user)
-        save_state(st)
-        await ensure_admin_inbox(st, context)
+    st["active_user"] = to_user
+    st["last_user"] = to_user
+    touch_recent_user(st, to_user)
+    save_state(st)
+
+    await ensure_admin_inbox(st, context.bot)
+
 
         label = _user_label(user_meta, to_user)
         await update.message.reply_text(f"已发送给：{label} [{to_user}]")
@@ -973,6 +1023,8 @@ async def run_webhook_server(tg_app: Application):
     try:
         st = load_state()
         await ensure_admin_inbox(st, tg_app.bot)
+        await ensure_admin_inbox(st, context.bot)
+
     except Exception:
         pass
 
@@ -1001,3 +1053,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
