@@ -568,6 +568,8 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 # ================== WEBHOOK SERVER ==================
+import asyncio  # 建议放文件顶部（如果你顶部已经 import 过，就不要重复）
+
 async def run_webhook_server(tg_app: Application):
     if not PUBLIC_URL:
         raise RuntimeError("Missing PUBLIC_URL (or RENDER_EXTERNAL_URL).")
@@ -588,28 +590,27 @@ async def run_webhook_server(tg_app: Application):
     async def health(_request):
         return web.Response(text="ok")
 
-    import asyncio  # 如果文件顶部已经有 asyncio，就不要重复加
-
-async def handle_update(request: web.Request):
-    try:
-        data = await request.json()
-    except Exception:
-        return web.Response(status=400, text="bad json")
-
-    # 关键：立刻响应 Telegram，避免 Read timeout expired
-    resp = web.Response(text="ok")
-
-    async def _process():
+    # ✅ 注意：handle_update 必须在 run_webhook_server 里面（缩进 4 格）
+    async def handle_update(request: web.Request):
         try:
-            update = Update.de_json(data, tg_app.bot)
-            await tg_app.process_update(update)
-        except Exception as e:
-            print("process_update error:", repr(e))
+            data = await request.json()
+        except Exception:
+            return web.Response(status=400, text="bad json")
 
-    asyncio.create_task(_process())
-    return resp
+        # 关键：立刻响应 Telegram，避免 Read timeout expired
+        resp = web.Response(text="ok")
 
+        async def _process():
+            try:
+                update = Update.de_json(data, tg_app.bot)
+                await tg_app.process_update(update)
+            except Exception as e:
+                print("process_update error:", repr(e))
 
+        asyncio.create_task(_process())
+        return resp
+
+    # ✅ 路由注册必须在 handle_update 外面（但仍在 run_webhook_server 内）
     aio.router.add_get(HEALTH_PATH, health)
     aio.router.add_post(webhook_path, handle_update)
 
@@ -620,7 +621,10 @@ async def handle_update(request: web.Request):
 
     print(f"[ok] webhook set: {webhook_url}")
     print(f"[ok] listening on 0.0.0.0:{PORT}, health: {HEALTH_PATH}")
+
+    # ✅ 必须阻塞住，否则 Render 会认为程序“跑完了”
     await asyncio.Event().wait()
+
 
 
 def main():
@@ -649,6 +653,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
