@@ -73,6 +73,8 @@ def load_state() -> Dict[str, Any]:
         "tickets": {},          # user_id(str) -> {ticket_id, status, created_at, header_msg_id}
         "msg_index": {},        # admin_message_id(str) -> user_id(int)
         "last_user": 0,
+        "active_user": 0,     # 新增：当前会话用户
+        "wecom_index": {},    # 新增：企业微信消息索引（如果你之前没加）
         "last_auto_reply": {},  # user_id(str) -> ts
         "user_meta": {},        # user_id(str) -> {name, username, language_code, first_seen, last_seen, msg_count, last_detected_lang}
         "user_status": {},      # user_id(str) -> status
@@ -499,46 +501,57 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
     if not is_admin(update):
         return
 
-    # 必须 Reply 才转发（避免误发）
-    if not update.message.reply_to_message:
-        return
-
     st = load_state()
-    rid = str(update.message.reply_to_message.message_id)
 
-    # 1) Reply 企业微信消息 => 回发企业微信（当前仅文字）
-    wecom_to = (st.get("wecom_index") or {}).get(rid)
-    if wecom_to:
-        admin_text = (update.message.text or "").strip()
-        if not admin_text:
-            await update.message.reply_text("当前仅支持文字回复到企业微信。")
+    # ========= A) 如果是 Reply：优先按 Reply 目标处理（WeCom 或 TG 用户） =========
+    if update.message.reply_to_message:
+        rid = str(update.message.reply_to_message.message_id)
+
+        # 1) Reply 企业微信消息 => 回发企业微信（当前仅支持文字）
+        wecom_to = (st.get("wecom_index") or {}).get(rid)
+        if wecom_to:
+            admin_text = (update.message.text or "").strip()
+            if not admin_text:
+                await update.message.reply_text("当前仅支持文字回复到企业微信。")
+                return
+            try:
+                await wecom_send_text(wecom_to, admin_text)
+                await update.message.reply_text("已回发到企业微信。")
+            except Exception as e:
+                await update.message.reply_text(f"回发企业微信失败：{e}")
             return
-        try:
-            await wecom_send_text(wecom_to, admin_text)
-            await update.message.reply_text("已回发到企业微信。")
-        except Exception as e:
-            await update.message.reply_text(f"回发企业微信失败：{e}")
-        return
 
-    # 2) 否则：走你原来的 TG 用户回复逻辑（保留）
-    to_user = None
-    if rid in (st.get("msg_index") or {}):
-        to_user = int(st["msg_index"][rid])
+        # 2) Reply TG 用户转发消息 => 找到 TG 用户
+        to_user = None
+        if rid in (st.get("msg_index") or {}):
+            to_user = int(st["msg_index"][rid])
 
-    if not to_user:
-        try:
+        if not to_user:
             await update.message.reply_text("没识别到用户ID：请 Reply 用户的“转发自用户”消息。")
-        except Exception:
-            pass
-        return
+            return
 
-    # 目标语言：以用户最后检测语言为准（严格互译的关键）
-    user_meta = (st.get("user_meta") or {}).get(str(to_user), {})
-    user_lang = _norm_lang(user_meta.get("last_detected_lang", "en"))
-    if user_lang == "auto":
-        user_lang = "en"
+        # 选项 3：Reply 过谁，就把谁设为 active_user
+        st["active_user"] = to_user
+        st["last_user"] = to_user
+        save_state(st)
 
+    # ========= B) 不 Reply：按选项 3 发给 active_user，缺省用 last_user =========
+    else:
+        to_user = int(st.get("active_user", 0) or 0)
+        if to_user <= 0:
+            to_user = int(st.get("last_user", 0) or 0)
+
+        if to_user <= 0:
+            await update.message.reply_text("当前没有可发送的目标用户：请先让用户联系机器人一次，或先 Reply 某条用户消息以建立会话。")
+            return
+
+    # ========= C) 下面是你原来的“发给 TG 用户”的逻辑（翻译 + 媒体 copy） =========
     try:
+        user_meta = (st.get("user_meta") or {}).get(str(to_user), {})
+        user_lang = _norm_lang(user_meta.get("last_detected_lang", "en"))
+        if user_lang == "auto":
+            user_lang = "en"
+
         admin_text = (update.message.text or "").strip()
         admin_caption = (update.message.caption or "").strip()
 
@@ -565,19 +578,16 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
                 if tr and tr.strip():
                     await context.bot.send_message(chat_id=to_user, text=tr.strip())
 
+        # 发送成功后：更新 active_user/last_user，确保下次不 Reply 也能发
+        st["active_user"] = to_user
         st["last_user"] = to_user
         save_state(st)
 
-        try:
-            await update.message.reply_text("已发送。")
-        except Exception:
-            pass
+        await update.message.reply_text("已发送。")
 
     except Exception as e:
-        try:
-            await update.message.reply_text(f"发送失败：{e}")
-        except Exception:
-            pass
+        await update.message.reply_text(f"发送失败：{e}")
+
 
 
 # ========= WECOM BRIDGE (TEXT ONLY) =========
@@ -849,6 +859,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
