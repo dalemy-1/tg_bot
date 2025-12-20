@@ -566,7 +566,81 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text(f"发送失败：{e}")
         except Exception:
             pass
+            
 
+import base64
+import hashlib
+import struct
+from Crypto.Cipher import AES
+from xml.etree import ElementTree as ET
+
+WECOM_CB_TOKEN = (os.getenv("WECOM_CB_TOKEN") or "").strip()
+WECOM_CB_AESKEY = (os.getenv("WECOM_CB_AESKEY") or "").strip()
+WECOM_CORP_ID = (os.getenv("WECOM_CORP_ID") or "").strip()
+
+def _sha1_signature(token: str, timestamp: str, nonce: str, echostr: str) -> str:
+    arr = [token, timestamp, nonce, echostr]
+    arr.sort()
+    s = "".join(arr).encode("utf-8")
+    return hashlib.sha1(s).hexdigest()
+
+def _pkcs7_unpad(data: bytes) -> bytes:
+    pad = data[-1]
+    if pad < 1 or pad > 32:
+        raise ValueError("bad padding")
+    return data[:-pad]
+
+def _aes_key_bytes(aes_key_43: str) -> bytes:
+    # 43位 EncodingAESKey -> base64解码后32字节
+    return base64.b64decode(aes_key_43 + "=")
+
+def _decrypt_echostr(echostr_b64: str) -> str:
+    key = _aes_key_bytes(WECOM_CB_AESKEY)
+    cipher = AES.new(key, AES.MODE_CBC, iv=key[:16])
+    plain = cipher.decrypt(base64.b64decode(echostr_b64))
+    plain = _pkcs7_unpad(plain)
+
+    # 格式：16字节随机串 + 4字节网络序长度 + msg + corpid
+    msg_len = struct.unpack("!I", plain[16:20])[0]
+    msg = plain[20:20 + msg_len]
+    corp = plain[20 + msg_len:].decode("utf-8")
+
+    if corp != WECOM_CORP_ID:
+        raise ValueError("corp_id mismatch")
+    return msg.decode("utf-8")
+
+async def wecom_callback_get(request: web.Request):
+    # 企业微信保存时会GET校验
+    if not (WECOM_CB_TOKEN and WECOM_CB_AESKEY and WECOM_CORP_ID):
+        return web.Response(status=500, text="missing wecom env")
+
+    qs = request.query
+    msg_signature = qs.get("msg_signature", "")
+    timestamp = qs.get("timestamp", "")
+    nonce = qs.get("nonce", "")
+    echostr = qs.get("echostr", "")
+
+    if not (msg_signature and timestamp and nonce and echostr):
+        return web.Response(status=400, text="bad query")
+
+    try:
+        sig = _sha1_signature(WECOM_CB_TOKEN, timestamp, nonce, echostr)
+        if sig != msg_signature:
+            return web.Response(status=403, text="bad signature")
+
+        plain = _decrypt_echostr(echostr)
+        # 必须返回解密后的明文
+        return web.Response(text=plain)
+    except Exception as e:
+        print("wecom verify failed:", repr(e))
+        return web.Response(status=403, text="verify failed")
+
+async def wecom_callback_post(request: web.Request):
+    """
+    先占位：确保企业微信POST回调不会502/超时。
+    真正做“双向：企业微信回复->TG”时，我们再在这里解析xml并转发。
+    """
+    return web.Response(text="success")
 
 # ================== WEBHOOK SERVER ==================
 import asyncio  # 建议放文件顶部（如果你顶部已经 import 过，就不要重复）
@@ -616,6 +690,10 @@ async def run_webhook_server(tg_app: Application):
     # 路由注册必须在这里（不能缩进到 handle_update 里）
     aio.router.add_get(HEALTH_PATH, health)
     aio.router.add_post(webhook_path, handle_update)
+    
+    aio.router.add_get("/wecom/callback", wecom_callback_get)
+    aio.router.add_post("/wecom/callback", wecom_callback_post)
+
 
     runner = web.AppRunner(aio)
     await runner.setup()
@@ -657,6 +735,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
