@@ -584,13 +584,26 @@ async def run_webhook_server(tg_app: Application):
         return web.Response(text="ok")
 
     async def handle_update(request: web.Request):
+    try:
+        data = await request.json()
+    except Exception:
+        return web.Response(status=400, text="bad json")
+
+    # 关键：立刻响应 Telegram，避免 Read timeout expired
+    resp = web.Response(text="ok")
+
+    async def _process():
         try:
-            data = await request.json()
-        except Exception:
-            return web.Response(status=400, text="bad json")
-        update = Update.de_json(data, tg_app.bot)
-        await tg_app.process_update(update)
-        return web.Response(text="ok")
+            update = Update.de_json(data, tg_app.bot)
+            # 用 tg_app 自己的 task 管理（更稳）
+            await tg_app.process_update(update)
+        except Exception as e:
+            print("process_update error:", repr(e))
+
+    # 后台处理，不阻塞 webhook 响应
+    asyncio.create_task(_process())
+    return resp
+
 
     aio.router.add_get(HEALTH_PATH, health)
     aio.router.add_post(webhook_path, handle_update)
@@ -631,3 +644,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
