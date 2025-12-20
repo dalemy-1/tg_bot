@@ -2,4 +2,5 @@ python-telegram-bot[webhooks]==21.6
 aiohttp==3.9.5
 langid==1.1.6
 requests==2.32.3
-pycryptodome
+pycryptodome>=3.20.0
+
