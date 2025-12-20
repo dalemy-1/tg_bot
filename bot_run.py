@@ -581,23 +581,24 @@ async def run_webhook_server(tg_app: Application):
     webhook_path = f"/{WEBHOOK_SECRET}"
     webhook_url = f"{PUBLIC_URL}{webhook_path}"
 
+    # 1) 启动 TG 应用并设置 webhook
     await tg_app.initialize()
     await tg_app.start()
     await tg_app.bot.set_webhook(url=webhook_url, drop_pending_updates=True)
 
+    # 2) 启动 aiohttp Web 服务
     aio = web.Application()
 
     async def health(_request):
         return web.Response(text="ok")
 
-    # ✅ 注意：handle_update 必须在 run_webhook_server 里面（缩进 4 格）
     async def handle_update(request: web.Request):
         try:
             data = await request.json()
         except Exception:
             return web.Response(status=400, text="bad json")
 
-        # 关键：立刻响应 Telegram，避免 Read timeout expired
+        # 关键：先立刻响应 Telegram，避免 Read timeout expired
         resp = web.Response(text="ok")
 
         async def _process():
@@ -610,7 +611,6 @@ async def run_webhook_server(tg_app: Application):
         asyncio.create_task(_process())
         return resp
 
-    # ✅ 路由注册必须在 handle_update 外面（但仍在 run_webhook_server 内）
     aio.router.add_get(HEALTH_PATH, health)
     aio.router.add_post(webhook_path, handle_update)
 
@@ -622,7 +622,7 @@ async def run_webhook_server(tg_app: Application):
     print(f"[ok] webhook set: {webhook_url}")
     print(f"[ok] listening on 0.0.0.0:{PORT}, health: {HEALTH_PATH}")
 
-    # ✅ 必须阻塞住，否则 Render 会认为程序“跑完了”
+    # 让进程一直活着
     await asyncio.Event().wait()
 
 
@@ -653,6 +653,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
