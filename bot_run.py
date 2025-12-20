@@ -23,6 +23,11 @@ from telegram.ext import (
 # ================== ENV ==================
 TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 ADMIN_ID = int(os.getenv("TG_ADMIN_ID", "0") or "0")
+print("[boot] TG_BOT_TOKEN prefix:", (TOKEN or "")[:10], "len:", len(TOKEN or ""), "tail:", (TOKEN or "")[-4:])
+print("[boot] RENDER_EXTERNAL_URL:", (os.getenv("RENDER_EXTERNAL_URL") or "")[:80])
+print("[boot] PUBLIC_URL:", (os.getenv("PUBLIC_URL") or "")[:80])
+
+
 
 PUBLIC_URL = (os.getenv("RENDER_EXTERNAL_URL") or os.getenv("PUBLIC_URL") or "").strip().rstrip("/")
 WEBHOOK_SECRET = (os.getenv("WEBHOOK_SECRET") or "").strip()
@@ -644,5 +649,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
