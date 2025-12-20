@@ -504,14 +504,28 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
         return
 
     st = load_state()
-
     rid = str(update.message.reply_to_message.message_id)
+
+    # 1) Reply 企业微信消息 => 回发企业微信（当前仅文字）
+    wecom_to = (st.get("wecom_index") or {}).get(rid)
+    if wecom_to:
+        admin_text = (update.message.text or "").strip()
+        if not admin_text:
+            await update.message.reply_text("当前仅支持文字回复到企业微信。")
+            return
+        try:
+            await wecom_send_text(wecom_to, admin_text)
+            await update.message.reply_text("已回发到企业微信。")
+        except Exception as e:
+            await update.message.reply_text(f"回发企业微信失败：{e}")
+        return
+
+    # 2) 否则：走你原来的 TG 用户回复逻辑（保留）
     to_user = None
     if rid in (st.get("msg_index") or {}):
         to_user = int(st["msg_index"][rid])
 
     if not to_user:
-        # 没识别到就不发
         try:
             await update.message.reply_text("没识别到用户ID：请 Reply 用户的“转发自用户”消息。")
         except Exception:
@@ -524,8 +538,6 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
     if user_lang == "auto":
         user_lang = "en"
 
-    # 1) 先把管理员消息 copy 给用户（保证媒体可达）
-    # 2) 如需翻译，则额外再发一条“翻译后的文本”（文本消息则直接发翻译）
     try:
         admin_text = (update.message.text or "").strip()
         admin_caption = (update.message.caption or "").strip()
@@ -568,8 +580,193 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
             pass
 
 
-# ================== WEBHOOK SERVER ==================
-import asyncio  # 建议放文件顶部（如果你顶部已经 import 过，就不要重复）
+# ========= WECOM BRIDGE (TEXT ONLY) =========
+import base64
+import hashlib
+import struct
+from xml.etree import ElementTree as ET
+
+from Crypto.Cipher import AES
+
+WECOM_CB_TOKEN = (os.getenv("WECOM_CB_TOKEN") or "").strip()
+WECOM_CB_AESKEY = (os.getenv("WECOM_CB_AESKEY") or "").strip()
+WECOM_CORP_ID = (os.getenv("WECOM_CORP_ID") or "").strip()
+
+WECOM_AGENT_ID = int(os.getenv("WECOM_AGENT_ID", "0") or "0")
+WECOM_APP_SECRET = (os.getenv("WECOM_APP_SECRET") or "").strip()
+
+_wecom_token_cache = {"token": "", "exp": 0}
+
+
+def remember_wecom_index(state: Dict[str, Any], admin_message_id: int, wecom_userid: str) -> None:
+    m = state.setdefault("wecom_index", {})
+    m[str(admin_message_id)] = wecom_userid
+    if len(m) > 8000:
+        for k in list(m.keys())[: len(m) - 8000]:
+            m.pop(k, None)
+
+
+def _sha1_signature(token: str, timestamp: str, nonce: str, encrypt: str) -> str:
+    arr = [token, timestamp, nonce, encrypt]
+    arr.sort()
+    return hashlib.sha1("".join(arr).encode("utf-8")).hexdigest()
+
+
+def _pkcs7_unpad(data: bytes) -> bytes:
+    pad = data[-1]
+    if pad < 1 or pad > 32:
+        raise ValueError("bad padding")
+    return data[:-pad]
+
+
+def _aes_key_bytes(aes_key_43: str) -> bytes:
+    return base64.b64decode(aes_key_43 + "=")
+
+
+def _wecom_decrypt(encrypt_b64: str) -> str:
+    if not WECOM_CB_AESKEY:
+        raise RuntimeError("missing WECOM_CB_AESKEY")
+    key = _aes_key_bytes(WECOM_CB_AESKEY)
+    cipher = AES.new(key, AES.MODE_CBC, iv=key[:16])
+    plain = cipher.decrypt(base64.b64decode(encrypt_b64))
+    plain = _pkcs7_unpad(plain)
+
+    msg_len = struct.unpack("!I", plain[16:20])[0]
+    msg = plain[20:20 + msg_len]
+    corp = plain[20 + msg_len:].decode("utf-8")
+    if WECOM_CORP_ID and corp != WECOM_CORP_ID:
+        raise ValueError(f"corp_id mismatch: {corp}")
+    return msg.decode("utf-8")
+
+
+async def wecom_callback_get(request: web.Request):
+    qs = request.query
+    msg_signature = qs.get("msg_signature", "")
+    timestamp = qs.get("timestamp", "")
+    nonce = qs.get("nonce", "")
+    echostr = qs.get("echostr", "")
+
+    if not (msg_signature and timestamp and nonce and echostr):
+        return web.Response(status=400, text="bad query")
+
+    sig = _sha1_signature(WECOM_CB_TOKEN, timestamp, nonce, echostr)
+    if sig != msg_signature:
+        print("[wecom][GET] bad signature")
+        return web.Response(status=403, text="bad signature")
+
+    try:
+        plain = _wecom_decrypt(echostr)
+        return web.Response(text=plain)
+    except Exception as e:
+        print("[wecom][GET] decrypt failed:", repr(e))
+        return web.Response(status=403, text="verify failed")
+
+
+def wecom_callback_post_factory(tg_app: Application):
+    async def wecom_callback_post(request: web.Request):
+        # 立刻返回 success，避免企业微信重试/超时
+        try:
+            body = await request.text()
+        except Exception:
+            return web.Response(status=400, text="bad body")
+
+        resp = web.Response(text="success")
+
+        async def _process():
+            try:
+                qs = request.query
+                msg_signature = qs.get("msg_signature", "")
+                timestamp = qs.get("timestamp", "")
+                nonce = qs.get("nonce", "")
+
+                if not (msg_signature and timestamp and nonce):
+                    print("[wecom][POST] missing query params")
+                    return
+
+                root = ET.fromstring(body)
+                encrypt = root.findtext("Encrypt", default="")
+                if not encrypt:
+                    print("[wecom][POST] missing Encrypt")
+                    return
+
+                sig = _sha1_signature(WECOM_CB_TOKEN, timestamp, nonce, encrypt)
+                if sig != msg_signature:
+                    print("[wecom][POST] bad signature")
+                    return
+
+                plain_xml = _wecom_decrypt(encrypt)
+                px = ET.fromstring(plain_xml)
+
+                msg_type = px.findtext("MsgType", default="")
+                from_user = px.findtext("FromUserName", default="")
+                content = px.findtext("Content", default="")
+
+                print(f"[wecom][POST] msg_type={msg_type} from={from_user}")
+
+                if msg_type == "text" and from_user and content:
+                    st2 = load_state()
+                    msg = await tg_app.bot.send_message(
+                        chat_id=ADMIN_ID,
+                        text=f"[WeCom] {from_user}:\n{content}",
+                    )
+                    remember_wecom_index(st2, msg.message_id, from_user)
+                    save_state(st2)
+
+            except Exception as e:
+                print("[wecom][POST] process error:", repr(e))
+
+        asyncio.create_task(_process())
+        return resp
+
+    return wecom_callback_post
+
+
+async def wecom_get_access_token() -> str:
+    now = int(time.time())
+    if _wecom_token_cache["token"] and now < _wecom_token_cache["exp"] - 60:
+        return _wecom_token_cache["token"]
+
+    if not (WECOM_CORP_ID and WECOM_APP_SECRET):
+        raise RuntimeError("Missing WECOM_CORP_ID/WECOM_APP_SECRET")
+
+    url = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
+    params = {"corpid": WECOM_CORP_ID, "corpsecret": WECOM_APP_SECRET}
+
+    s = await _session()
+    async with s.get(url, params=params) as resp:
+        data = await resp.json(content_type=None)
+
+    if int(data.get("errcode", -1)) != 0:
+        raise RuntimeError(f"wecom gettoken failed: {data}")
+
+    token = data["access_token"]
+    expires_in = int(data.get("expires_in", 7200))
+    _wecom_token_cache["token"] = token
+    _wecom_token_cache["exp"] = now + expires_in
+    return token
+
+
+async def wecom_send_text(touser: str, content: str) -> None:
+    if WECOM_AGENT_ID <= 0:
+        raise RuntimeError("Missing WECOM_AGENT_ID")
+
+    token = await wecom_get_access_token()
+    url = f"https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={token}"
+    payload = {
+        "touser": touser,
+        "msgtype": "text",
+        "agentid": WECOM_AGENT_ID,
+        "text": {"content": content},
+        "safe": 0,
+    }
+
+    s = await _session()
+    async with s.post(url, json=payload) as resp:
+        data = await resp.json(content_type=None)
+
+    if int(data.get("errcode", -1)) != 0:
+        raise RuntimeError(f"wecom send failed: {data}")
+
 
 async def run_webhook_server(tg_app: Application):
     if not PUBLIC_URL:
@@ -595,13 +792,12 @@ async def run_webhook_server(tg_app: Application):
         return web.Response(text="ok")
 
     async def handle_update(request: web.Request):
-        # 只做最轻量的事情：读 json + 立刻回 ok
         try:
             data = await request.json()
         except Exception:
             return web.Response(status=400, text="bad json")
 
-        resp = web.Response(text="ok")  # 立刻响应 Telegram，避免 Read timeout expired
+        resp = web.Response(text="ok")
 
         async def _process():
             try:
@@ -613,9 +809,12 @@ async def run_webhook_server(tg_app: Application):
         asyncio.create_task(_process())
         return resp
 
-    # 路由注册必须在这里（不能缩进到 handle_update 里）
     aio.router.add_get(HEALTH_PATH, health)
     aio.router.add_post(webhook_path, handle_update)
+
+    # WeCom routes
+    aio.router.add_get("/wecom/callback", wecom_callback_get)
+    aio.router.add_post("/wecom/callback", wecom_callback_post_factory(tg_app))
 
     runner = web.AppRunner(aio)
     await runner.setup()
@@ -625,10 +824,7 @@ async def run_webhook_server(tg_app: Application):
     print(f"[ok] webhook set: {webhook_url}")
     print(f"[ok] listening on 0.0.0.0:{PORT}, health: {HEALTH_PATH}")
 
-    # 常驻不退出
     await asyncio.Event().wait()
-
-
 
 
 def main():
@@ -639,13 +835,9 @@ def main():
 
     tg_app = Application.builder().token(TOKEN).build()
 
-    # Minimal command
     tg_app.add_handler(CommandHandler("start", cmd_start))
-
-    # Buttons (admin)
     tg_app.add_handler(CallbackQueryHandler(on_callback))
 
-    # Private handlers
     tg_app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.User(user_id=ADMIN_ID), handle_user_private))
     tg_app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.User(user_id=ADMIN_ID), handle_admin_private))
 
@@ -657,6 +849,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
