@@ -75,26 +75,36 @@ def _now_ts() -> int:
 
 
 def load_state() -> Dict[str, Any]:
+    base = {
+        "ticket_seq": 0,
+        "tickets": {},
+        "msg_index": {},
+        "last_user": 0,
+        "active_user": 0,
+        "wecom_index": {},
+        "last_auto_reply": {},
+        "user_meta": {},
+        "user_status": {},
+
+        # 风控（如果你没用可保留，不影响）
+        "out_last_sent_ts": {},
+        "out_recent_hashes": {},
+    }
+
     if STATE_FILE.exists():
         try:
-            return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+            data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                # 兼容旧文件：缺什么补什么
+                for k, v in base.items():
+                    if k not in data:
+                        data[k] = v
+                return data
         except Exception:
             pass
-    return {
-        "ticket_seq": 0,
-        "tickets": {},          # user_id(str) -> {ticket_id, created_at, header_msg_id}
-        "msg_index": {},        # admin_message_id(str) -> user_id(int)
-        "last_user": 0,
-        "active_user": 0,       # 选项3：当前会话用户
-        "wecom_index": {},      # admin_message_id(str) -> wecom_userid(str)
-        "last_auto_reply": {},  # user_id(str) -> ts
-        "user_meta": {},        # user_id(str) -> meta
-        "user_status": {},      # user_id(str) -> status
 
-        # 风控：管理员对外发送
-        "out_last_sent_ts": {},     # user_id(str) -> ts
-        "out_recent_hashes": {},    # sig(str) -> {"ts": int, "uid": int}
-    }
+    return base
+
 
 
 def save_state(state: Dict[str, Any]) -> None:
@@ -618,9 +628,13 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
             pass
         st.setdefault("last_auto_reply", {})[str(uid)] = now_ts
 
+        # ✅ 关键：谁发来消息，默认把谁设为当前会话对象
     st["last_user"] = uid
+    st["active_user"] = uid   # <<< 新增这一行：不Reply也能回到该用户
+
     save_state(st)
     await refresh_header(st, context, uid)
+
 
 
 # ================== ADMIN -> (WeCom or TG User) ==================
@@ -633,8 +647,9 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
         return
 
     st = load_state()
+    to_user: int = 0
 
-    # ========= A) 如果是 Reply：优先按 Reply 目标处理 =========
+    # ========= A) 如果 Reply：优先按 Reply 目标处理（WeCom 或 TG 用户） =========
     if update.message.reply_to_message:
         rid = str(update.message.reply_to_message.message_id)
 
@@ -652,8 +667,7 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
                 await update.message.reply_text(f"回发企业微信失败：{e}")
             return
 
-        # 2) Reply TG 用户消息 => 识别 to_user
-        to_user = None
+        # 2) Reply TG 用户转发消息 => 找到 TG 用户
         if rid in (st.get("msg_index") or {}):
             to_user = int(st["msg_index"][rid])
 
@@ -661,13 +675,12 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text("没识别到用户ID：请 Reply 用户的“转发自用户”消息。")
             return
 
-        # 选项3：Reply 过谁，就把谁设为 active_user（并提示）
+        # ✅ Reply 过谁，就把谁设为 active_user
         st["active_user"] = to_user
         st["last_user"] = to_user
         save_state(st)
-        await _notify_active_user(context, st, to_user, reply_to=update.message.reply_to_message.message_id)
 
-    # ========= B) 不 Reply：发给 active_user，缺省用 last_user =========
+    # ========= B) 不 Reply：按 active_user / last_user =========
     else:
         to_user = int(st.get("active_user", 0) or 0)
         if to_user <= 0:
@@ -677,13 +690,7 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text("当前没有可发送的目标用户：请先让用户联系机器人一次，或先 Reply 某条用户消息以建立会话。")
             return
 
-    # ========= C) 风控保护：同一用户限速 =========
-    ok_rl, wait_sec = _check_rate_limit(st, to_user)
-    if not ok_rl:
-        await update.message.reply_text(f"⏳ 触发限速：同一用户 {OUT_RATE_LIMIT_PER_USER_SEC}s 内只能发送一次。请 {wait_sec}s 后再发。")
-        return
-
-    # ========= D) 组装发送内容（翻译 + 媒体 copy）并做跨用户去重 =========
+    # ========= C) 发给 TG 用户（翻译 + 媒体 copy） =========
     try:
         user_meta = (st.get("user_meta") or {}).get(str(to_user), {})
         user_lang = _norm_lang(user_meta.get("last_detected_lang", "en"))
@@ -693,25 +700,16 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
         admin_text = (update.message.text or "").strip()
         admin_caption = (update.message.caption or "").strip()
 
-        # --- 文本消息 ---
         if admin_text:
-            out_text = admin_text
+            send_text = admin_text
             if TRANSLATE_ENABLED and _is_chinese(admin_text) and user_lang != "zh-CN":
                 tr = await translate(admin_text, "zh-CN", user_lang)
                 if tr and tr.strip():
-                    out_text = tr.strip()
+                    send_text = tr.strip()
 
-            # 跨用户去重（对“最终将发送的文本”做）
-            ok_dd, reason = _check_dedup_across_users(st, to_user, out_text)
-            if not ok_dd:
-                await update.message.reply_text(f"🚫 已拦截发送：{reason}")
-                return
+            await context.bot.send_message(chat_id=to_user, text=send_text)
 
-            await context.bot.send_message(chat_id=to_user, text=out_text)
-
-        # --- 媒体/文件/贴纸等 ---
         else:
-            # 媒体本体不做跨用户去重（因为不稳定），只做限速；caption 翻译文本可做去重
             await context.bot.copy_message(
                 chat_id=to_user,
                 from_chat_id=update.effective_chat.id,
@@ -721,26 +719,22 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
             if admin_caption and TRANSLATE_ENABLED and _is_chinese(admin_caption) and user_lang != "zh-CN":
                 tr = await translate(admin_caption, "zh-CN", user_lang)
                 if tr and tr.strip():
-                    out_text = tr.strip()
+                    await context.bot.send_message(chat_id=to_user, text=tr.strip())
 
-                    ok_dd, reason = _check_dedup_across_users(st, to_user, out_text)
-                    if not ok_dd:
-                        await update.message.reply_text(f"🚫 Caption 翻译已拦截：{reason}")
-                        # 注意：媒体已经copy出去，这里只拦截“翻译补发文本”
-                        return
-
-                    await context.bot.send_message(chat_id=to_user, text=out_text)
-
-        # 发送成功：标记限速时间 + 更新会话对象
-        _mark_sent(st, to_user)
+        # ✅ 成功后更新会话对象，确保下一条不Reply也能发
         st["active_user"] = to_user
         st["last_user"] = to_user
         save_state(st)
 
-        await update.message.reply_text("已发送。")
+        # ✅ 回执明确显示发给了谁，避免你以为发出但其实发给别人
+        name = (user_meta.get("name") or "Unknown").strip()
+        username = (user_meta.get("username") or "")
+        label = f"{name} (@{username})" if username else name
+        await update.message.reply_text(f"已发送给：{label} [{to_user}]")
 
     except Exception as e:
         await update.message.reply_text(f"发送失败：{e}")
+
 
 
 # ================== WECOM BRIDGE (TEXT ONLY) ==================
@@ -991,3 +985,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
