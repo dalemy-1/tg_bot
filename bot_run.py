@@ -583,7 +583,9 @@ async def run_webhook_server(tg_app: Application):
     async def health(_request):
         return web.Response(text="ok")
 
-    async def handle_update(request: web.Request):
+    import asyncio  # 如果文件顶部已经有 asyncio，就不要重复加
+
+async def handle_update(request: web.Request):
     try:
         data = await request.json()
     except Exception:
@@ -595,12 +597,10 @@ async def run_webhook_server(tg_app: Application):
     async def _process():
         try:
             update = Update.de_json(data, tg_app.bot)
-            # 用 tg_app 自己的 task 管理（更稳）
             await tg_app.process_update(update)
         except Exception as e:
             print("process_update error:", repr(e))
 
-    # 后台处理，不阻塞 webhook 响应
     asyncio.create_task(_process())
     return resp
 
@@ -644,4 +644,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
