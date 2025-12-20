@@ -2,12 +2,12 @@ import os
 import re
 import json
 import time
-import asyncio
 import base64
 import hashlib
 import struct
+import asyncio
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, List
 from xml.etree import ElementTree as ET
 
 from aiohttp import web, ClientSession, ClientTimeout
@@ -38,36 +38,30 @@ HEALTH_PATH = "/healthz"
 ADMIN_USERNAME = (os.getenv("ADMIN_USERNAME") or "Adalemy").strip().lstrip("@")
 
 AUTO_REPLY_TEXT = (os.getenv("AUTO_REPLY_TEXT") or "你好，已收到你的消息，我们会尽快回复。").strip()
-AUTO_REPLY_COOLDOWN_SEC = int(os.getenv("AUTO_REPLY_COOLDOWN_SEC", "86400"))  # 24h
+AUTO_REPLY_COOLDOWN_SEC = int(os.getenv("AUTO_REPLY_COOLDOWN_SEC", "86400"))  # 24h 默认
 
 TRANSLATE_ENABLED = (os.getenv("TRANSLATE_ENABLED") or "1").strip() == "1"
 ADMIN_LANG = "zh-CN"
 
-# 翻译后端（可选 LibreTranslate + 兜底 MyMemory）
 LIBRETRANSLATE_URL = (os.getenv("LIBRETRANSLATE_URL") or "").strip().rstrip("/")
 LIBRETRANSLATE_API_KEY = (os.getenv("LIBRETRANSLATE_API_KEY") or "").strip()
 MYMEMORY_EMAIL = (os.getenv("MYMEMORY_EMAIL") or "").strip()
-
-# ===== 风控保护（你要求新增）=====
-# 1) 同一用户限速（秒）
-OUT_RATE_LIMIT_PER_USER_SEC = int(os.getenv("OUT_RATE_LIMIT_PER_USER_SEC", "5"))
-# 2) 跨用户文本去重窗口（秒）
-OUT_DEDUP_WINDOW_SEC = int(os.getenv("OUT_DEDUP_WINDOW_SEC", "60"))
-# 是否启用跨用户去重（1/0）
-OUT_DEDUP_ENABLED = (os.getenv("OUT_DEDUP_ENABLED") or "1").strip() == "1"
 
 BASE_DIR = Path(__file__).resolve().parent
 STATE_FILE = BASE_DIR / "support_state.json"
 
 MAX_MSG_INDEX = 8000
-
 STATUS_OPTIONS = ["已下单", "退货退款", "已返款", "黑名单"]
 DEFAULT_STATUS = "用户来信"
 
+# 最近对话列表（管理员看到的“收件箱”按钮条数）
+INBOX_LIMIT = int(os.getenv("INBOX_LIMIT", "15") or "15")
+
 print("[boot] TG_BOT_TOKEN prefix:", (TOKEN or "")[:10], "len:", len(TOKEN or ""), "tail:", (TOKEN or "")[-4:])
-print("[boot] PUBLIC_URL:", (PUBLIC_URL or "")[:80])
-print("[boot] OUT_RATE_LIMIT_PER_USER_SEC:", OUT_RATE_LIMIT_PER_USER_SEC)
-print("[boot] OUT_DEDUP_WINDOW_SEC:", OUT_DEDUP_WINDOW_SEC, "OUT_DEDUP_ENABLED:", OUT_DEDUP_ENABLED)
+print("[boot] PUBLIC_URL:", (PUBLIC_URL or "")[:120])
+print("[boot] ADMIN_ID:", ADMIN_ID)
+print("[boot] INBOX_LIMIT:", INBOX_LIMIT)
+
 
 # ================== STATE ==================
 def _now_ts() -> int:
@@ -75,36 +69,44 @@ def _now_ts() -> int:
 
 
 def load_state() -> Dict[str, Any]:
-    base = {
+    """兼容旧 state 文件：缺什么补什么，避免你升级代码后字段丢失导致功能失效。"""
+    base: Dict[str, Any] = {
         "ticket_seq": 0,
         "tickets": {},
         "msg_index": {},
         "last_user": 0,
-        "active_user": 0,
-        "wecom_index": {},
-        "last_auto_reply": {},
-        "user_meta": {},
-        "user_status": {},
 
-        # 风控（如果你没用可保留，不影响）
-        "out_last_sent_ts": {},
-        "out_recent_hashes": {},
+        # ✅ 关键：当前会话对象（不 Reply 也能发送）
+        "active_user": 0,
+
+        # WeCom Reply 映射：admin_message_id -> wecom userid
+        "wecom_index": {},
+
+        # 最近联系人（用于收件箱按钮）
+        "recent_users": [],  # List[int]
+        "admin_inbox_msg_id": 0,
+
+        "last_auto_reply": {},
+
+        "user_meta": {},      # user_id(str) -> {...}
+        "user_status": {},    # user_id(str) -> status
     }
 
     if STATE_FILE.exists():
         try:
             data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
             if isinstance(data, dict):
-                # 兼容旧文件：缺什么补什么
                 for k, v in base.items():
                     if k not in data:
                         data[k] = v
+                # 类型兜底
+                if not isinstance(data.get("recent_users"), list):
+                    data["recent_users"] = []
                 return data
         except Exception:
             pass
 
     return base
-
 
 
 def save_state(state: Dict[str, Any]) -> None:
@@ -125,15 +127,6 @@ def remember_msg_index(state: Dict[str, Any], admin_message_id: int, user_id: in
             mi.pop(k, None)
 
 
-def remember_wecom_index(state: Dict[str, Any], admin_message_id: int, wecom_userid: str) -> None:
-    m = state.setdefault("wecom_index", {})
-    m[str(admin_message_id)] = str(wecom_userid)
-    if len(m) > MAX_MSG_INDEX:
-        keys = list(m.keys())
-        for k in keys[: len(keys) - MAX_MSG_INDEX]:
-            m.pop(k, None)
-
-
 def fmt_time(ts: int) -> str:
     if not ts:
         return "-"
@@ -144,7 +137,7 @@ def _safe(s: str) -> str:
     return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-# ================== TRANSLATION (strict mutual) ==================
+# ================== TRANSLATION ==================
 _http: Optional[ClientSession] = None
 
 
@@ -227,15 +220,12 @@ async def _translate_mymemory(text: str, src: str, tgt: str) -> Optional[str]:
         async with s.get(url, params=params) as resp:
             data = await resp.json(content_type=None)
         tr = (((data or {}).get("responseData") or {}).get("translatedText") or "").strip()
-        if tr:
-            return tr
-        return None
+        return tr or None
     except Exception:
         return None
 
 
 async def translate(text: str, src: str, tgt: str) -> Optional[str]:
-    """失败返回 None；严格互译：中文<->其它语言"""
     if not TRANSLATE_ENABLED:
         return None
     q = (text or "").strip()
@@ -264,80 +254,13 @@ async def translate(text: str, src: str, tgt: str) -> Optional[str]:
     return None
 
 
-# ================== 风控保护：限速 + 去重 ==================
-def _norm_text_for_sig(text: str) -> str:
-    t = (text or "").strip()
-    t = re.sub(r"\s+", " ", t)
-    return t.lower()
-
-
-def _sig_text(text: str) -> str:
-    nt = _norm_text_for_sig(text)
-    return hashlib.sha1(nt.encode("utf-8")).hexdigest()
-
-
-def _cleanup_recent_hashes(st: Dict[str, Any]) -> None:
-    recent = st.setdefault("out_recent_hashes", {})
-    now = _now_ts()
-    dead = []
-    for k, v in (recent or {}).items():
-        ts = int((v or {}).get("ts", 0) or 0)
-        if now - ts > OUT_DEDUP_WINDOW_SEC:
-            dead.append(k)
-    for k in dead:
-        recent.pop(k, None)
-
-
-def _check_rate_limit(st: Dict[str, Any], uid: int) -> Tuple[bool, int]:
-    """返回 (允许发送?, 还需等待秒数)"""
-    if OUT_RATE_LIMIT_PER_USER_SEC <= 0:
-        return True, 0
-    now = _now_ts()
-    last = int((st.get("out_last_sent_ts") or {}).get(str(uid), 0) or 0)
-    delta = now - last
-    if delta >= OUT_RATE_LIMIT_PER_USER_SEC:
-        return True, 0
-    return False, int(OUT_RATE_LIMIT_PER_USER_SEC - delta)
-
-
-def _mark_sent(st: Dict[str, Any], uid: int) -> None:
-    st.setdefault("out_last_sent_ts", {})[str(uid)] = _now_ts()
-
-
-def _check_dedup_across_users(st: Dict[str, Any], uid: int, out_text: str) -> Tuple[bool, str]:
-    """
-    跨用户去重：窗口内同一文本，不允许发给不同用户。
-    返回 (允许?, 原因)
-    """
-    if not OUT_DEDUP_ENABLED:
-        return True, ""
-    if not out_text or not out_text.strip():
-        return True, ""
-
-    _cleanup_recent_hashes(st)
-    recent = st.setdefault("out_recent_hashes", {})
-
-    sig = _sig_text(out_text)
-    hit = recent.get(sig)
-    if hit:
-        hit_uid = int((hit or {}).get("uid", 0) or 0)
-        hit_ts = int((hit or {}).get("ts", 0) or 0)
-        if hit_uid and hit_uid != uid and (_now_ts() - hit_ts) <= OUT_DEDUP_WINDOW_SEC:
-            return False, f"跨用户去重触发：{OUT_DEDUP_WINDOW_SEC}s 内相同内容已发给其他用户（uid={hit_uid}）"
-
-    # 记录本次
-    recent[sig] = {"ts": _now_ts(), "uid": int(uid)}
-    return True, ""
-
-
 # ================== UI ==================
 def contact_admin_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("联系管理员", url=f"https://t.me/{ADMIN_USERNAME}")]
-    ])
+    return InlineKeyboardMarkup([[InlineKeyboardButton("联系管理员", url=f"https://t.me/{ADMIN_USERNAME}")]])
 
 
 def status_keyboard(uid: int) -> InlineKeyboardMarkup:
+    # 增加“设为当前会话”按钮：不需要命令
     row1 = [
         InlineKeyboardButton("已下单", callback_data=f"status|{uid}|已下单"),
         InlineKeyboardButton("退货退款", callback_data=f"status|{uid}|退货退款"),
@@ -350,7 +273,19 @@ def status_keyboard(uid: int) -> InlineKeyboardMarkup:
         InlineKeyboardButton("清空状态", callback_data=f"clear|{uid}|-"),
         InlineKeyboardButton("Profile", callback_data=f"profile|{uid}|-"),
     ]
-    return InlineKeyboardMarkup([row1, row2, row3])
+    row4 = [
+        InlineKeyboardButton("设为当前会话", callback_data=f"setactive|{uid}|-"),
+        InlineKeyboardButton("打开用户", url=f"tg://user?id={uid}"),
+    ]
+    return InlineKeyboardMarkup([row1, row2, row3, row4])
+
+
+def _user_label(meta: Dict[str, Any], uid: int) -> str:
+    name = (meta.get("name") or "Unknown").strip()
+    username = (meta.get("username") or "").strip()
+    if username:
+        return f"{name} @{username}"
+    return f"{name}"
 
 
 def render_header(state: Dict[str, Any], uid: int) -> str:
@@ -360,8 +295,6 @@ def render_header(state: Dict[str, Any], uid: int) -> str:
     status = (state.get("user_status") or {}).get(uid_key, DEFAULT_STATUS)
 
     ticket_id = t.get("ticket_id", "-")
-    name = meta.get("name", "Unknown")
-    username = meta.get("username")
     user_link = f"tg://user?id={uid}"
 
     first_seen = int(meta.get("first_seen", 0) or 0)
@@ -369,24 +302,108 @@ def render_header(state: Dict[str, Any], uid: int) -> str:
     msg_count = int(meta.get("msg_count", 0) or 0)
     last_lang = _norm_lang(meta.get("last_detected_lang", "auto"))
 
+    active_uid = int(state.get("active_user", 0) or 0)
+    active_mark = "✅ 当前会话" if active_uid == uid else ""
+
     lines = [
-        f"🧾 <b>Ticket #{ticket_id}</b>   <b>Status:</b> <code>{_safe(status)}</code>",
-        f"<b>Name:</b> {_safe(name)}",
+        f"🧾 <b>Ticket #{ticket_id}</b>   <b>Status:</b> <code>{_safe(status)}</code>   {active_mark}",
+        f"<b>Name:</b> {_safe(meta.get('name', 'Unknown'))}",
     ]
-    if username:
-        lines.append(f"<b>Username:</b> @{_safe(username)}")
+    if meta.get("username"):
+        lines.append(f"<b>Username:</b> @{_safe(meta.get('username'))}")
+
     lines += [
         f"<b>UserID:</b> <code>{uid}</code>   <b>Open:</b> <a href=\"{user_link}\">Click</a>",
         f"<b>Last lang:</b> <code>{_safe(last_lang)}</code>",
         f"<b>First seen:</b> <code>{fmt_time(first_seen)}</code>",
         f"<b>Last seen:</b> <code>{fmt_time(last_seen)}</code>   <b>Msg count:</b> <code>{msg_count}</code>",
         "",
-        "<b>推荐：</b>在管理员私聊里 <b>Reply（回复）</b>下面那条“转发自用户”的消息，即可回复对方（支持文字/图片/文件/贴纸/语音等）。",
-        "<b>选项3：</b>你 Reply 过某用户后，会把该用户设置为 <code>active_user</code>，之后可不 Reply 直接发给该用户。",
+        "<b>用法（推荐）：</b>点击下面「设为当前会话」，然后你在管理员私聊里不 Reply 直接发消息，也会发给该用户。",
+        "<b>用法（备选）：</b>Reply（回复）任意一条“转发自用户”的消息，也会自动切换当前会话并回复对方。",
     ]
     return "\n".join(lines)
 
 
+def build_inbox_keyboard(state: Dict[str, Any]) -> InlineKeyboardMarkup:
+    # 最近对话按钮：一键切换 active_user
+    recent: List[int] = [int(x) for x in (state.get("recent_users") or []) if str(x).isdigit() or isinstance(x, int)]
+    recent = recent[:INBOX_LIMIT]
+
+    rows: List[List[InlineKeyboardButton]] = []
+    user_meta = state.get("user_meta") or {}
+
+    # 2 列排版
+    row: List[InlineKeyboardButton] = []
+    for uid in recent:
+        meta = user_meta.get(str(uid), {}) if isinstance(user_meta, dict) else {}
+        label = _user_label(meta, uid)
+        if int(state.get("active_user", 0) or 0) == uid:
+            label = f"✅ {label}"
+        btn = InlineKeyboardButton(label[:40], callback_data=f"setactive|{uid}|-")
+        row.append(btn)
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+
+    # 额外：清空当前会话
+    rows.append([InlineKeyboardButton("清空当前会话", callback_data="clearactive|0|-")])
+    return InlineKeyboardMarkup(rows)
+
+
+async def ensure_admin_inbox(state: Dict[str, Any], context: ContextTypes.DEFAULT_TYPE) -> None:
+    """管理员收件箱固定入口：没有就发一条，有就更新。"""
+    msg_id = int(state.get("admin_inbox_msg_id", 0) or 0)
+    active_uid = int(state.get("active_user", 0) or 0)
+
+    head = "📥 <b>收件箱 / 最近对话</b>\n"
+    if active_uid > 0:
+        meta = (state.get("user_meta") or {}).get(str(active_uid), {})
+        head += f"当前会话：<code>{active_uid}</code> {_safe(_user_label(meta, active_uid))}\n"
+        head += "你现在可以在管理员私聊里不 Reply 直接发消息。\n"
+    else:
+        head += "当前会话：<code>未选择</code>\n"
+        head += "请点击下面任意用户按钮切换会话。\n"
+
+    text = head
+
+    try:
+        if msg_id > 0:
+            await context.bot.edit_message_text(
+                chat_id=ADMIN_ID,
+                message_id=msg_id,
+                text=text,
+                parse_mode=ParseMode.HTML,
+                reply_markup=build_inbox_keyboard(state),
+                disable_web_page_preview=True,
+            )
+        else:
+            m = await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=text,
+                parse_mode=ParseMode.HTML,
+                reply_markup=build_inbox_keyboard(state),
+                disable_web_page_preview=True,
+            )
+            state["admin_inbox_msg_id"] = m.message_id
+            save_state(state)
+    except Exception:
+        # 不影响主流程
+        pass
+
+
+def touch_recent_user(state: Dict[str, Any], uid: int) -> None:
+    recent = state.setdefault("recent_users", [])
+    # 去重 + 置顶
+    recent = [int(x) for x in recent if isinstance(x, int) or (isinstance(x, str) and x.isdigit())]
+    uid = int(uid)
+    recent = [x for x in recent if x != uid]
+    recent.insert(0, uid)
+    state["recent_users"] = recent[: max(INBOX_LIMIT, 50)]
+
+
+# ================== Tickets ==================
 async def ensure_ticket(state: Dict[str, Any], context: ContextTypes.DEFAULT_TYPE, uid: int) -> Dict[str, Any]:
     tickets = state.setdefault("tickets", {})
     uid_key = str(uid)
@@ -436,46 +453,17 @@ async def refresh_header(state: Dict[str, Any], context: ContextTypes.DEFAULT_TY
         pass
 
 
-def _user_label(st: Dict[str, Any], uid: int) -> str:
-    meta = (st.get("user_meta") or {}).get(str(uid), {})
-    name = (meta.get("name") or "Unknown").strip()
-    username = (meta.get("username") or "").strip()
-    if username:
-        return f"{name} (@{username}) [{uid}]"
-    return f"{name} [{uid}]"
-
-
-async def _notify_active_user(context: ContextTypes.DEFAULT_TYPE, st: Dict[str, Any], uid: int, reply_to: Optional[int] = None):
-    user_link = f"tg://user?id={uid}"
-    text = (
-        "✅ 当前会话用户已切换为：\n"
-        f"{_user_label(st, uid)}\n"
-        f"打开对话：{user_link}\n\n"
-        "之后你可以【不 Reply 直接发】，机器人会发给该用户。\n"
-        "也可用 /who 查看当前对象。"
-    )
-    try:
-        await context.bot.send_message(
-            chat_id=ADMIN_ID,
-            text=text,
-            disable_web_page_preview=True,
-            reply_to_message_id=reply_to if reply_to else None,
-        )
-    except Exception:
-        pass
-
-
 # ================== COMMANDS ==================
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_admin(update):
+        st = load_state()
+        await ensure_admin_inbox(st, context)
         await update.message.reply_text(
             "机器人已上线。\n\n"
             "管理员用法：\n"
             "1) 用户给机器人发消息 -> 你会收到“转发自用户”的消息。\n"
-            "2) Reply 那条“转发自用户”的消息即可回复对方。\n"
-            "3) 选项3：你 Reply 过谁，谁会成为 active_user，之后可不 Reply 直接继续发。\n"
-            "4) /who 查看当前 active_user。\n"
-            "5) 已开启风控：同一用户限速 + 跨用户文本去重。\n"
+            "2) 你可以 Reply 那条消息来回复用户；\n"
+            "3) 或者点击「收件箱」里的用户按钮切换当前会话，然后不 Reply 直接发消息。\n"
         )
     else:
         await update.message.reply_text(
@@ -485,28 +473,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-async def cmd_who(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update):
-        return
-    st = load_state()
-    active_uid = int(st.get("active_user", 0) or 0)
-    last_uid = int(st.get("last_user", 0) or 0)
-
-    def line(title: str, uid: int) -> str:
-        if uid <= 0:
-            return f"{title}：-"
-        return f"{title}：{_user_label(st, uid)} (tg://user?id={uid})"
-
-    msg = "\n".join([
-        line("当前 active_user", active_uid),
-        line("最近 last_user", last_uid),
-        "",
-        "不 Reply 直接发送时：优先发给 active_user；如没有 active_user 才会用 last_user。",
-    ])
-    await update.message.reply_text(msg)
-
-
-# ================== CALLBACKS (admin buttons) ==================
+# ================== CALLBACKS ==================
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.callback_query:
         return
@@ -518,12 +485,41 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = q.data or ""
     parts = data.split("|")
-    if len(parts) < 2:
+    if len(parts) < 1:
         return
 
     action = parts[0]
-    uid = int(parts[1])
     st = load_state()
+
+    # setactive|uid|-
+    if action == "setactive" and len(parts) >= 2:
+        uid = int(parts[1])
+        st["active_user"] = uid
+        st["last_user"] = uid
+        touch_recent_user(st, uid)
+        save_state(st)
+        await ensure_admin_inbox(st, context)
+        await refresh_header(st, context, uid)
+        try:
+            await q.message.reply_text(f"已切换当前会话：{uid}\n现在你可以不 Reply 直接发消息。")
+        except Exception:
+            pass
+        return
+
+    if action == "clearactive":
+        st["active_user"] = 0
+        save_state(st)
+        await ensure_admin_inbox(st, context)
+        try:
+            await q.message.reply_text("已清空当前会话。请在收件箱选择用户。")
+        except Exception:
+            pass
+        return
+
+    # status|uid|xxx / clear|uid|- / profile|uid|-
+    if len(parts) < 2:
+        return
+    uid = int(parts[1])
 
     if action == "status" and len(parts) >= 3:
         status = parts[2]
@@ -531,12 +527,14 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             st.setdefault("user_status", {})[str(uid)] = status
             save_state(st)
             await refresh_header(st, context, uid)
+            await ensure_admin_inbox(st, context)
         return
 
     if action == "clear":
         st.setdefault("user_status", {})[str(uid)] = DEFAULT_STATUS
         save_state(st)
         await refresh_header(st, context, uid)
+        await ensure_admin_inbox(st, context)
         return
 
     if action == "profile":
@@ -569,6 +567,7 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     st = load_state()
 
+    # meta
     meta = st.setdefault("user_meta", {}).setdefault(str(uid), {})
     meta.setdefault("first_seen", _now_ts())
     meta["last_seen"] = _now_ts()
@@ -577,10 +576,16 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
     meta["username"] = getattr(user, "username", None)
     meta["language_code"] = getattr(user, "language_code", "")
 
+    # ticket/header
     t = await ensure_ticket(st, context, uid)
-
     st.setdefault("user_status", {}).setdefault(str(uid), DEFAULT_STATUS)
 
+    # ✅ 关键：收到谁的消息，就把谁设为当前会话（不 Reply 也能回过去）
+    st["active_user"] = uid
+    st["last_user"] = uid
+    touch_recent_user(st, uid)
+
+    # 转发给管理员（保留“转发自用户”）
     forwarded_id = None
     try:
         fwd = await context.bot.forward_message(
@@ -599,9 +604,11 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
         forwarded_id = copied.message_id
         remember_msg_index(st, copied.message_id, uid)
 
+    # 也把 header 记入 index（防止管理员误 Reply header）
     if t.get("header_msg_id"):
         remember_msg_index(st, int(t["header_msg_id"]), uid)
 
+    # 检测语言
     txt = (update.message.text or update.message.caption or "").strip()
     if txt:
         src = detect_lang(txt)
@@ -619,6 +626,7 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
                 except Exception:
                     pass
 
+    # 自动回复（24小时一次）
     last_ts = int((st.get("last_auto_reply") or {}).get(str(uid), 0) or 0)
     now_ts = _now_ts()
     if now_ts - last_ts >= AUTO_REPLY_COOLDOWN_SEC:
@@ -628,16 +636,12 @@ async def handle_user_private(update: Update, context: ContextTypes.DEFAULT_TYPE
             pass
         st.setdefault("last_auto_reply", {})[str(uid)] = now_ts
 
-        # ✅ 关键：谁发来消息，默认把谁设为当前会话对象
-    st["last_user"] = uid
-    st["active_user"] = uid   # <<< 新增这一行：不Reply也能回到该用户
-
     save_state(st)
     await refresh_header(st, context, uid)
+    await ensure_admin_inbox(st, context)
 
 
-
-# ================== ADMIN -> (WeCom or TG User) ==================
+# ================== ADMIN -> USER ==================
 async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_chat:
         return
@@ -649,11 +653,11 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
     st = load_state()
     to_user: int = 0
 
-    # ========= A) 如果 Reply：优先按 Reply 目标处理（WeCom 或 TG 用户） =========
+    # ========= A) Reply：优先按 Reply 目标 =========
     if update.message.reply_to_message:
         rid = str(update.message.reply_to_message.message_id)
 
-        # 1) Reply 企业微信消息 => 回发企业微信（仅文字）
+        # 1) Reply WeCom
         wecom_to = (st.get("wecom_index") or {}).get(rid)
         if wecom_to:
             admin_text = (update.message.text or "").strip()
@@ -667,7 +671,7 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
                 await update.message.reply_text(f"回发企业微信失败：{e}")
             return
 
-        # 2) Reply TG 用户转发消息 => 找到 TG 用户
+        # 2) Reply TG 用户转发
         if rid in (st.get("msg_index") or {}):
             to_user = int(st["msg_index"][rid])
 
@@ -675,10 +679,12 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text("没识别到用户ID：请 Reply 用户的“转发自用户”消息。")
             return
 
-        # ✅ Reply 过谁，就把谁设为 active_user
+        # Reply 谁，就切换当前会话
         st["active_user"] = to_user
         st["last_user"] = to_user
+        touch_recent_user(st, to_user)
         save_state(st)
+        await ensure_admin_inbox(st, context)
 
     # ========= B) 不 Reply：按 active_user / last_user =========
     else:
@@ -687,7 +693,7 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
             to_user = int(st.get("last_user", 0) or 0)
 
         if to_user <= 0:
-            await update.message.reply_text("当前没有可发送的目标用户：请先让用户联系机器人一次，或先 Reply 某条用户消息以建立会话。")
+            await update.message.reply_text("当前没有目标用户：请先在收件箱点选用户，或先 Reply 某条用户消息。")
             return
 
     # ========= C) 发给 TG 用户（翻译 + 媒体 copy） =========
@@ -706,7 +712,6 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
                 tr = await translate(admin_text, "zh-CN", user_lang)
                 if tr and tr.strip():
                     send_text = tr.strip()
-
             await context.bot.send_message(chat_id=to_user, text=send_text)
 
         else:
@@ -715,36 +720,41 @@ async def handle_admin_private(update: Update, context: ContextTypes.DEFAULT_TYP
                 from_chat_id=update.effective_chat.id,
                 message_id=update.message.message_id,
             )
-
             if admin_caption and TRANSLATE_ENABLED and _is_chinese(admin_caption) and user_lang != "zh-CN":
                 tr = await translate(admin_caption, "zh-CN", user_lang)
                 if tr and tr.strip():
                     await context.bot.send_message(chat_id=to_user, text=tr.strip())
 
-        # ✅ 成功后更新会话对象，确保下一条不Reply也能发
         st["active_user"] = to_user
         st["last_user"] = to_user
+        touch_recent_user(st, to_user)
         save_state(st)
+        await ensure_admin_inbox(st, context)
 
-        # ✅ 回执明确显示发给了谁，避免你以为发出但其实发给别人
-        name = (user_meta.get("name") or "Unknown").strip()
-        username = (user_meta.get("username") or "")
-        label = f"{name} (@{username})" if username else name
+        label = _user_label(user_meta, to_user)
         await update.message.reply_text(f"已发送给：{label} [{to_user}]")
 
     except Exception as e:
         await update.message.reply_text(f"发送失败：{e}")
 
 
-
 # ================== WECOM BRIDGE (TEXT ONLY) ==================
 WECOM_CB_TOKEN = (os.getenv("WECOM_CB_TOKEN") or "").strip()
 WECOM_CB_AESKEY = (os.getenv("WECOM_CB_AESKEY") or "").strip()
 WECOM_CORP_ID = (os.getenv("WECOM_CORP_ID") or "").strip()
+
 WECOM_AGENT_ID = int(os.getenv("WECOM_AGENT_ID", "0") or "0")
 WECOM_APP_SECRET = (os.getenv("WECOM_APP_SECRET") or "").strip()
 
 _wecom_token_cache = {"token": "", "exp": 0}
+
+
+def remember_wecom_index(state: Dict[str, Any], admin_message_id: int, wecom_userid: str) -> None:
+    m = state.setdefault("wecom_index", {})
+    m[str(admin_message_id)] = wecom_userid
+    if len(m) > 8000:
+        for k in list(m.keys())[: len(m) - 8000]:
+            m.pop(k, None)
 
 
 def _sha1_signature(token: str, timestamp: str, nonce: str, encrypt: str) -> str:
@@ -775,6 +785,7 @@ def _wecom_decrypt(encrypt_b64: str) -> str:
     msg_len = struct.unpack("!I", plain[16:20])[0]
     msg = plain[20:20 + msg_len]
     corp = plain[20 + msg_len:].decode("utf-8")
+
     if WECOM_CORP_ID and corp != WECOM_CORP_ID:
         raise ValueError(f"corp_id mismatch: {corp}")
     return msg.decode("utf-8")
@@ -792,19 +803,18 @@ async def wecom_callback_get(request: web.Request):
 
     sig = _sha1_signature(WECOM_CB_TOKEN, timestamp, nonce, echostr)
     if sig != msg_signature:
-        print("[wecom][GET] bad signature")
         return web.Response(status=403, text="bad signature")
 
     try:
         plain = _wecom_decrypt(echostr)
         return web.Response(text=plain)
-    except Exception as e:
-        print("[wecom][GET] decrypt failed:", repr(e))
+    except Exception:
         return web.Response(status=403, text="verify failed")
 
 
 def wecom_callback_post_factory(tg_app: Application):
     async def wecom_callback_post(request: web.Request):
+        # 立刻返回 success（企业微信要求快响应）
         try:
             body = await request.text()
         except Exception:
@@ -820,18 +830,16 @@ def wecom_callback_post_factory(tg_app: Application):
                 nonce = qs.get("nonce", "")
 
                 if not (msg_signature and timestamp and nonce):
-                    print("[wecom][POST] missing query params")
                     return
 
                 root = ET.fromstring(body)
                 encrypt = root.findtext("Encrypt", default="")
                 if not encrypt:
-                    print("[wecom][POST] missing Encrypt")
                     return
 
                 sig = _sha1_signature(WECOM_CB_TOKEN, timestamp, nonce, encrypt)
                 if sig != msg_signature:
-                    print("[wecom][POST] bad signature")
+                    print("[wecom] bad signature")
                     return
 
                 plain_xml = _wecom_decrypt(encrypt)
@@ -842,16 +850,16 @@ def wecom_callback_post_factory(tg_app: Application):
                 content = px.findtext("Content", default="")
 
                 if msg_type == "text" and from_user and content:
-                    st2 = load_state()
+                    st = load_state()
                     msg = await tg_app.bot.send_message(
                         chat_id=ADMIN_ID,
                         text=f"[WeCom] {from_user}:\n{content}",
                     )
-                    remember_wecom_index(st2, msg.message_id, from_user)
-                    save_state(st2)
+                    remember_wecom_index(st, msg.message_id, from_user)
+                    save_state(st)
 
             except Exception as e:
-                print("[wecom][POST] process error:", repr(e))
+                print("[wecom] process error:", repr(e))
 
         asyncio.create_task(_process())
         return resp
@@ -920,6 +928,7 @@ async def run_webhook_server(tg_app: Application):
 
     await tg_app.initialize()
     await tg_app.start()
+
     await tg_app.bot.set_webhook(url=webhook_url, drop_pending_updates=True)
 
     aio = web.Application()
@@ -937,8 +946,8 @@ async def run_webhook_server(tg_app: Application):
 
         async def _process():
             try:
-                update = Update.de_json(data, tg_app.bot)
-                await tg_app.process_update(update)
+                upd = Update.de_json(data, tg_app.bot)
+                await tg_app.process_update(upd)
             except Exception as e:
                 print("process_update error:", repr(e))
 
@@ -948,6 +957,7 @@ async def run_webhook_server(tg_app: Application):
     aio.router.add_get(HEALTH_PATH, health)
     aio.router.add_post(webhook_path, handle_update)
 
+    # WeCom routes
     aio.router.add_get("/wecom/callback", wecom_callback_get)
     aio.router.add_post("/wecom/callback", wecom_callback_post_factory(tg_app))
 
@@ -958,6 +968,13 @@ async def run_webhook_server(tg_app: Application):
 
     print(f"[ok] webhook set: {webhook_url}")
     print(f"[ok] listening on 0.0.0.0:{PORT}, health: {HEALTH_PATH}")
+
+    # 启动后，给管理员补一条“收件箱”
+    try:
+        st = load_state()
+        await ensure_admin_inbox(st, tg_app.bot)
+    except Exception:
+        pass
 
     await asyncio.Event().wait()
 
@@ -971,7 +988,6 @@ def main():
     tg_app = Application.builder().token(TOKEN).build()
 
     tg_app.add_handler(CommandHandler("start", cmd_start))
-    tg_app.add_handler(CommandHandler("who", cmd_who))
     tg_app.add_handler(CallbackQueryHandler(on_callback))
 
     tg_app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.User(user_id=ADMIN_ID), handle_user_private))
@@ -985,4 +1001,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
