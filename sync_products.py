@@ -416,10 +416,10 @@ def build_caption(p: dict) -> str:
     return cap[:CAPTION_MAX]
 
 def compute_content_hash(p: dict, status: str) -> str:
-    # ✅ hash 只跟内容有关；不包含 message_id / ts / 顺序
+    footer = "Product list: ama.omino.top"  # ✅ 固定尾巴纳入 hash
     return sha1(
         "|".join([
-            norm_text(p.get("market")),  # 加上 market，更稳
+            norm_text(p.get("market")),
             norm_text(p.get("asin")),
             norm_text(p.get("title")),
             norm_text(p.get("keyword")),
@@ -430,8 +430,10 @@ def compute_content_hash(p: dict, status: str) -> str:
             canonical_money_for_hash(p.get("discount_price")),
             canonical_money_for_hash(p.get("commission")),
             status,
+            footer,  # ✅ 新增
         ])
     )
+
 
 # ==================== send/edit/delete ====================
 
@@ -903,4 +905,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
