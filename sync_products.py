@@ -410,7 +410,7 @@ def build_caption(p: dict) -> str:
     if link:
         lines.append(f"link:{link}")
 
-    lines.append("Contact Email: info@omino.top")
+    lines.append("Product list: ama.omino.top")
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
@@ -903,3 +903,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
