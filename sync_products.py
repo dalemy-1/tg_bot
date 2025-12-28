@@ -407,8 +407,6 @@ def build_caption(p: dict) -> str:
         lines.append(f"Discount Price: {discount_price}")
     if commission:
         lines.append(f"Commission: {commission}")
-    if link:
-        lines.append(f"link:{link}")
 
     lines.append("Product list: ama.omino.top")
 
@@ -905,5 +903,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
