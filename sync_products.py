@@ -423,7 +423,6 @@ def compute_content_hash(p: dict, status: str) -> str:
             norm_text(p.get("keyword")),
             norm_text(p.get("store")),
             norm_text(p.get("remark")),
-            norm_text(p.get("link")),
             norm_text(p.get("image_url")),
             canonical_money_for_hash(p.get("discount_price")),
             canonical_money_for_hash(p.get("commission")),
@@ -903,6 +902,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
