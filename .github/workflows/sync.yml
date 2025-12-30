@@ -52,14 +52,14 @@ jobs:
         run: |
           python sync_products.py
 
-            - name: Commit & push posted_state.json (with retry)
+      - name: Commit & push posted_state.json (with retry)
         run: |
           set -e
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 先同步远端，减少后面 rebase 复杂度
+          # 先同步远端，降低 rebase 冲突概率
           git fetch origin main
           git rebase origin/main || true
 
@@ -74,7 +74,6 @@ jobs:
 
           for i in 1 2 3 4 5; do
             echo "Push attempt $i..."
-            # push 前再轻量同步一次，避免别的 run 先推了
             git fetch origin main
             git rebase origin/main || true
 
@@ -89,4 +88,3 @@ jobs:
 
           echo "Push failed after retries."
           exit 1
-
