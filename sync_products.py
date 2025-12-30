@@ -243,18 +243,44 @@ def _fetch_text_with_retry(url: str) -> str:
 
 # ==================== Telegram ====================
 
+# ✅ 仅新增：区分“网络问题”和“API 业务错误”，方便主流程优雅降级
+class TelegramNetworkError(RuntimeError):
+    pass
+
+class TelegramApiError(RuntimeError):
+    pass
+
 def tg_api(method: str, payload: dict, max_retry: int = 6):
     if not TG_TOKEN:
-        raise RuntimeError("Missing TG_BOT_TOKEN")
+        raise TelegramApiError("Missing TG_BOT_TOKEN")
 
     url = f"https://api.telegram.org/bot{TG_TOKEN}/{method}"
 
     for attempt in range(max_retry):
-        r = requests.post(url, json=payload, timeout=30)
+        try:
+            r = requests.post(url, json=payload, timeout=30)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            # ✅ 网络不可达/超时：重试（这是 Actions “Network is unreachable” 的根因）
+            wait_s = 2 + attempt * 2
+            print(f"[warn] tg_api network error {type(e).__name__}: {e}. wait {wait_s}s ({attempt+1}/{max_retry})")
+            time.sleep(wait_s)
+            if attempt == max_retry - 1:
+                raise TelegramNetworkError(f"{method} network failed after retries: {e}")
+            continue
+
+        # ✅ Telegram 偶尔返回 5xx：也重试
+        if r.status_code in (500, 502, 503, 504):
+            wait_s = 2 + attempt * 2
+            print(f"[warn] tg_api server {r.status_code}, retry in {wait_s}s ({attempt+1}/{max_retry})")
+            time.sleep(wait_s)
+            if attempt == max_retry - 1:
+                raise TelegramNetworkError(f"{method} server error {r.status_code} after retries: {r.text[:200]}")
+            continue
+
         try:
             data = r.json()
         except Exception:
-            raise RuntimeError(f"{method} HTTP {r.status_code}: {r.text}")
+            raise TelegramApiError(f"{method} HTTP {r.status_code}: {r.text}")
 
         if data.get("ok"):
             return data["result"]
@@ -270,9 +296,9 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
             time.sleep(wait_s)
             continue
 
-        raise RuntimeError(f"{method} failed: {data}")
+        raise TelegramApiError(f"{method} failed: {data}")
 
-    raise RuntimeError(f"{method} failed after retries (429).")
+    raise TelegramApiError(f"{method} failed after retries.")
 
 def is_not_modified_error(err: Exception) -> bool:
     s = str(err).lower()
@@ -431,7 +457,6 @@ def compute_content_hash(p: dict, status: str) -> str:
         ])
     )
 
-
 # ==================== send/edit/delete ====================
 
 def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
@@ -439,15 +464,24 @@ def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
     img = safe_str(p.get("image_url"))
 
     if img:
-        try:
-            res = tg_api("sendPhoto", {"chat_id": target_chat_id, "photo": img, "caption": caption})
-            time.sleep(SEND_DELAY_SEC)
-            return {"message_id": res["message_id"], "kind": "photo", "image_url": img}, None
-        except Exception as e:
-            if BAD_IMAGE_POLICY == "skip" and is_bad_image_error(e):
-                print(f"[skip] bad image -> skip product. market={p.get('market')} asin={p.get('asin')} err={e}")
-                return None, "BAD_IMAGE_SKIP"
-            print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
+        # ✅ 仅增强：图片发送遇到“网络异常”时，多重试几次，降低退化成纯文本的概率
+        photo_attempts = 3
+        for i in range(photo_attempts):
+            try:
+                res = tg_api("sendPhoto", {"chat_id": target_chat_id, "photo": img, "caption": caption})
+                time.sleep(SEND_DELAY_SEC)
+                return {"message_id": res["message_id"], "kind": "photo", "image_url": img}, None
+            except TelegramNetworkError as e:
+                wait_s = 2 + i * 2
+                print(f"[warn] sendPhoto network error, retry in {wait_s}s ({i+1}/{photo_attempts}): {e}")
+                time.sleep(wait_s)
+                continue
+            except Exception as e:
+                if BAD_IMAGE_POLICY == "skip" and is_bad_image_error(e):
+                    print(f"[skip] bad image -> skip product. market={p.get('market')} asin={p.get('asin')} err={e}")
+                    return None, "BAD_IMAGE_SKIP"
+                print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
+                break
 
     res = tg_api("sendMessage", {"chat_id": target_chat_id, "text": caption, "disable_web_page_preview": True})
     time.sleep(SEND_DELAY_SEC)
@@ -651,6 +685,9 @@ def main():
     actions_done = 0
     stopped_due_to_limit = False
 
+    # ✅ 仅新增：当 Telegram 网络不可用时，优雅停止本次 run（保存 state，避免 Actions 红叉）
+    telegram_down = False
+
     def at_limit() -> bool:
         return actions_done >= MAX_ACTIONS_PER_RUN
 
@@ -739,170 +776,172 @@ def main():
 
     # ---------- per group: match/edit/post/delete ----------
     for gk, info in desired.items():
-        if _should_exit or stopped_due_to_limit:
+        if _should_exit or stopped_due_to_limit or telegram_down:
             break
 
-        market = info["market"]
-        target_chat = target_chat_for_market(market)
+        try:
+            market = info["market"]
+            target_chat = target_chat_for_market(market)
 
-        desired_active: List[dict] = info["active"]
-        desired_hashes = [compute_content_hash(p, "active") for p in desired_active]
+            desired_active: List[dict] = info["active"]
+            desired_hashes = [compute_content_hash(p, "active") for p in desired_active]
 
-        existing_list = groups.get(gk)
-        if not isinstance(existing_list, list):
-            existing_list = []
-        existing_list = [m for m in existing_list if isinstance(m, dict)]
+            existing_list = groups.get(gk)
+            if not isinstance(existing_list, list):
+                existing_list = []
+            existing_list = [m for m in existing_list if isinstance(m, dict)]
 
-        existing_candidates: List[dict] = []
-        for m in existing_list:
-            if m.get("status") == "active" and m.get("message_id") and m.get("chat_id"):
-                existing_candidates.append(m)
+            existing_candidates: List[dict] = []
+            for m in existing_list:
+                if m.get("status") == "active" and m.get("message_id") and m.get("chat_id"):
+                    existing_candidates.append(m)
 
-        # 1) exact hash match -> keep
-        used_existing_ids = set()
-        matched_pairs: List[Tuple[dict, dict, str]] = []
+            # 1) exact hash match -> keep
+            used_existing_ids = set()
+            matched_pairs: List[Tuple[dict, dict, str]] = []
 
-        by_hash: Dict[str, List[dict]] = {}
-        for m in existing_candidates:
-            h = safe_str(m.get("hash"))
-            by_hash.setdefault(h, []).append(m)
+            by_hash: Dict[str, List[dict]] = {}
+            for m in existing_candidates:
+                h = safe_str(m.get("hash"))
+                by_hash.setdefault(h, []).append(m)
 
-        unmatched_products: List[Tuple[dict, str]] = []
-        for p, h in zip(desired_active, desired_hashes):
-            if h in by_hash and by_hash[h]:
-                m = by_hash[h].pop()
-                used_existing_ids.add(id(m))
-                matched_pairs.append((m, p, h))
-            else:
-                unmatched_products.append((p, h))
+            unmatched_products: List[Tuple[dict, str]] = []
+            for p, h in zip(desired_active, desired_hashes):
+                if h in by_hash and by_hash[h]:
+                    m = by_hash[h].pop()
+                    used_existing_ids.add(id(m))
+                    matched_pairs.append((m, p, h))
+                else:
+                    unmatched_products.append((p, h))
 
-        remaining_existing = [m for m in existing_candidates if id(m) not in used_existing_ids]
+            remaining_existing = [m for m in existing_candidates if id(m) not in used_existing_ids]
 
-        # 2) reuse remaining existing for unmatched products -> edit
-        edit_pairs: List[Tuple[dict, dict, str]] = []
-        while unmatched_products and remaining_existing:
-            p, h = unmatched_products.pop(0)
-            m = remaining_existing.pop(0)
-            edit_pairs.append((m, p, h))
+            # 2) reuse remaining existing for unmatched products -> edit
+            edit_pairs: List[Tuple[dict, dict, str]] = []
+            while unmatched_products and remaining_existing:
+                p, h = unmatched_products.pop(0)
+                m = remaining_existing.pop(0)
+                edit_pairs.append((m, p, h))
 
-        # 3) extra existing -> delete (list减少/删除)
-        extra_existing = remaining_existing[:]
+            # 3) extra existing -> delete (list减少/删除)
+            extra_existing = remaining_existing[:]
 
-        # 4) extra products -> post
-        new_posts = unmatched_products[:]
+            # 4) extra products -> post
+            new_posts = unmatched_products[:]
 
-        now_ts = int(time.time())
-        for m, p, h in matched_pairs:
-            m["hash"] = h
-            m["ts"] = now_ts
-            m["status"] = "active"
-            m["chat_id"] = m.get("chat_id") or target_chat
+            now_ts = int(time.time())
+            for m, p, h in matched_pairs:
+                m["hash"] = h
+                m["ts"] = now_ts
+                m["status"] = "active"
+                m["chat_id"] = m.get("chat_id") or target_chat
 
-        for m, p, h in edit_pairs:
-            if _should_exit or stopped_due_to_limit:
-                break
-            if at_limit():
-                stopped_due_to_limit = True
-                print(f"[warn] action limit reached, stop before edit: {gk}")
-                break
-
-            msg_chat = m.get("chat_id") or target_chat
-            msg_id = int(m["message_id"])
-
-            new_meta, did_action, missing = edit_existing(msg_chat, msg_id, m, p)
-            if missing:
+            for m, p, h in edit_pairs:
+                if _should_exit or stopped_due_to_limit or telegram_down:
+                    break
                 if at_limit():
                     stopped_due_to_limit = True
-                    print(f"[warn] action limit reached, stop before repost(missing): {gk}")
+                    print(f"[warn] action limit reached, stop before edit: {gk}")
                     break
-                info2, err_code = send_new(target_chat, p)
-                if err_code == "BAD_IMAGE_SKIP":
-                    m["status"] = "removed"
-                    m["ts"] = int(time.time())
-                    print(f"[skip] repost missing but bad image skip: {gk}")
+
+                msg_chat = m.get("chat_id") or target_chat
+                msg_id = int(m["message_id"])
+
+                new_meta, did_action, missing = edit_existing(msg_chat, msg_id, m, p)
+                if missing:
+                    if at_limit():
+                        stopped_due_to_limit = True
+                        print(f"[warn] action limit reached, stop before repost(missing): {gk}")
+                        break
+                    info2, err_code = send_new(target_chat, p)
+                    if err_code == "BAD_IMAGE_SKIP":
+                        m["status"] = "removed"
+                        m["ts"] = int(time.time())
+                        print(f"[skip] repost missing but bad image skip: {gk}")
+                        continue
+                    actions_done += 1
+                    m.update({
+                        "chat_id": target_chat,
+                        "message_id": info2["message_id"],
+                        "kind": info2["kind"],
+                        "image_url": info2["image_url"],
+                        "hash": h,
+                        "status": "active",
+                        "ts": int(time.time()),
+                        "delete_attempted": False,
+                        "delete_ok": False,
+                    })
+                    print(f"reposted(missing->send): {gk} msg {info2['message_id']}")
                     continue
-                actions_done += 1
+
+                if did_action:
+                    actions_done += 1
+                    print(f"edited: {gk} msg {msg_id}")
+                else:
+                    print(f"nochange(edit): {gk} msg {msg_id}")
+
                 m.update({
-                    "chat_id": target_chat,
-                    "message_id": info2["message_id"],
-                    "kind": info2["kind"],
-                    "image_url": info2["image_url"],
+                    "chat_id": msg_chat,
+                    "kind": new_meta["kind"],
+                    "image_url": new_meta["image_url"],
                     "hash": h,
                     "status": "active",
                     "ts": int(time.time()),
-                    "delete_attempted": False,
-                    "delete_ok": False,
                 })
-                print(f"reposted(missing->send): {gk} msg {info2['message_id']}")
-                continue
 
-            if did_action:
+            for m in extra_existing:
+                if _should_exit or stopped_due_to_limit or telegram_down:
+                    break
+                if at_limit():
+                    stopped_due_to_limit = True
+                    print(f"[warn] action limit reached, stop before delete: {gk}")
+                    break
+                msg_id = m.get("message_id")
+                chat_id = m.get("chat_id") or target_chat
+                if msg_id and chat_id:
+                    ok = delete_message(chat_id, msg_id)
+                    actions_done += 1
+                    m["delete_ok"] = bool(ok)
+                m["status"] = "removed"
+                m["ts"] = int(time.time())
+                m["message_id"] = None  # ✅ 防止以后又被当作可 edit 的候选
+                print(f"deleted(extra): {gk}")
+
+            for p, h in new_posts:
+                if _should_exit or stopped_due_to_limit or telegram_down:
+                    break
+                if at_limit():
+                    stopped_due_to_limit = True
+                    print(f"[warn] action limit reached, stop before post: {gk}")
+                    break
+
+                info2, err_code = send_new(target_chat, p)
+                if err_code == "BAD_IMAGE_SKIP":
+                    continue
                 actions_done += 1
-                print(f"edited: {gk} msg {msg_id}")
-            else:
-                print(f"nochange(edit): {gk} msg {msg_id}")
 
-            m.update({
-                "chat_id": msg_chat,
-                "kind": new_meta["kind"],
-                "image_url": new_meta["image_url"],
-                "hash": h,
-                "status": "active",
-                "ts": int(time.time()),
-            })
+                existing_list.append({
+                    "chat_id": target_chat,
+                    "message_id": info2["message_id"],
+                    "hash": h,
+                    "status": "active",
+                    "kind": info2["kind"],
+                    "image_url": info2["image_url"],
+                    "ts": int(time.time()),
+                    "delete_attempted": False,
+                    "delete_ok": False
+                })
+                print(f"posted: {gk} msg {info2['message_id']}")
 
-        for m in extra_existing:
-            if _should_exit or stopped_due_to_limit:
-                break
-            if at_limit():
-                stopped_due_to_limit = True
-                print(f"[warn] action limit reached, stop before delete: {gk}")
-                break
-            msg_id = m.get("message_id")
-            chat_id = m.get("chat_id") or target_chat
-            if msg_id and chat_id:
-                ok = delete_message(chat_id, msg_id)
-                actions_done += 1
-                m["delete_ok"] = bool(ok)
-            m["status"] = "removed"
-            m["ts"] = int(time.time())
-            m["message_id"] = None  # ✅ 防止以后又被当作可 edit 的候选
-            print(f"deleted(extra): {gk}")
+            groups[gk] = existing_list
 
-        for p, h in new_posts:
-            if _should_exit or stopped_due_to_limit:
-                break
-            if at_limit():
-                stopped_due_to_limit = True
-                print(f"[warn] action limit reached, stop before post: {gk}")
-                break
-
-            info2, err_code = send_new(target_chat, p)
-            if err_code == "BAD_IMAGE_SKIP":
-                continue
-            actions_done += 1
-
-            existing_list.append({
-                "chat_id": target_chat,
-                "message_id": info2["message_id"],
-                "hash": h,
-                "status": "active",
-                "kind": info2["kind"],
-                "image_url": info2["image_url"],
-                "ts": int(time.time()),
-                "delete_attempted": False,
-                "delete_ok": False
-            })
-            print(f"posted: {gk} msg {info2['message_id']}")
-
-        groups[gk] = existing_list
+        except TelegramNetworkError as e:
+            telegram_down = True
+            print(f"[warn] Telegram network unavailable, stop this run gracefully: {e}")
+            break
 
     save_json_atomic(STATE_FILE, state)
     print(f"done. actions={actions_done}/{MAX_ACTIONS_PER_RUN}. state saved -> {STATE_FILE}")
 
 if __name__ == "__main__":
     main()
-
-
-
-
