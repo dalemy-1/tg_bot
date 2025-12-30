@@ -19,7 +19,7 @@ jobs:
       TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
       GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
 
-      TG_SEND_DELAY_SEC: "2.0"
+      TG_SEND_DELAY_SEC: "3.0"
       MAX_ACTIONS_PER_RUN: "250"
 
       BAD_IMAGE_POLICY: "fallback_text"
@@ -52,11 +52,16 @@ jobs:
         run: |
           python sync_products.py
 
-      - name: Commit & push posted_state.json (with retry)
+            - name: Commit & push posted_state.json (with retry)
         run: |
           set -e
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 先同步远端，减少后面 rebase 复杂度
+          git fetch origin main
+          git rebase origin/main || true
 
           git add posted_state.json
 
@@ -69,14 +74,19 @@ jobs:
 
           for i in 1 2 3 4 5; do
             echo "Push attempt $i..."
-            git pull --rebase origin main || true
+            # push 前再轻量同步一次，避免别的 run 先推了
+            git fetch origin main
+            git rebase origin/main || true
+
             if git push; then
               echo "Push success."
               exit 0
             fi
+
             echo "Push failed, retry in 3s..."
             sleep 3
           done
 
           echo "Push failed after retries."
           exit 1
+
