@@ -11,9 +11,13 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
 import requests
+from urllib.parse import urlparse
 
 # ==================== version ====================
-SYNC_PRODUCTS_VERSION = "2025-12-19-dup-asin-final"
+SYNC_PRODUCTS_VERSION = "2026-01-01-link-html-image-auto-template-rev"
+
+# ✅ 方案A：改这个值即可强制“全量历史消息 edit 到新模板”
+CAPTION_TEMPLATE_REV = "2026-01-01-v1"
 
 TG_TOKEN = (os.getenv("TG_BOT_TOKEN") or "").strip()
 BASE_DIR = Path(__file__).resolve().parent
@@ -63,6 +67,13 @@ CURRENCY_SYMBOL = {
 
 TG_PARSE_MODE = "HTML"
 
+# ✅ 图片发送模式：auto=先URL失败则上传；upload=强制上传；url=强制URL
+TG_IMAGE_MODE = (os.getenv("TG_IMAGE_MODE") or "auto").strip().lower()  # auto|upload|url
+IMAGE_FETCH_TIMEOUT = int(os.getenv("IMAGE_FETCH_TIMEOUT", "25"))
+IMAGE_FETCH_RETRY = int(os.getenv("IMAGE_FETCH_RETRY", "3"))
+IMAGE_MAX_BYTES = int(os.getenv("IMAGE_MAX_BYTES", str(9 * 1024 * 1024)))  # 9MB
+IMAGE_MIN_BYTES = int(os.getenv("IMAGE_MIN_BYTES", "2048"))
+
 # ==================== utils ====================
 
 def safe_str(x) -> str:
@@ -92,7 +103,7 @@ def norm_status(v) -> str:
     return "active"
 
 def norm_asin(v) -> str:
-    # ✅ 关键：ASIN 统一大写、去空格，避免 key 对不上导致“重头发”
+    # ✅ ASIN 统一大写、去空格
     s = safe_str(v).upper().replace(" ", "")
     return s
 
@@ -245,7 +256,6 @@ def _fetch_text_with_retry(url: str) -> str:
     raise RuntimeError(f"fetch failed after retries: {last_err}")
 
 def h(s: str) -> str:
-    """HTML escape for Telegram parse_mode=HTML"""
     return html.escape(safe_str(s), quote=True)
 
 def build_product_page_url(market: str, asin: str) -> str:
@@ -253,9 +263,63 @@ def build_product_page_url(market: str, asin: str) -> str:
     a = norm_asin(asin)
     return f"https://ama.omino.top/p/{mk}/{a}"
 
+# ==================== image fetch/upload helpers ====================
+
+def _guess_filename_from_url(url: str) -> str:
+    try:
+        p = urlparse(url).path or ""
+        name = (p.rsplit("/", 1)[-1] or "image.jpg").strip()
+        if "." not in name:
+            name += ".jpg"
+        return name[:120]
+    except Exception:
+        return "image.jpg"
+
+def _is_image_content_type(ctype: str) -> bool:
+    c = (ctype or "").lower()
+    return c.startswith("image/") or ("application/octet-stream" in c)
+
+def fetch_image_bytes(url: str) -> Tuple[bytes, str]:
+    last_err = None
+    for attempt in range(IMAGE_FETCH_RETRY + 1):
+        try:
+            r = requests.get(url, timeout=IMAGE_FETCH_TIMEOUT, stream=True, allow_redirects=True)
+            r.raise_for_status()
+
+            ctype = (r.headers.get("content-type") or "").strip()
+            if not _is_image_content_type(ctype):
+                raise ValueError(f"not image content-type: {ctype}")
+
+            buf = io.BytesIO()
+            total = 0
+            for chunk in r.iter_content(chunk_size=64 * 1024):
+                if not chunk:
+                    continue
+                buf.write(chunk)
+                total += len(chunk)
+                if total > IMAGE_MAX_BYTES:
+                    raise ValueError(f"image too large: {total} bytes > {IMAGE_MAX_BYTES}")
+            data = buf.getvalue()
+
+            if len(data) < IMAGE_MIN_BYTES:
+                raise ValueError(f"image too small: {len(data)} bytes (likely error content)")
+
+            head = data[:256].lstrip().lower()
+            if head.startswith(b"<!doctype html") or head.startswith(b"<html") or b"<body" in head:
+                raise ValueError("downloaded content looks like HTML")
+
+            return data, _guess_filename_from_url(url)
+
+        except Exception as e:
+            last_err = e
+            wait = 1 + attempt * 2
+            print(f"[warn] fetch_image_bytes failed ({attempt+1}/{IMAGE_FETCH_RETRY+1}): {e}. wait {wait}s")
+            time.sleep(wait)
+
+    raise RuntimeError(f"fetch_image_bytes failed after retries: {last_err}")
+
 # ==================== Telegram ====================
 
-# ✅ 仅新增：区分“网络问题”和“API 业务错误”，方便主流程优雅降级
 class TelegramNetworkError(RuntimeError):
     pass
 
@@ -310,6 +374,54 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
 
     raise TelegramApiError(f"{method} failed after retries.")
 
+def tg_api_multipart(method: str, payload: dict, files: dict, max_retry: int = 6):
+    if not TG_TOKEN:
+        raise TelegramApiError("Missing TG_BOT_TOKEN")
+
+    url = f"https://api.telegram.org/bot{TG_TOKEN}/{method}"
+
+    for attempt in range(max_retry):
+        try:
+            r = requests.post(url, data=payload, files=files, timeout=60)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            wait_s = 2 + attempt * 2
+            print(f"[warn] tg_api_multipart network error {type(e).__name__}: {e}. wait {wait_s}s ({attempt+1}/{max_retry})")
+            time.sleep(wait_s)
+            if attempt == max_retry - 1:
+                raise TelegramNetworkError(f"{method} multipart network failed after retries: {e}")
+            continue
+
+        if r.status_code in (500, 502, 503, 504):
+            wait_s = 2 + attempt * 2
+            print(f"[warn] tg_api_multipart server {r.status_code}, retry in {wait_s}s ({attempt+1}/{max_retry})")
+            time.sleep(wait_s)
+            if attempt == max_retry - 1:
+                raise TelegramNetworkError(f"{method} multipart server error {r.status_code} after retries: {r.text[:200]}")
+            continue
+
+        try:
+            data = r.json()
+        except Exception:
+            raise TelegramApiError(f"{method} multipart HTTP {r.status_code}: {r.text}")
+
+        if data.get("ok"):
+            return data["result"]
+
+        err_code = data.get("error_code")
+        if err_code == 429:
+            retry_after = 5
+            params = data.get("parameters") or {}
+            if isinstance(params, dict) and params.get("retry_after"):
+                retry_after = int(params["retry_after"])
+            wait_s = retry_after + 1
+            print(f"[warn] multipart 429 Too Many Requests, wait {wait_s}s then retry... ({attempt+1}/{max_retry})")
+            time.sleep(wait_s)
+            continue
+
+        raise TelegramApiError(f"{method} multipart failed: {data}")
+
+    raise TelegramApiError(f"{method} multipart failed after retries.")
+
 def is_not_modified_error(err: Exception) -> bool:
     s = str(err).lower()
     return ("message is not modified" in s) or ("specified new message content" in s)
@@ -350,8 +462,8 @@ def load_products() -> List[Dict[str, str]]:
         keyword = _get(row, "keyword", "Keyword")
         store = _get(row, "store", "Store")
         remark = _get(row, "remark", "Remark")
-        link = _get(row, "link", "Link", "url", "URL")
 
+        link = _get(row, "link", "Link", "url", "URL")
         image_url = _get(row, "image_url", "image", "Image", "img", "imageUrl", "imageURL")
 
         status = norm_status(_get(row, "status", "Status"))
@@ -428,7 +540,6 @@ def build_caption(p: dict) -> str:
     discount_price = format_money_for_caption(p.get("discount_price"), market)
     commission = format_money_for_caption(p.get("commission"), market)
 
-    # HTML-safe content
     title_h = h(title) if title else ""
     keyword_h = h(keyword)
     store_h = h(store)
@@ -455,14 +566,12 @@ def build_caption(p: dict) -> str:
     if commission_h:
         lines.append(f"Commission: {commission_h}")
 
-    # ✅ 可点击链接（HTML）
     lines.append(f'Product link: <a href="{product_url_h}">{product_url_h}</a>')
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
 
 def compute_content_hash(p: dict, status: str) -> str:
-    # ✅ 固定尾巴纳入 hash，确保链接变化会触发 edit
     footer = f"Product link: {build_product_page_url(p.get('market'), p.get('asin'))}"
     return sha1(
         "|".join([
@@ -477,6 +586,7 @@ def compute_content_hash(p: dict, status: str) -> str:
             canonical_money_for_hash(p.get("commission")),
             status,
             footer,
+            CAPTION_TEMPLATE_REV,  # ✅ 方案A：模板版本号进入hash，触发全量历史编辑
         ])
     )
 
@@ -486,19 +596,49 @@ def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
     caption = build_caption(p)
     img = safe_str(p.get("image_url"))
 
+    def _send_photo_by_url(photo_url: str):
+        return tg_api("sendPhoto", {
+            "chat_id": target_chat_id,
+            "photo": photo_url,
+            "caption": caption,
+            "parse_mode": TG_PARSE_MODE,
+            "disable_web_page_preview": True,
+        })
+
+    def _send_photo_by_upload(photo_url: str):
+        data, filename = fetch_image_bytes(photo_url)
+        res = tg_api_multipart(
+            "sendPhoto",
+            payload={
+                "chat_id": str(target_chat_id),
+                "caption": caption,
+                "parse_mode": TG_PARSE_MODE,
+                "disable_web_page_preview": "true",
+            },
+            files={
+                "photo": (filename, data)
+            }
+        )
+        return res
+
     if img:
         photo_attempts = 3
         for i in range(photo_attempts):
             try:
-                res = tg_api("sendPhoto", {
-                    "chat_id": target_chat_id,
-                    "photo": img,
-                    "caption": caption,
-                    "parse_mode": TG_PARSE_MODE,
-                    "disable_web_page_preview": True,
-                })
+                if TG_IMAGE_MODE == "url":
+                    res = _send_photo_by_url(img)
+                elif TG_IMAGE_MODE == "upload":
+                    res = _send_photo_by_upload(img)
+                else:
+                    try:
+                        res = _send_photo_by_url(img)
+                    except Exception as e1:
+                        print(f"[warn] sendPhoto(url) failed -> try upload. err={e1}")
+                        res = _send_photo_by_upload(img)
+
                 time.sleep(SEND_DELAY_SEC)
                 return {"message_id": res["message_id"], "kind": "photo", "image_url": img}, None
+
             except TelegramNetworkError as e:
                 wait_s = 2 + i * 2
                 print(f"[warn] sendPhoto network error, retry in {wait_s}s ({i+1}/{photo_attempts}): {e}")
@@ -523,10 +663,9 @@ def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
 def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple[dict, bool, bool]:
     """
     返回 (new_meta, did_action, message_missing)
-    规则：
-    - 不做“text->photo”类型转换（避免 delete+repost），保持原 kind 稳定
-    - photo 消息优先 editMedia(仅当有新图且不同)，否则 editCaption
-    - text 消息 editText
+    - 不做 text->photo 类型转换
+    - photo: 优先 editMedia(换图)，否则 editCaption
+    - text: editText
     """
     caption = build_caption(p)
 
@@ -538,18 +677,39 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
         if prev_kind == "photo":
             if new_img and new_img != prev_img:
                 try:
-                    tg_api("editMessageMedia", {
-                        "chat_id": target_chat_id,
-                        "message_id": int(message_id),
-                        "media": {
-                            "type": "photo",
-                            "media": new_img,
-                            "caption": caption,
-                            "parse_mode": TG_PARSE_MODE,
-                        }
-                    })
+                    if TG_IMAGE_MODE == "url":
+                        tg_api("editMessageMedia", {
+                            "chat_id": target_chat_id,
+                            "message_id": int(message_id),
+                            "media": {
+                                "type": "photo",
+                                "media": new_img,
+                                "caption": caption,
+                                "parse_mode": TG_PARSE_MODE,
+                            }
+                        })
+                    else:
+                        data, filename = fetch_image_bytes(new_img)
+                        tg_api_multipart(
+                            "editMessageMedia",
+                            payload={
+                                "chat_id": str(target_chat_id),
+                                "message_id": str(int(message_id)),
+                                "media": json.dumps({
+                                    "type": "photo",
+                                    "media": "attach://photo",
+                                    "caption": caption,
+                                    "parse_mode": TG_PARSE_MODE,
+                                }, ensure_ascii=False),
+                            },
+                            files={
+                                "photo": (filename, data)
+                            }
+                        )
+
                     time.sleep(SEND_DELAY_SEC)
                     return {"kind": "photo", "image_url": new_img}, True, False
+
                 except Exception as e:
                     if is_message_not_found(e):
                         return {"kind": "photo", "image_url": prev_img}, False, True
@@ -630,7 +790,6 @@ def migrate_state_to_groups(raw_state: Any) -> Dict[str, Any]:
          ...
       }
     }
-
     兼容旧格式（flat key: "US:B0XXX" -> dict）
     """
     if isinstance(raw_state, dict) and "groups" in raw_state and isinstance(raw_state.get("groups"), dict):
@@ -678,6 +837,8 @@ def main():
     global _should_exit
 
     print("SYNC_PRODUCTS_VERSION =", SYNC_PRODUCTS_VERSION)
+    print(f"[debug] CAPTION_TEMPLATE_REV={CAPTION_TEMPLATE_REV}")
+    print(f"[debug] TG_IMAGE_MODE={TG_IMAGE_MODE} IMAGE_FETCH_TIMEOUT={IMAGE_FETCH_TIMEOUT} IMAGE_FETCH_RETRY={IMAGE_FETCH_RETRY} IMAGE_MAX_BYTES={IMAGE_MAX_BYTES}")
     print(f"[debug] MIGRATE_ONLY={MIGRATE_ONLY} RESET_STATE={RESET_STATE}")
     print(f"[debug] BAD_IMAGE_POLICY={BAD_IMAGE_POLICY} PURGE_MISSING={PURGE_MISSING} TG_SEND_DELAY_SEC={SEND_DELAY_SEC}")
     print(f"[debug] PURGE_MIN_ROWS={PURGE_MIN_ROWS} PURGE_MIN_ACTIVE_RATIO={PURGE_MIN_ACTIVE_RATIO} FETCH_RETRY={FETCH_RETRY} FETCH_TIMEOUT={FETCH_TIMEOUT}")
@@ -731,6 +892,7 @@ def main():
             raise RuntimeError(f"channel_map missing market={market}")
         return cid
 
+    # ---------- build desired by group ----------
     desired: Dict[str, Dict[str, Any]] = {}
     seen_group_keys = set()
 
@@ -753,6 +915,7 @@ def main():
         else:
             desired[gk]["removed_count"] += 1
 
+    # ---------- PURGE missing groups ----------
     if PURGE_MISSING and (not _should_exit) and (not stopped_due_to_limit):
         prev_active_msgs = 0
         for gk, lst in groups.items():
@@ -806,6 +969,7 @@ def main():
         else:
             print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip purge this run.")
 
+    # ---------- per group ----------
     for gk, info in desired.items():
         if _should_exit or stopped_due_to_limit or telegram_down:
             break
@@ -827,6 +991,7 @@ def main():
                 if m.get("status") == "active" and m.get("message_id") and m.get("chat_id"):
                     existing_candidates.append(m)
 
+            # 1) exact hash match -> keep
             used_existing_ids = set()
             matched_pairs: List[Tuple[dict, dict, str]] = []
 
@@ -846,13 +1011,16 @@ def main():
 
             remaining_existing = [m for m in existing_candidates if id(m) not in used_existing_ids]
 
+            # 2) reuse remaining existing -> edit
             edit_pairs: List[Tuple[dict, dict, str]] = []
             while unmatched_products and remaining_existing:
                 p, hh = unmatched_products.pop(0)
                 m = remaining_existing.pop(0)
                 edit_pairs.append((m, p, hh))
 
+            # 3) extra existing -> delete
             extra_existing = remaining_existing[:]
+            # 4) extra products -> post
             new_posts = unmatched_products[:]
 
             now_ts = int(time.time())
