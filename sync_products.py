@@ -733,7 +733,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                     return {"kind": "photo", "image_url": prev_img}, False, False
                 raise
 
-        try:
+                try:
             tg_api("editMessageText", {
                 "chat_id": target_chat_id,
                 "message_id": int(message_id),
@@ -743,16 +743,33 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
             })
             time.sleep(SEND_DELAY_SEC)
             return {"kind": "text", "image_url": ""}, True, False
+
         except Exception as e:
+            # ✅ 关键修复：如果这条消息其实是 photo（只有caption，没有text），则自动改用 editMessageCaption
+            if is_no_text_to_edit(e):
+                try:
+                    tg_api("editMessageCaption", {
+                        "chat_id": target_chat_id,
+                        "message_id": int(message_id),
+                        "caption": caption,
+                        "parse_mode": TG_PARSE_MODE,
+                    })
+                    time.sleep(SEND_DELAY_SEC)
+                    # 这里把 kind 修正成 photo，避免下次再走 editMessageText
+                    return {"kind": "photo", "image_url": prev_img}, True, False
+                except Exception as e2:
+                    if is_message_not_found(e2):
+                        return {"kind": "photo", "image_url": prev_img}, False, True
+                    if is_not_modified_error(e2):
+                        return {"kind": "photo", "image_url": prev_img}, False, False
+                    raise
+
             if is_message_not_found(e):
                 return {"kind": "text", "image_url": ""}, False, True
             if is_not_modified_error(e):
                 return {"kind": "text", "image_url": ""}, False, False
             raise
-    except Exception as e:
-        if is_message_not_found(e):
-            return {"kind": prev_kind, "image_url": prev_img}, False, True
-        raise
+
 
 def delete_message(target_chat_id, message_id: int) -> bool:
     try:
@@ -1139,3 +1156,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
