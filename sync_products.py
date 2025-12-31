@@ -430,6 +430,10 @@ def is_message_not_found(err: Exception) -> bool:
     s = str(err).lower()
     return ("message to edit not found" in s) or ("message to delete not found" in s)
 
+def is_no_text_to_edit(err: Exception) -> bool:
+    s = str(err).lower()
+    return ("there is no text in the message to edit" in s) or ("no text in the message to edit" in s)
+
 def is_bad_image_error(err: Exception) -> bool:
     s = str(err).lower()
     keys = [
@@ -666,6 +670,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
     - 不做 text->photo 类型转换
     - photo: 优先 editMedia(换图)，否则 editCaption
     - text: editText
+    - ✅ 修复：如果误把 photo 当 text 去 editText，出现 400 no text，则自动 fallback 到 editCaption
     """
     caption = build_caption(p)
 
@@ -674,7 +679,9 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
     new_img = safe_str(p.get("image_url"))
 
     try:
+        # -------- photo message branch --------
         if prev_kind == "photo":
+            # 1) try replace media if image changed
             if new_img and new_img != prev_img:
                 try:
                     if TG_IMAGE_MODE == "url":
@@ -717,6 +724,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                         return {"kind": "photo", "image_url": prev_img}, False, False
                     print(f"[warn] editMessageMedia failed -> fallback to edit caption only. msg={message_id} err={e}")
 
+            # 2) edit caption
             try:
                 tg_api("editMessageCaption", {
                     "chat_id": target_chat_id,
@@ -733,7 +741,8 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                     return {"kind": "photo", "image_url": prev_img}, False, False
                 raise
 
-                try:
+        # -------- text message branch --------
+        try:
             tg_api("editMessageText", {
                 "chat_id": target_chat_id,
                 "message_id": int(message_id),
@@ -755,7 +764,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                         "parse_mode": TG_PARSE_MODE,
                     })
                     time.sleep(SEND_DELAY_SEC)
-                    # 这里把 kind 修正成 photo，避免下次再走 editMessageText
+                    # 修正 kind，避免下次还走 editText
                     return {"kind": "photo", "image_url": prev_img}, True, False
                 except Exception as e2:
                     if is_message_not_found(e2):
@@ -769,6 +778,12 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
             if is_not_modified_error(e):
                 return {"kind": "text", "image_url": ""}, False, False
             raise
+
+    except Exception as e:
+        if is_message_not_found(e):
+            return {"kind": prev_kind, "image_url": prev_img}, False, True
+        raise
+
 
 
 def delete_message(target_chat_id, message_id: int) -> bool:
@@ -1156,4 +1171,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
