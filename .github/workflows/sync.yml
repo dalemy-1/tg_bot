@@ -49,6 +49,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run sync
+        env:
+          RESET_STATE: "1"
         run: |
           python sync_products.py
 
