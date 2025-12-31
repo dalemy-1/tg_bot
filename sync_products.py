@@ -34,7 +34,7 @@ FALLBACK_TO_LOCAL_CSV = (os.getenv("FALLBACK_TO_LOCAL_CSV", "1").strip() != "0")
 BAD_IMAGE_POLICY = (os.getenv("BAD_IMAGE_POLICY") or "fallback_text").strip().lower()
 
 # ✅ 以“列表”为准：如果某个 market:asin 组完全从表里消失，会删除该组所有消息（受安全阈值保护）
-PURGE_MISSING = (os.getenv("PURGE_MISSING", "1").strip() == "1")
+PURGE_MISSING = (os.getenv("PURGE_MISSING", "0").strip() == "1")
 PURGE_MIN_ROWS = int(os.getenv("PURGE_MIN_ROWS", "50"))
 PURGE_MIN_ACTIVE_RATIO = float(os.getenv("PURGE_MIN_ACTIVE_RATIO", "0.5"))
 
@@ -44,7 +44,7 @@ FETCH_TIMEOUT = int(os.getenv("FETCH_TIMEOUT", "30"))
 MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
 
 # RESET_STATE=1 会把旧 state 备份并清空，从零开始发（会导致全部重发）
-RESET_STATE = (os.getenv("RESET_STATE", "0").strip() == "1")
+RESET_STATE = (os.getenv("RESET_STATE", "1").strip() == "1")
 
 # ✅ 只迁移 state，不做 Telegram 动作（用于把旧 flat posted_state.json 升级成 groups）
 MIGRATE_ONLY = (os.getenv("MIGRATE_ONLY", "0").strip() == "1")
@@ -1171,6 +1171,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
