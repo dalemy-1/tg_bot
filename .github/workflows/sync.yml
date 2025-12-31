@@ -50,7 +50,7 @@ jobs:
 
       - name: Run sync
         env:
-          RESET_STATE: "1"
+          RESET_STATE: "0"
         run: |
           python sync_products.py
 
