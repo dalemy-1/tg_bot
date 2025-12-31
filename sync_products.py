@@ -5,6 +5,7 @@ import json
 import time
 import hashlib
 import signal
+import html
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
@@ -59,6 +60,8 @@ CURRENCY_SYMBOL = {
     "CA": "$",
     "JP": "¥",
 }
+
+TG_PARSE_MODE = "HTML"
 
 # ==================== utils ====================
 
@@ -241,6 +244,15 @@ def _fetch_text_with_retry(url: str) -> str:
             time.sleep(wait)
     raise RuntimeError(f"fetch failed after retries: {last_err}")
 
+def h(s: str) -> str:
+    """HTML escape for Telegram parse_mode=HTML"""
+    return html.escape(safe_str(s), quote=True)
+
+def build_product_page_url(market: str, asin: str) -> str:
+    mk = safe_str(market).lower()
+    a = norm_asin(asin)
+    return f"https://ama.omino.top/p/{mk}/{a}"
+
 # ==================== Telegram ====================
 
 # ✅ 仅新增：区分“网络问题”和“API 业务错误”，方便主流程优雅降级
@@ -260,7 +272,6 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
         try:
             r = requests.post(url, json=payload, timeout=30)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-            # ✅ 网络不可达/超时：重试（这是 Actions “Network is unreachable” 的根因）
             wait_s = 2 + attempt * 2
             print(f"[warn] tg_api network error {type(e).__name__}: {e}. wait {wait_s}s ({attempt+1}/{max_retry})")
             time.sleep(wait_s)
@@ -268,7 +279,6 @@ def tg_api(method: str, payload: dict, max_retry: int = 6):
                 raise TelegramNetworkError(f"{method} network failed after retries: {e}")
             continue
 
-        # ✅ Telegram 偶尔返回 5xx：也重试
         if r.status_code in (500, 502, 503, 504):
             wait_s = 2 + attempt * 2
             print(f"[warn] tg_api server {r.status_code}, retry in {wait_s}s ({attempt+1}/{max_retry})")
@@ -414,33 +424,46 @@ def build_caption(p: dict) -> str:
     keyword = safe_str(p.get("keyword"))
     store = safe_str(p.get("store"))
     remark = safe_str(p.get("remark"))
-    link = safe_str(p.get("link"))
 
     discount_price = format_money_for_caption(p.get("discount_price"), market)
     commission = format_money_for_caption(p.get("commission"), market)
 
+    # HTML-safe content
+    title_h = h(title) if title else ""
+    keyword_h = h(keyword)
+    store_h = h(store)
+    remark_h = h(remark)
+    discount_h = h(discount_price) if discount_price else ""
+    commission_h = h(commission) if commission else ""
+
+    asin = norm_asin(p.get("asin"))
+    product_url = build_product_page_url(market, asin)
+    product_url_h = h(product_url)
+
     lines: List[str] = []
-    head = f"{flag}{title}".strip() if title else f"{flag}(无标题)".strip()
+    head = f"{flag}{title_h}".strip() if title_h else f"{flag}(No title)".strip()
     lines.append(head)
 
-    if keyword:
-        lines.append(f"Keyword: {keyword}")
-    if store:
-        lines.append(f"Store: {store}")
-    if remark:
-        lines.append(f"Remark: {remark}")
-    if discount_price:
-        lines.append(f"Discount Price: {discount_price}")
-    if commission:
-        lines.append(f"Commission: {commission}")
+    if keyword_h:
+        lines.append(f"Keyword: {keyword_h}")
+    if store_h:
+        lines.append(f"Store: {store_h}")
+    if remark_h:
+        lines.append(f"Remark: {remark_h}")
+    if discount_h:
+        lines.append(f"Discount Price: {discount_h}")
+    if commission_h:
+        lines.append(f"Commission: {commission_h}")
 
-    lines.append("Product list: ama.omino.top")
+    # ✅ 可点击链接（HTML）
+    lines.append(f'Product link: <a href="{product_url_h}">{product_url_h}</a>')
 
     cap = "\n".join(lines)
     return cap[:CAPTION_MAX]
 
 def compute_content_hash(p: dict, status: str) -> str:
-    footer = "Product list: ama.omino.top"  # ✅ 固定尾巴纳入 hash
+    # ✅ 固定尾巴纳入 hash，确保链接变化会触发 edit
+    footer = f"Product link: {build_product_page_url(p.get('market'), p.get('asin'))}"
     return sha1(
         "|".join([
             norm_text(p.get("market")),
@@ -453,7 +476,7 @@ def compute_content_hash(p: dict, status: str) -> str:
             canonical_money_for_hash(p.get("discount_price")),
             canonical_money_for_hash(p.get("commission")),
             status,
-            footer,  # ✅ 新增
+            footer,
         ])
     )
 
@@ -464,11 +487,16 @@ def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
     img = safe_str(p.get("image_url"))
 
     if img:
-        # ✅ 仅增强：图片发送遇到“网络异常”时，多重试几次，降低退化成纯文本的概率
         photo_attempts = 3
         for i in range(photo_attempts):
             try:
-                res = tg_api("sendPhoto", {"chat_id": target_chat_id, "photo": img, "caption": caption})
+                res = tg_api("sendPhoto", {
+                    "chat_id": target_chat_id,
+                    "photo": img,
+                    "caption": caption,
+                    "parse_mode": TG_PARSE_MODE,
+                    "disable_web_page_preview": True,
+                })
                 time.sleep(SEND_DELAY_SEC)
                 return {"message_id": res["message_id"], "kind": "photo", "image_url": img}, None
             except TelegramNetworkError as e:
@@ -483,7 +511,12 @@ def send_new(target_chat_id, p: dict) -> Tuple[Optional[dict], Optional[str]]:
                 print(f"[warn] sendPhoto failed -> fallback to text. market={p.get('market')} asin={p.get('asin')} img={img} err={e}")
                 break
 
-    res = tg_api("sendMessage", {"chat_id": target_chat_id, "text": caption, "disable_web_page_preview": True})
+    res = tg_api("sendMessage", {
+        "chat_id": target_chat_id,
+        "text": caption,
+        "parse_mode": TG_PARSE_MODE,
+        "disable_web_page_preview": True
+    })
     time.sleep(SEND_DELAY_SEC)
     return {"message_id": res["message_id"], "kind": "text", "image_url": ""}, None
 
@@ -508,7 +541,12 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                     tg_api("editMessageMedia", {
                         "chat_id": target_chat_id,
                         "message_id": int(message_id),
-                        "media": {"type": "photo", "media": new_img, "caption": caption}
+                        "media": {
+                            "type": "photo",
+                            "media": new_img,
+                            "caption": caption,
+                            "parse_mode": TG_PARSE_MODE,
+                        }
                     })
                     time.sleep(SEND_DELAY_SEC)
                     return {"kind": "photo", "image_url": new_img}, True, False
@@ -524,6 +562,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                     "chat_id": target_chat_id,
                     "message_id": int(message_id),
                     "caption": caption,
+                    "parse_mode": TG_PARSE_MODE,
                 })
                 time.sleep(SEND_DELAY_SEC)
                 return {"kind": "photo", "image_url": prev_img}, True, False
@@ -539,6 +578,7 @@ def edit_existing(target_chat_id, message_id: int, prev: dict, p: dict) -> Tuple
                 "chat_id": target_chat_id,
                 "message_id": int(message_id),
                 "text": caption,
+                "parse_mode": TG_PARSE_MODE,
                 "disable_web_page_preview": True,
             })
             time.sleep(SEND_DELAY_SEC)
@@ -596,7 +636,6 @@ def migrate_state_to_groups(raw_state: Any) -> Dict[str, Any]:
     if isinstance(raw_state, dict) and "groups" in raw_state and isinstance(raw_state.get("groups"), dict):
         if "_meta" not in raw_state or not isinstance(raw_state.get("_meta"), dict):
             raw_state["_meta"] = {}
-        # ✅ 顺手把 groups key 规范化一次
         fixed: Dict[str, List[dict]] = {}
         for k, lst in raw_state["groups"].items():
             nk = normalize_group_key(k)
@@ -647,7 +686,6 @@ def main():
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-    # MIGRATE_ONLY 时不要求 TG_TOKEN（只迁移文件）
     if not MIGRATE_ONLY and not TG_TOKEN:
         raise SystemExit("Missing TG_BOT_TOKEN env var.")
 
@@ -658,7 +696,6 @@ def main():
     if channel_map:
         print(f"[ok] mode=channels markets={sorted(channel_map.keys())}")
 
-    # reset
     if RESET_STATE and STATE_FILE.exists():
         bak = STATE_FILE.with_suffix(f".reset_{int(time.time())}.bak")
         STATE_FILE.replace(bak)
@@ -674,7 +711,6 @@ def main():
         groups = {}
         state["groups"] = groups
 
-    # ✅ 只迁移不发消息：用于把旧 posted_state.json 升级成 groups，避免“重头发”
     if MIGRATE_ONLY:
         save_json_atomic(STATE_FILE, state)
         print(f"[ok] MIGRATE_ONLY=1 -> migrated posted_state.json only, skip Telegram actions. saved -> {STATE_FILE}")
@@ -684,8 +720,6 @@ def main():
 
     actions_done = 0
     stopped_due_to_limit = False
-
-    # ✅ 仅新增：当 Telegram 网络不可用时，优雅停止本次 run（保存 state，避免 Actions 红叉）
     telegram_down = False
 
     def at_limit() -> bool:
@@ -697,7 +731,6 @@ def main():
             raise RuntimeError(f"channel_map missing market={market}")
         return cid
 
-    # ---------- build desired by group ----------
     desired: Dict[str, Dict[str, Any]] = {}
     seen_group_keys = set()
 
@@ -720,7 +753,6 @@ def main():
         else:
             desired[gk]["removed_count"] += 1
 
-    # ---------- PURGE missing groups ----------
     if PURGE_MISSING and (not _should_exit) and (not stopped_due_to_limit):
         prev_active_msgs = 0
         for gk, lst in groups.items():
@@ -774,7 +806,6 @@ def main():
         else:
             print("[warn] PURGE_MISSING enabled but blocked by safety thresholds; skip purge this run.")
 
-    # ---------- per group: match/edit/post/delete ----------
     for gk, info in desired.items():
         if _should_exit or stopped_due_to_limit or telegram_down:
             break
@@ -796,47 +827,42 @@ def main():
                 if m.get("status") == "active" and m.get("message_id") and m.get("chat_id"):
                     existing_candidates.append(m)
 
-            # 1) exact hash match -> keep
             used_existing_ids = set()
             matched_pairs: List[Tuple[dict, dict, str]] = []
 
             by_hash: Dict[str, List[dict]] = {}
             for m in existing_candidates:
-                h = safe_str(m.get("hash"))
-                by_hash.setdefault(h, []).append(m)
+                hh = safe_str(m.get("hash"))
+                by_hash.setdefault(hh, []).append(m)
 
             unmatched_products: List[Tuple[dict, str]] = []
-            for p, h in zip(desired_active, desired_hashes):
-                if h in by_hash and by_hash[h]:
-                    m = by_hash[h].pop()
+            for p, hh in zip(desired_active, desired_hashes):
+                if hh in by_hash and by_hash[hh]:
+                    m = by_hash[hh].pop()
                     used_existing_ids.add(id(m))
-                    matched_pairs.append((m, p, h))
+                    matched_pairs.append((m, p, hh))
                 else:
-                    unmatched_products.append((p, h))
+                    unmatched_products.append((p, hh))
 
             remaining_existing = [m for m in existing_candidates if id(m) not in used_existing_ids]
 
-            # 2) reuse remaining existing for unmatched products -> edit
             edit_pairs: List[Tuple[dict, dict, str]] = []
             while unmatched_products and remaining_existing:
-                p, h = unmatched_products.pop(0)
+                p, hh = unmatched_products.pop(0)
                 m = remaining_existing.pop(0)
-                edit_pairs.append((m, p, h))
+                edit_pairs.append((m, p, hh))
 
-            # 3) extra existing -> delete (list减少/删除)
             extra_existing = remaining_existing[:]
-
-            # 4) extra products -> post
             new_posts = unmatched_products[:]
 
             now_ts = int(time.time())
-            for m, p, h in matched_pairs:
-                m["hash"] = h
+            for m, p, hh in matched_pairs:
+                m["hash"] = hh
                 m["ts"] = now_ts
                 m["status"] = "active"
                 m["chat_id"] = m.get("chat_id") or target_chat
 
-            for m, p, h in edit_pairs:
+            for m, p, hh in edit_pairs:
                 if _should_exit or stopped_due_to_limit or telegram_down:
                     break
                 if at_limit():
@@ -865,7 +891,7 @@ def main():
                         "message_id": info2["message_id"],
                         "kind": info2["kind"],
                         "image_url": info2["image_url"],
-                        "hash": h,
+                        "hash": hh,
                         "status": "active",
                         "ts": int(time.time()),
                         "delete_attempted": False,
@@ -884,7 +910,7 @@ def main():
                     "chat_id": msg_chat,
                     "kind": new_meta["kind"],
                     "image_url": new_meta["image_url"],
-                    "hash": h,
+                    "hash": hh,
                     "status": "active",
                     "ts": int(time.time()),
                 })
@@ -904,10 +930,10 @@ def main():
                     m["delete_ok"] = bool(ok)
                 m["status"] = "removed"
                 m["ts"] = int(time.time())
-                m["message_id"] = None  # ✅ 防止以后又被当作可 edit 的候选
+                m["message_id"] = None
                 print(f"deleted(extra): {gk}")
 
-            for p, h in new_posts:
+            for p, hh in new_posts:
                 if _should_exit or stopped_due_to_limit or telegram_down:
                     break
                 if at_limit():
@@ -923,7 +949,7 @@ def main():
                 existing_list.append({
                     "chat_id": target_chat,
                     "message_id": info2["message_id"],
-                    "hash": h,
+                    "hash": hh,
                     "status": "active",
                     "kind": info2["kind"],
                     "image_url": info2["image_url"],
