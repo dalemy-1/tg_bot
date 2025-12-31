@@ -44,7 +44,7 @@ FETCH_TIMEOUT = int(os.getenv("FETCH_TIMEOUT", "30"))
 MAX_ACTIONS_PER_RUN = int(os.getenv("MAX_ACTIONS_PER_RUN", "250"))
 
 # RESET_STATE=1 会把旧 state 备份并清空，从零开始发（会导致全部重发）
-RESET_STATE = (os.getenv("RESET_STATE", "0").strip() == "1")
+RESET_STATE = (os.getenv("RESET_STATE", "1").strip() == "1")
 
 # ✅ 只迁移 state，不做 Telegram 动作（用于把旧 flat posted_state.json 升级成 groups）
 MIGRATE_ONLY = (os.getenv("MIGRATE_ONLY", "0").strip() == "1")
@@ -1171,5 +1171,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
