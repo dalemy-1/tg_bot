@@ -1,1 +1,2150 @@
-{}
+{
+  "_meta": {
+    "migrated_at": 1779596304,
+    "from": "flat",
+    "version": "2026-01-01-link-html-image-auto-template-rev",
+    "ts": 1779596304
+  },
+  "groups": {
+    "DE:B0GTQDDQWQ": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1511,
+        "hash": "b9947cacdeb7fd487312a4c34288b0daa67df323",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71KaH-qO2FL._AC_SL1500_.jpg",
+        "ts": 1779596309,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "IT:B0G2BRL4LX": [
+      {
+        "chat_id": "@IT1_AMA",
+        "message_id": 121,
+        "hash": "b2012c73c7ce8efed6b668d94a7f3c90aa00cc65",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61I+xEPAygL._AC_SL1024_.jpg",
+        "ts": 1779596312,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0DRXVQH7G": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1512,
+        "hash": "bcfc99ed3dc6186bab4014aa15e5368679d1ed28",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/619XAoHtFAL._AC_SX425_.jpg",
+        "ts": 1779596316,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GFLMSTGY": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1513,
+        "hash": "7023cf0639e525d45d80574280f2ddb745bae3e7",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71DKMQt8xyL._AC_SL1500_.jpg",
+        "ts": 1779596319,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GXTT4Q99": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2766,
+        "hash": "e558672daa93d8a592c15ecb1bfc13ce3448a994",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61O3AQeVLtL._SL1500_.jpg",
+        "ts": 1779596323,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B08CVRH3ZB": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5060,
+        "hash": "8affd0f56d7e3720555f21bac84c14bf651d7023",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71dPV5QX3sL._AC_SX679_.jpg",
+        "ts": 1779596327,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "ES:B0GSYS53YY": [
+      {
+        "chat_id": "@es_ama_1",
+        "message_id": 121,
+        "hash": "675229352988af4e661a68d8ee842033f9d5755a",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/617WnpRZ-RL._AC_SL1200_.jpg",
+        "ts": 1779596331,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GQZ2RYVZ": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1514,
+        "hash": "fcc32ce4134e0facfe4ac066551ac8a6bf173479",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/618dIpK6LLL._AC_SL1200_.jpg",
+        "ts": 1779596334,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "JP:B0DDC2LF1D": [
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 151,
+        "hash": "68c5c2c656a0b3b7dc03a67055bdf4017cabf839",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51BqCCmCVRL._AC_SX679_.jpg",
+        "ts": 1779596338,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GF1X8N3Q": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1515,
+        "hash": "19910dfcdb6a4fb8ab8e589880848cfb8ccf1126",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61Sz4B6rJwL._AC_SL1500_.jpg",
+        "ts": 1779596341,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GWL1WXST": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5061,
+        "hash": "7c48dc93fb8042aca3d8caff4eb88d0682f4fdf0",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71saUKZDzIL._AC_SL1500_.jpg",
+        "ts": 1779596345,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:2008555603": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5062,
+        "hash": "3468c1e7353d69a8f6f8b8237e32dcf9e8f0bb6d",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260512/54e2b097ae2e499eb03434ee7a949ae3.png",
+        "ts": 1779596351,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1932346696": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5063,
+        "hash": "74a3d7128fc49536437f20a28d67e58027b85bc1",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260515/3da521e8bbf44e39b5f09e56edc165c3.png",
+        "ts": 1779596357,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "CA:B0GKF6S4G6": [
+      {
+        "chat_id": "@ca_ama",
+        "message_id": 288,
+        "hash": "2dd8f4b09e84c75f3977d66e54cd15fc3836ec3b",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596361,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GV42RFMC": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5064,
+        "hash": "f36ce7ef8c8072dfadcc1e6dcd2969618bcddc67",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81WMlEJpUkL._AC_SX569_.jpg",
+        "ts": 1779596365,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GR8NND1P": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1516,
+        "hash": "0b2ffbe671c10caa08c161bde641ab1171f206d5",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61T-kZezdoL._AC_SL1280_.jpg",
+        "ts": 1779596368,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1517,
+        "hash": "48c1735a85ffade3661e2687b8f244646f38e123",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61T-kZezdoL._AC_SL1280_.jpg",
+        "ts": 1779596372,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GDFGHS7Q": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1518,
+        "hash": "86924bd9d9c3b7e2ec115e0b1a51b2d1295408d9",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71OD5ULiPwL._AC_SL1500_.jpg",
+        "ts": 1779596375,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0FVXMP7SW": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1519,
+        "hash": "bc7cc9a73aa83b2ec575a4daef242aea6b24ab91",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596378,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FSX88V4Z": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5065,
+        "hash": "ebe814817c7a0061110fa8fddbf79277529d8780",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61NttQVrT-L._AC_SL1500_.jpg",
+        "ts": 1779596382,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0G7V9KLTY": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5066,
+        "hash": "9ec6572245edf952f9f2a6f0bbb1eb5357a9bcd3",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61pJUYiN1wL._AC_SL1050_.jpg",
+        "ts": 1779596386,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GLDZJXW2": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5067,
+        "hash": "949ed64be2521c38d5cf366895d7f062bb80421b",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71FToFYQWOL._AC_SL1500_.jpg",
+        "ts": 1779596389,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GKNZ333F": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5068,
+        "hash": "3d32bb30a4c4a7a436bf921e608837aeed19eea5",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71vQEJeb5fL._SL1500_.jpg",
+        "ts": 1779596393,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5069,
+        "hash": "550bf7b69ca115ff605abb1061db37819b0a2e28",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71vQEJeb5fL._SL1500_.jpg",
+        "ts": 1779596396,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5070,
+        "hash": "9130dbd9b5b5d64e05d70a29b60983752ca7cb25",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71vQEJeb5fL._SL1500_.jpg",
+        "ts": 1779596400,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5071,
+        "hash": "9130dbd9b5b5d64e05d70a29b60983752ca7cb25",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71vQEJeb5fL._SL1500_.jpg",
+        "ts": 1779596403,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1948561096": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5072,
+        "hash": "c16f0cc60c39d12d667c13df5f8a15f7869be15b",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260515/504460dbca8c4a869651f3005504d166.png",
+        "ts": 1779596410,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FBWF4D4C": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5073,
+        "hash": "2b28224da73d497b4b47768a2d140ad2a7d3e5a5",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/818ntJEwx4L._AC_SX679_.jpg",
+        "ts": 1779596413,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FSDRFWZS": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5074,
+        "hash": "f8ecb4226d0b09389f3e919febd81f24f71f23dc",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71cU+T44HiL._AC_SL1500_.jpg",
+        "ts": 1779596417,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1071187048": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5075,
+        "hash": "8b28dd1bec6da82d13591588924623a3f8fb8141",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260520/c15017460dc04981a15c11f6c5bbc2f4.png",
+        "ts": 1779596423,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GS5M84HH": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1520,
+        "hash": "bbf4069f88808d21125dc68804c003c533378390",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71eCz+98lYL._AC_SL1500_.jpg",
+        "ts": 1779596426,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0G11HN16L": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2767,
+        "hash": "0b25bd498d55f5b36fe7aaee0088fbc22a4599d3",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71wSRRSWGPL._AC_SX679_.jpg",
+        "ts": 1779596430,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GTRDPX9X": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5076,
+        "hash": "79de919ca93c76bfc981e703c16dafc7ee4546f4",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61H0l-9aNsL._AC_SL1500_.jpg",
+        "ts": 1779596433,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0G34CTF8G": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5077,
+        "hash": "06b85e809fc18ba92fe66eb07293c291632e37c5",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71dVDNiT8EL._AC_SL1500_.jpg",
+        "ts": 1779596437,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0G49H5WSL": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5078,
+        "hash": "508ce281505e0bc6f827c327aec555070ed75176",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51BT+feRXVL._AC_SY500_.jpg",
+        "ts": 1779596440,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GWQ8MHFC": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2768,
+        "hash": "72d11d0af99be27c4697a0e644d4f1882096fb0d",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61at6w53R7L._AC_SL1500_.jpg",
+        "ts": 1779596444,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GD7GBK1C": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5079,
+        "hash": "e1ef1467063c9b8beeffca286ebe4a0258eb75c8",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61X+e6I8J3L._AC_SL1500_.jpg",
+        "ts": 1779596447,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "FR:B0GYP9MCJR": [
+      {
+        "chat_id": "@FR_AMA",
+        "message_id": 320,
+        "hash": "856dd6e8a69eaa64880c6e247f2177809fea1440",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61WF8yX-AoL._AC_SL1200_.jpg",
+        "ts": 1779596451,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B08TB52VKN": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1521,
+        "hash": "54fc9e492e2d4bce23a312a69e8d3e388f34855e",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61rAQ-yzdvL._AC_SX466_.jpg",
+        "ts": 1779596455,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0G2LYZL1X": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2769,
+        "hash": "f579cbc262a52c3e969726cfc7fa056582b02439",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71RZPYRY+pL._AC_SL1500_.jpg",
+        "ts": 1779596458,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1942390792": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5080,
+        "hash": "b51078e40b16a33f7870072119328e83e44a9fd4",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260429/ab50d56b986f45da84ecdf9b85847876.png",
+        "ts": 1779596465,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1842387362": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5081,
+        "hash": "d40045219c5c79b5860c86a593c36618ab389ee3",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260106/4b071332c70647a6a8aa8255611bd4e0.png",
+        "ts": 1779596471,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0FCLJBWZ7": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1522,
+        "hash": "800b40c8ebbacae9d6fb352a29a0ec9c5d7a32be",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71fvZ5FmdLL._SL1500_.jpg",
+        "ts": 1779596475,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0G5XS75ZS": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2770,
+        "hash": "ed86f9b426cba99deffdd3d8ea11f15393bf1273",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/610Vj5PZpOL._AC_SL1500_.jpg",
+        "ts": 1779596478,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0DSVFXRVP": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2771,
+        "hash": "05217c5a6106ecf03ff4c29511c387a4c275defa",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61h8sQsXmKL._SX522_.jpg",
+        "ts": 1779596482,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GVXC4ZYY": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2772,
+        "hash": "cc9de9dbd4e371d7445cde8d7998d71dc6107283",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61-+jFOOSUL._AC_SX569_.jpg",
+        "ts": 1779596485,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "CA:B0GS8BMTB2": [
+      {
+        "chat_id": "@ca_ama",
+        "message_id": 289,
+        "hash": "a5a660a18c7b9855f5e147d0a0113a03aaf4a2dd",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61djKgCczsL._AC_SL1500_.jpg",
+        "ts": 1779596489,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GRW6BP5H": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2773,
+        "hash": "d2dbbea6dbcecc20e767b200397028ded492a896",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61X4KRCqUdL._AC_SX679_.jpg",
+        "ts": 1779596492,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GRWZSKH8": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5082,
+        "hash": "f49bc2f33528d07a16257185711cebdf528c72be",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/712XL6RhIsL._AC_SL1500_.jpg",
+        "ts": 1779596496,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "CA:B09P2YTJSH": [
+      {
+        "chat_id": "@ca_ama",
+        "message_id": 290,
+        "hash": "e04f9cbb78682da3c929b6bc00e19a41adb3eb94",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71AraBCkoVL._AC_SX679_.jpg",
+        "ts": 1779596499,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1756227439": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5083,
+        "hash": "b8576750f2b09ef5631adb81947ba227e878ff6d",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260226/43ec9a78b57f45cfa0ff35499ea84c1b.png",
+        "ts": 1779596508,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FVSPZPMF": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5084,
+        "hash": "4443ee724ad8c33c534764cb443335f6336e3520",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61BHudJHCfL._SL1500_.jpg",
+        "ts": 1779596512,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FSYSK75P": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5085,
+        "hash": "897c6b7638098ecf8fc0f1c4aa2bef34587fc537",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/6130NgKxrJL._AC_SL1500_.jpg",
+        "ts": 1779596515,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FS7BLXR8": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5086,
+        "hash": "6ace2663ae0dac97d4d2b31ffdcbf35861ecedff",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71t85DVhCWL._SL1500_.jpg",
+        "ts": 1779596519,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0DZMZBVTQ": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5087,
+        "hash": "9d756d1d2846d666c5bd614468ba38e240db9cb8",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71jpWJ+L9HL._SX679_.jpg",
+        "ts": 1779596522,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GFTPTCWC": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5088,
+        "hash": "b9d6e3fb9bac04adc8556196dda6cb872344f3ce",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260516/0ff189864550426590c36a2a227d0ed3.png",
+        "ts": 1779596530,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5089,
+        "hash": "0368e9069bbb96080d426b017da5093c324743ea",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71BGEk3c9qL._AC_SL1500_.jpg",
+        "ts": 1779596533,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5090,
+        "hash": "ea2e534a7374135aea7dfe4970177c8b8a68cccb",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71BGEk3c9qL._AC_SL1500_.jpg",
+        "ts": 1779596537,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GVDG586V": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5091,
+        "hash": "6ba813beb111ec4cb80cc55bfe63dd2e437b350f",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/7129ppjjWlL._AC_SL1500_.jpg",
+        "ts": 1779596540,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1742100742": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5092,
+        "hash": "3acf6e5d818ad2a3f5c3bf4ff655dcb672c1458f",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260226/8c707549950f4320ab2d01861a365779.png",
+        "ts": 1779596550,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GWQT5B8B": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5093,
+        "hash": "7b813b3b80ff4413b3dc785e003ecce91edbec41",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61ebLT3AmHL._AC_SL1500_.jpg",
+        "ts": 1779596553,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GTQBDV24": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5094,
+        "hash": "f5fbce611e6ba3ca0ad0a37dc692f79bfa69bdf6",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81ZLu1q2tsL._AC_SL1500_.jpg",
+        "ts": 1779596557,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FD42FN4R": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5095,
+        "hash": "3fca9d3953bf2a3a25adb8fcafe6877556029074",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/618+vba6TSL._AC_SL1500_.jpg",
+        "ts": 1779596560,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FN6YKGTR": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2774,
+        "hash": "ebdffff5cc8b82c2d1176e368ccaca12f7d7268a",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596564,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "IT:B0GHR1F9MK": [
+      {
+        "chat_id": "@IT1_AMA",
+        "message_id": 122,
+        "hash": "1a0c2a8dae59532dd5d195f6ec959f16268be2da",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260503/049a0dfb688b4881b32b0396e05fbd16.png",
+        "ts": 1779596569,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "IT:B0GN3GSLZC": [
+      {
+        "chat_id": "@IT1_AMA",
+        "message_id": 123,
+        "hash": "34e427ba7cdabc97303643aaf308a6ea349b8f58",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260503/45ef44b46d6c4072873823bbbea414fd.png",
+        "ts": 1779596575,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "IT:B0GL22KYHV": [
+      {
+        "chat_id": "@IT1_AMA",
+        "message_id": 124,
+        "hash": "4302ab3574375822d111750e4f2fef2800727a2b",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260503/642878644a8d4ce2ab50e092e4e02568.png",
+        "ts": 1779596581,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "IT:B0GN3JXV5D": [
+      {
+        "chat_id": "@IT1_AMA",
+        "message_id": 125,
+        "hash": "8ec6ea09409a846ec5078efc1fda05e03a9b2305",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61X38ax64VL._AC_SX522_.jpg",
+        "ts": 1779596585,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "FR:B0GX5J8Y44": [
+      {
+        "chat_id": "@FR_AMA",
+        "message_id": 321,
+        "hash": "52b83760f2f6ce1660e1535e85ba26e46c5799bb",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61QED8jbefL._AC_SL1200_.jpg",
+        "ts": 1779596588,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0BZPGD42Y": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2775,
+        "hash": "2e63e9e5e919868e67015e195efd13fb8725b3aa",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61kxAEHfpDL._AC_SX425_.jpg",
+        "ts": 1779596592,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0G6DJTMX7": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2776,
+        "hash": "c9b4366a600ac2dd601c5f83e71e35d58101f97b",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61g6G7WHTdL._AC_SX679_.jpg",
+        "ts": 1779596595,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GDTP6YHZ": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1523,
+        "hash": "2b85a837f061d485535cf406f42e01b115670da1",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51Rz2YsX5gL._SY300_SX300_QL70_ML2_.jpg",
+        "ts": 1779596599,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0G6WVXJTZ": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1524,
+        "hash": "1b02054626de358f8d2b5d991bc70040cdb7b65c",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71JWVB668xL._AC_SX425_PIbundle-28,TopRight,0,0_SH20_.jpg",
+        "ts": 1779596602,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "FR:B0GF2F576P": [
+      {
+        "chat_id": "@FR_AMA",
+        "message_id": 322,
+        "hash": "87723ffdb266f88c4e1219e8928439024626285b",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596606,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "FR:B0G3W1ZRRL": [
+      {
+        "chat_id": "@FR_AMA",
+        "message_id": 323,
+        "hash": "b1d4f8632eca91b6f48949eab7657d5978d2095d",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596609,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "FR:B0G1CFK7RJ": [
+      {
+        "chat_id": "@FR_AMA",
+        "message_id": 324,
+        "hash": "5487462f338da883cf5d534cd8c59f8ca9f5a095",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260117/b8bc063f7bd540fbbb352d3c984cc37a.png",
+        "ts": 1779596616,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0DX1T4B5F": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5096,
+        "hash": "6c191b30555e1a71b027286667eac698a3d9a030",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/7159SgZNxuL._AC_SX679_.jpg",
+        "ts": 1779596620,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GX1M6V25": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5097,
+        "hash": "d7a988ec756400f0b46dcff74420e4ae7b7b365e",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61gRxXjEtML._AC_SL1500_.jpg",
+        "ts": 1779596623,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GWQ816Q7": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5098,
+        "hash": "47310628c44abb8a77f8046e0c2fc5f6159b0bdc",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61khWhGHwtL._AC_SL1500_.jpg",
+        "ts": 1779596627,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0G4VRRD7N": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1525,
+        "hash": "9a54c46e293ea8cdbe77701784750fe381d9b217",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71f1svoeuWL._AC_SL1500_.jpg",
+        "ts": 1779596630,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FGQ5QRZQ": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2777,
+        "hash": "d84d1bb178f92de738c0140aec915531c7732df5",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51Z43QJQW2L._AC_SX679_.jpg",
+        "ts": 1779596634,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0F8BBQDJ1": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1526,
+        "hash": "5b15f52fd10302bacc6c1a217f6a25072554660c",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61wwOdjhOCL._AC_SL1500_.jpg",
+        "ts": 1779596637,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0G6C2RCNJ": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5099,
+        "hash": "798f8aff25682a02ea6235c9c06649a1cbbd4943",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/816N+1mbSxL._SL1500_.jpg",
+        "ts": 1779596641,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GV814CT8": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1527,
+        "hash": "1689522076b57c4b4bff34953df9680ec2803c65",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71Fw7hXoyNL._AC_SL1500_.jpg",
+        "ts": 1779596644,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0FSWDYCWG": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1528,
+        "hash": "3b578646dbc452cc2e775147f5f7621757a4fd5e",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71lFPQNqOOL._AC_SX679_.jpg",
+        "ts": 1779596648,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0FSX3DSL9": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1529,
+        "hash": "9e6f127f162e07ed255b293681b4946e2cafc926",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/717sIFQDT3L._AC_SL1500_.jpg",
+        "ts": 1779596651,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0F7PG5G9L": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1530,
+        "hash": "0d42c3f22a323f74ffb21f111a5d2df4d0e3c8fc",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61ooTCQS9DL._AC_SY450_.jpg",
+        "ts": 1779596655,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0DZ6WLFFQ": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2778,
+        "hash": "da3d4a7961f3e2654d5d45688ed41e12756648b0",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71sI+DQ6jGL._AC_SX569_.jpg",
+        "ts": 1779596658,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0G7T7PTXT": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2779,
+        "hash": "41ca83066b58b6ff8b9570464aefaf1bc5953fc0",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61qu5sXFVtL._AC_SL1500_.jpg",
+        "ts": 1779596662,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FMY85CGR": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5100,
+        "hash": "4deccee385016260d9f85f8e48f371f7ace025bf",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/816a14WizDL._AC_SL1500_.jpg",
+        "ts": 1779596665,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1950780820": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5101,
+        "hash": "8a663a991275cf359a1678c66785135ddadfd3ce",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260429/48ae3e31adaf4f5f820c6f0ad6cc57f1.png",
+        "ts": 1779596671,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GDXXP66F": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5102,
+        "hash": "35a77598c0884cf29423d492c4d46169e92976df",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71tWajJNHoL._AC_SL1500_.jpg",
+        "ts": 1779596674,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0G3TB8WDC": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1531,
+        "hash": "c114182936d96de2a92655ca7755cda6fc7223a6",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71hJJFVPeCL._AC_SL1500_.jpg",
+        "ts": 1779596678,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0DYNZYJYQ": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5103,
+        "hash": "5a40df58d41c92d942e644d7bd2fe30d0e84445c",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51kHAzfqVKL._AC_SL1200_.jpg",
+        "ts": 1779596681,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0DD6C46DB": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5104,
+        "hash": "26394a4ec997902e7db91c5c7fbdc11a875573cc",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81bSsWi96wL._AC_SY450_.jpg",
+        "ts": 1779596685,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FQPMQTK8": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5105,
+        "hash": "7efb0b4a35598b8c0cb83e250e25fa1c383bf4bb",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61rSJXcHuQL._AC_SL1280_.jpg",
+        "ts": 1779596688,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1933875188": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5106,
+        "hash": "da73bd8610f039edde5637153e9e83dac9f0ac7b",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260409/a95945d2f9e44ad7979725dab7267021.png",
+        "ts": 1779596694,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GSQ882B5": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1532,
+        "hash": "da019030693b445f90be7a21aceda785a643162b",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81PEkMELpFL._AC_SL1500_.jpg",
+        "ts": 1779596697,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0D3X3RH5Q": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1533,
+        "hash": "7e728658e1069e6c506cb1d851221608f0db5eaf",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71B+vhY85BL._AC_SX425_.jpg",
+        "ts": 1779596701,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GSQMVM4L": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1534,
+        "hash": "a1e5145dc978ba84b594e0e8b8c932858b075dff",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/710ODjp4ZdL._AC_SL1500_.jpg",
+        "ts": 1779596704,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FLK162VD": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5107,
+        "hash": "ec30ef435f40c6e14f22289bba5ba9fbcb85c2ae",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/7109wzLiK1L._AC_SX679_.jpg",
+        "ts": 1779596708,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5108,
+        "hash": "ee6e7d61c215e2035e3e4cf2bb190e1e1c7d6d96",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/7109wzLiK1L._AC_SX679_.jpg",
+        "ts": 1779596711,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FCSFYFSD": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5109,
+        "hash": "e11c73984b978250acc7b1743b27c92f9512e84f",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/7111UykpW-L._AC_SL1500_.jpg",
+        "ts": 1779596715,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "ES:B0GVN6RPHJ": [
+      {
+        "chat_id": "@es_ama_1",
+        "message_id": 122,
+        "hash": "3c3b324654f0f78832579cc4c19b4010f28a6dae",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61OWiqJVdOL._AC_SL1200_.jpg",
+        "ts": 1779596718,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GSQTBJ1D": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1535,
+        "hash": "579b8120874e6e831dcf6cd349e3d06eab2c7790",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71DsxplPhKL._AC_SL1500_.jpg",
+        "ts": 1779596722,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FFYSGVSZ": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2780,
+        "hash": "90d754e3b8e5fbd18fe7cac2664eab89954ff5e5",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71NZ0siTcuL._AC_SX569_.jpg",
+        "ts": 1779596725,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FWQX6RLM": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5110,
+        "hash": "afa4f9d164bb1694c4b200dddf3ac256caf623d0",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71fvptRW0nL._AC_SL1500_.jpg",
+        "ts": 1779596729,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GMWV8WJ3": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2781,
+        "hash": "f84d219c82fd00070b3c86644a53c4631b17fcca",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81x3aP2TUxL._AC_SX679_.jpg",
+        "ts": 1779596732,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FWQHQL2G": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5111,
+        "hash": "c4371c3d3affa13ffc689dc84f264ebbddc52664",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71+9X8IDP5L._AC_SX679_.jpg",
+        "ts": 1779596736,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0D7QMMF9Y": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5112,
+        "hash": "fbef89adb0b1dbd33d6e8aa6f3164af09616f732",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71GlkEay7NL._AC_SX679_.jpg",
+        "ts": 1779596739,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1737632278": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5113,
+        "hash": "651d6181d4caf7173e3ab7f5df2205e5467ac833",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260226/287626f61c33492980ee8eea5291b401.png",
+        "ts": 1779596749,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FZ5KCCMH": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5114,
+        "hash": "5b76828fd481bd57b49e62cbea957df640207eb7",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71y2NRgQP3L._AC_SL1500_.jpg",
+        "ts": 1779596752,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FJFKSL9D": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5115,
+        "hash": "722af25180cd3f2c2e495e888573c09c11666cbc",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61pARqO-BxL._AC_SX569_.jpg",
+        "ts": 1779596756,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "IT:B0GTLF1WXM": [
+      {
+        "chat_id": "@IT1_AMA",
+        "message_id": 126,
+        "hash": "43b3b4aba9abf7ffc74ce1c25d7d5e1e426f24e4",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51KC90jP11L._AC_SL1500_.jpg",
+        "ts": 1779596759,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FWQDFJNY": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5116,
+        "hash": "af53d2ec64f30898fa7fcbc29380f39b250c02bd",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71IxKrcuy3L._AC_SL1500_.jpg",
+        "ts": 1779596763,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GWH422TW": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1536,
+        "hash": "82c2a22c4ffee8f0814f14e274994452f2137bc6",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61bQIrPyVrL._AC_SL1500_.jpg",
+        "ts": 1779596766,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "JP:B0GSVJKBWC": [
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 152,
+        "hash": "19c7c137f0da242b1e70bd4865ca9ba4eab67c3d",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260513/d4e34cfc3b49464ab80cb1c5ada2a8c0.png",
+        "ts": 1779596773,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FNMTQHLN": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5117,
+        "hash": "59f335a462ebe427d0171135f1b458856d2d5912",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71VtPHdZYzL._AC_SX569_.jpg",
+        "ts": 1779596776,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "ES:B0GQTGGLX8": [
+      {
+        "chat_id": "@es_ama_1",
+        "message_id": 123,
+        "hash": "31f8922c90b599468d2cc2599cdc94af1591d3e7",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51y-5baPT6L._AC_SL1500_.jpg",
+        "ts": 1779596780,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "ES:B0GX5DQG1X": [
+      {
+        "chat_id": "@es_ama_1",
+        "message_id": 124,
+        "hash": "0010490854ebffe48f1216cc3c152aedb75b9b40",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71z4GcLdryL._AC_SL1200_.jpg",
+        "ts": 1779596783,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "JP:B0D2WZ8VQ8": [
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 153,
+        "hash": "9429aa326352914d807174baf1f5e942962e5e88",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260513/a55df1a75874455f8a38b1cde52045bb.png",
+        "ts": 1779596791,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "JP:B0C7BNFLVW": [
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 154,
+        "hash": "bd80803a0d9dbc9b51996d53e71b37086d586491",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81CWUuaRn5L._AC_SX679_.jpg",
+        "ts": 1779596794,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GVN5HSKC": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2782,
+        "hash": "a17c82de9b24228e1a70f7156061e6f227750b0a",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/612POVjIxcL._AC_SL1200_.jpg",
+        "ts": 1779596798,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GJZZ1KRD": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2783,
+        "hash": "d9d9d5e7da03a45d5a95bc1f27b7c43fd1a31d09",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61hCenDFEmL._AC_SX569_.jpg",
+        "ts": 1779596801,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FFZ2Z59R": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2784,
+        "hash": "f1970ed399395281aa637b095927238b51c61e48",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81g4i+qTUsL._AC_SX679_.jpg",
+        "ts": 1779596805,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "FR:B0GR8NND1P": [
+      {
+        "chat_id": "@FR_AMA",
+        "message_id": 325,
+        "hash": "b00d5420bda39f08f4ba7ad351c34d8f676909e1",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61T-kZezdoL._AC_SL1280_.jpg",
+        "ts": 1779596808,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0DX1TQ1RH": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5118,
+        "hash": "9e1b438337d81c86cc57add29f4e5e0c9879dcff",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71-tLm9vP6L._AC_SX522_PIbundle-8,TopRight,0,0_SH20_.jpg",
+        "ts": 1779596812,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0DX1372V4": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5119,
+        "hash": "57620c53f0ee05ce17b52cf5eac4b9b318b0bf6e",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/716vMCI-HNL._AC_SX679_PIbundle-12,TopRight,0,0_SH20_.jpg",
+        "ts": 1779596815,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0FVG5YX8K": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1537,
+        "hash": "1766ea5622ac582e85da86589135ee7ac2ec3271",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596819,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GR1GCTF7": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1538,
+        "hash": "c42644de0b493a0c635f29b10e480947ff3d0213",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81wIuvwtg8L._AC_SL1500_.jpg",
+        "ts": 1779596822,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "IT:B0FM7V7S5Z": [
+      {
+        "chat_id": "@IT1_AMA",
+        "message_id": 127,
+        "hash": "253e1251af9f335163cba7c0edc0bbbead43c271",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71Pm2H2b0wL._AC_SX679_.jpg",
+        "ts": 1779596826,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0GJ337L8Z": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5120,
+        "hash": "883c92b4873969cc60ead3ef0b4d42547c22f139",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596829,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "IT:B0GS1NXZHQ": [
+      {
+        "chat_id": "@IT1_AMA",
+        "message_id": 128,
+        "hash": "ed9070ef6536e9801e4e25d7f8a4615fcc30b294",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51qaaHPMSKL._AC_SX425_.jpg",
+        "ts": 1779596833,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FFZ2TN3W": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2785,
+        "hash": "c8a2bddd856a290701fb99b62878908e2573e9fc",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/81g4i+qTUsL._AC_SX679_.jpg",
+        "ts": 1779596836,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GTNPYXT9": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2786,
+        "hash": "a43cf4e03df18c108f0b44cbe44d7e17cc98de9c",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/11z0fnVre6L._AC_.jpg",
+        "ts": 1779596840,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0G34N86SC": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2787,
+        "hash": "3a3389454008ca1dbd9e83c1262b53151268195e",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71tkER5FzsL._AC_SX679_.jpg",
+        "ts": 1779596843,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0FJFKSK3N": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5121,
+        "hash": "92cab462b56feb69049eb76d768b1c2a0a74f6f2",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61A3LQ+fEzL._AC_SX569_.jpg",
+        "ts": 1779596847,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0G7GPWX3Z": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2788,
+        "hash": "c89b8c04c09c711f385d01ea5f498f1df9783fe4",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61i40YCrvTL._AC_SL1500_.jpg",
+        "ts": 1779596850,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0GGQYGJXW": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2789,
+        "hash": "b04abc4aca6373fb9740e5e7994805f3900a8c29",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61hBGHlCHhL._AC_SL1500_.jpg",
+        "ts": 1779596854,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "FR:B0CHHWYGH4": [
+      {
+        "chat_id": "@FR_AMA",
+        "message_id": 326,
+        "hash": "5d3affee158bf952fe70a9db94b0ccce84b4c0b2",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260117/4e30c0f097a24cd08189f23dd10b97d9.png",
+        "ts": 1779596860,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "JP:B0FWJ8NBGD": [
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 155,
+        "hash": "f574e058cb4e6e57bef2587c04764656d8fef0ec",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51PcCIwDdxL._AC_.jpg",
+        "ts": 1779596864,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "FR:B0G2JFY2X7": [
+      {
+        "chat_id": "@FR_AMA",
+        "message_id": 327,
+        "hash": "49ebcafe8d4577b545c87b276d9126bf83d3d338",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596867,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0G5WTD9ND": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5122,
+        "hash": "97017399b557f98df1fdb444efc7f822fec0803e",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51XHsZZbG-L._AC_.jpg",
+        "ts": 1779596871,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5123,
+        "hash": "7e5eab805b1ed1c044bffbf182bfd837525fc5fc",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51XHsZZbG-L._AC_.jpg",
+        "ts": 1779596874,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0FVXHGRQH": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1539,
+        "hash": "1a23ea1256ab79f0d70a6b8b82825c2c579b3a70",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+caRwcP+L._AC_SL1200_.jpg",
+        "ts": 1779596878,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0D2CVZ13B": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1540,
+        "hash": "805aab592514515a75783ba65a4e9f692011ce34",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71uf4H9h2xL._AC_SX425_PIbundle-16,TopRight,0,0_SH20_.jpg",
+        "ts": 1779596881,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:1719402050": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5124,
+        "hash": "67df52ea102e81f8f44cc4c07a1df1d4f1b12e7e",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "http://154.48.226.28:5001/image/20260226/54d0536a1f4d45fba60f1ae3c997bb1d.png",
+        "ts": 1779596891,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "JP:B0FPK8MH85": [
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 156,
+        "hash": "476c8b6764e5659d623193442a02d77089097aab",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51+WYTlC3iL._AC_SX679_.jpg",
+        "ts": 1779596894,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0GSYX7S23": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1541,
+        "hash": "50b6016928aa62f717db4fa377091894cff6dfd1",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61yUkZXRrzL._AC_SX679_.jpg",
+        "ts": 1779596898,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B09PVNS186": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1542,
+        "hash": "c08d66811645e0b83534cf34cdfdf28010fd4b58",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://f.media-amazon.com/images/I/71xlj1VmVGL.__AC_SX300_SY300_QL70_ML2_.jpg",
+        "ts": 1779596901,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B098JLZ2RF": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1543,
+        "hash": "4dcfaa5388b9c95f3e503bcdfc17ba1db67740db",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/6121g+FQusL._AC_SY450_.jpg",
+        "ts": 1779596905,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0D3V33VCR": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1544,
+        "hash": "8a3c863a523daafda1f390991588b3cf684799be",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71lenTxA2-L._AC_SX425_PIbundle-8,TopRight,0,0_SH20_.jpg",
+        "ts": 1779596908,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "DE:B0B7GQ1QB8": [
+      {
+        "chat_id": "@DE1_AMA",
+        "message_id": 1545,
+        "hash": "b401cc80022d1514b8cf36f02dc3f922ec907c5c",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61Z7gCfBc9L._AC_SY355_.jpg",
+        "ts": 1779596912,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0F4MM4LWW": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2790,
+        "hash": "28dcf44eb67eac3202eaa50f20056c4604cf86f5",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/61kvNJEDJOL._AC_SX425_.jpg",
+        "ts": 1779596915,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "US:B0D7QNMBF3": [
+      {
+        "chat_id": "@USA1_AMA",
+        "message_id": 5125,
+        "hash": "b74113520b6b8dfa1322b85161e1969041abf017",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71TcIdZc3SL._AC_SX679_.jpg",
+        "ts": 1779596919,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0B7GQ1QB8": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2791,
+        "hash": "8489c468a9fe017fa516787340ab3ea5ef7a0cb7",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71RRk4CofEL._AC_SX679_PIbundle-16,TopRight,0,0_SH20_.jpg",
+        "ts": 1779596922,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "JP:B0FLXD4ZPS": [
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 157,
+        "hash": "63cb69017f695c39924fe446d2e3a1124e6e209e",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71E-zJ2LiXL._AC_SX679_.jpg",
+        "ts": 1779596926,
+        "delete_attempted": false,
+        "delete_ok": false
+      },
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 158,
+        "hash": "baec1f2c73e2a07c7f06519236a11a748a089b85",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71E-zJ2LiXL._AC_SX679_.jpg",
+        "ts": 1779596929,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0D3V33VCR": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2792,
+        "hash": "d91a96645e1e77d09bff5587d1a3bd09b4e96ef5",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71R34IhlCfL._AC_SX679_PIbundle-8,TopRight,0,0_SH20_.jpg",
+        "ts": 1779596933,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "JP:B0FN7KZJXH": [
+      {
+        "chat_id": "@jp_ama",
+        "message_id": 159,
+        "hash": "6a3af56d0996931b8bc0535f0ce7f936149c3513",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71AdiYqQD+L._AC_SX679_.jpg",
+        "ts": 1779596936,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FGPGD9YQ": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2793,
+        "hash": "1a29e7fcf6a68d1685a0a001192ef1224b35b2ef",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51Z43QJQW2L._AC_SL1500_.jpg",
+        "ts": 1779596940,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0DSVV991W": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2794,
+        "hash": "d40785134b07bb1563cca20aca9744380cdd1643",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71ZZrQT9STL._AC_SX679_.jpg",
+        "ts": 1779596943,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FGPPQ72Q": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2795,
+        "hash": "2698fd7b2588f770b4faa40c07345c32dd231816",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/51Z43QJQW2L._AC_SX679_.jpg",
+        "ts": 1779596947,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FGQ13VJQ": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2796,
+        "hash": "a219d383362ebeb5ded5f8f4270bf91c487013d2",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/713Moxm1B-L._AC_SL1500_.jpg",
+        "ts": 1779596950,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FGPYGZDG": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2797,
+        "hash": "b0a46071cf5edad2f281a829c4114c9df57e1d23",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/71135ltEPHL._AC_SX679_.jpg",
+        "ts": 1779596954,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ],
+    "UK:B0FGPSN6Z1": [
+      {
+        "chat_id": "@UK_AMA",
+        "message_id": 2798,
+        "hash": "c31acff7c72cfcba3bd36ee8db4500440c1cc838",
+        "status": "active",
+        "kind": "photo",
+        "image_url": "https://m.media-amazon.com/images/I/713Moxm1B-L._AC_SX679_.jpg",
+        "ts": 1779596957,
+        "delete_attempted": false,
+        "delete_ok": false
+      }
+    ]
+  }
+}
